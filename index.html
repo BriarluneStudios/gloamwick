@@ -205,8 +205,49 @@ body.mapmode #map{display:block}
 .craft{appearance:none;border:0;border-radius:14px;padding:11px;font:600 12px var(--f-display);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;
   background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 95%, #fff), color-mix(in srgb, var(--accent) 75%, #000));color:var(--night)}
 .craft:disabled{background:transparent;border:1px solid var(--line);color:var(--ink3);cursor:default}
+.tabs.four .tab{padding:9px 2px 8px;font-size:10px;letter-spacing:.1em;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tabs.four .tab .ti{font-size:17px;letter-spacing:0;line-height:1}
+.tabs.four .tab .badge{top:5px;right:calc(50% - 20px)}
+.tokbar{display:flex;align-items:center;gap:14px;padding:16px;border-radius:22px;border:1px solid color-mix(in srgb, var(--accent) 40%, transparent);background:rgba(0,0,0,.25)}
+.tokbar .big{font:700 30px var(--f-display);color:var(--accent);font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(243,217,138,.4)}
+.tokbar .lbl{font-size:16px;color:var(--ink2);line-height:1.25}
+.shop{display:flex;gap:12px;align-items:center;padding:14px 16px;border-radius:20px;border:1px solid var(--line);background:linear-gradient(160deg,#2a1d40,#120c1c)}
+.shop .si{font-size:28px}
+.shop .st{flex:1;font-size:16px;line-height:1.25;color:var(--ink2)}
+.shop .st b{display:block;font-family:var(--f-display);font-size:13px;letter-spacing:.06em;color:var(--ink)}
+.shop .craft{flex:0 0 auto;padding:10px 14px}
+.achs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ach{display:flex;flex-direction:column;gap:4px;padding:12px;border-radius:18px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.28);min-width:0}
+.ach .ai{font-size:22px;filter:grayscale(1) opacity(.45)}
+.ach .an{font-family:var(--f-display);font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--ink2)}
+.ach .ad{font-size:14px;line-height:1.2;color:var(--ink3)}
+.ach .ar{font-family:var(--f-display);font-size:10px;letter-spacing:.12em;color:var(--ink3);margin-top:auto;padding-top:2px}
+.ach.got{border-color:color-mix(in srgb, var(--accent) 50%, transparent);box-shadow:inset 0 0 30px -18px var(--accent)}
+.ach.got .ai{filter:none}
+.ach.got .an{color:var(--accent)}
+.ach.got .ar{color:var(--accent)}
+.lore{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:14px 16px;border-radius:20px;border:1px solid var(--line);background:linear-gradient(160deg,#2a1d40,#120c1c);color:var(--ink);font:inherit;cursor:pointer}
+.lore:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.lore .li{font-size:26px}
+.lore .lt{flex:1;min-width:0}
+.lore .lt b{display:block;font-family:var(--f-display);font-size:14px;letter-spacing:.04em;color:var(--accent)}
+.lore .lt span{font-size:15px;color:var(--ink2);font-style:italic}
+.lore.locked .li{filter:grayscale(1) opacity(.5)}
+.lore.locked .lt b{color:var(--ink2)}
+.lore .cost{font:600 12px var(--f-display);letter-spacing:.08em;color:var(--accent);white-space:nowrap}
+.page{text-align:left;font-size:18px;line-height:1.45;color:var(--ink)}
+.page p{margin:0 0 10px}
+.page p:first-letter{font-family:var(--f-display);font-size:1.5em;color:var(--accent)}
+#achBanner{position:fixed;left:50%;top:max(12px, env(safe-area-inset-top,0px));z-index:30;transform:translate(-50%,-140%);transition:transform .45s cubic-bezier(.2,.9,.3,1.2);
+  display:flex;gap:10px;align-items:center;padding:10px 16px;border-radius:18px;background:var(--panel-solid);border:1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow:0 12px 30px -10px #000, 0 0 24px -8px var(--accent);max-width:calc(100% - 32px);width:max-content;pointer-events:none}
+#achBanner.on{transform:translate(-50%,0)}
+#achBanner .bi{font-size:26px}
+#achBanner .bk{font-family:var(--f-display);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink3)}
+#achBanner .bn{font-family:var(--f-display);font-size:14px;font-weight:600;color:var(--accent)}
+#achBanner .bt{font-size:15px;color:var(--ink2)}
 .crest .total{font-family:var(--f-display);font-size:13px;letter-spacing:.14em;color:var(--accent);margin-top:6px}
-@media (prefers-reduced-motion: reduce){ .recipe.ready,.card,.stars span.on,.orb.next,.spell.armed,.spell.nudge,#levelName .pts.bump{animation:none} }
+@media (prefers-reduced-motion: reduce){ #achBanner{transition:none} .recipe.ready,.card,.stars span.on,.orb.next,.spell.armed,.spell.nudge,#levelName .pts.bump{animation:none} }
 </style>
 
 <canvas id="amb" aria-hidden="true"></canvas>
@@ -224,6 +265,7 @@ body.mapmode #map{display:block}
   <footer id="spells">
     <button class="spell" id="btnUndo"><span class="ic">↶</span><span class="nm">Undo</span><span class="ct" id="ctUndo">5</span></button>
     <button class="spell sig" id="btnSpell"><span class="ic" id="spIc">✦</span><span class="nm" id="spNm">Spell</span><span class="ct" id="ctSpell">1</span></button>
+    <button class="spell" id="btnPocket" hidden><span class="ic">🌱</span><span class="nm">Pocket</span><span class="ct" id="ctPocket">0</span></button>
     <button class="spell" id="btnRestart"><span class="ic">⟲</span><span class="nm">Restart</span></button>
   </footer>
   <section id="map" aria-label="Grimoire">
@@ -234,16 +276,21 @@ body.mapmode #map{display:block}
         <p>Sort the enchanted sands, discover every ingredient, brew every potion, and earn your place in each professor's classroom.</p>
         <div class="total" id="mapTotal"></div>
       </div>
-      <div class="tabs" role="tablist" aria-label="Grimoire pages">
-        <button class="tab" role="tab" id="tabRooms" aria-selected="true">Classrooms</button>
-        <button class="tab" role="tab" id="tabCraft" aria-selected="false">Spellcraft<span class="badge" id="craftBadge" hidden></span></button>
+      <div class="tabs four" role="tablist" aria-label="Grimoire pages">
+        <button class="tab" role="tab" data-tab="rooms" aria-selected="true"><span class="ti">🏰</span>Rooms</button>
+        <button class="tab" role="tab" data-tab="craft" aria-selected="false"><span class="ti">✦</span>Spells<span class="badge" id="craftBadge" hidden></span></button>
+        <button class="tab" role="tab" data-tab="awards" aria-selected="false"><span class="ti">🏆</span>Awards<span class="badge" id="awardBadge" hidden></span></button>
+        <button class="tab" role="tab" data-tab="lore" aria-selected="false"><span class="ti">📜</span>Lore<span class="badge" id="loreBadge" hidden></span></button>
       </div>
       <div class="years" id="yearBar" hidden></div>
       <div id="mapList" style="display:flex;flex-direction:column;gap:18px"></div>
       <div id="craftList" style="display:flex;flex-direction:column;gap:14px" hidden></div>
+      <div id="awardList" style="display:flex;flex-direction:column;gap:14px" hidden></div>
+      <div id="loreList" style="display:flex;flex-direction:column;gap:10px" hidden></div>
       <div class="map-foot">Five classrooms · thirty brews a year · spells to craft · ✦ stars for brewing without help · <a href="#" id="mapHelp" style="color:inherit">how to play</a><br>Gloamwick™ © 2026 Briarlune Studios · All rights reserved · <a href="https://briarlunestudios.github.io/gloamwick/" style="color:inherit">official site</a></div>
     </div>
   </section>
+  <div id="achBanner" role="status" aria-live="polite"></div>
   <div class="modal" id="modal" hidden><div class="card" id="modalCard"></div></div>
 </div>
 
@@ -309,7 +356,8 @@ const HIDDEN_HEX='#2c2142';
 /* ======================= SAVE ======================= */
 const KEY='gloamwick-potion-sort-v1';
 // pot: bottled potions on your shelf ("room-color": count). spells: crafted spells. year: highest academy year reached.
-let save={done:{},stars:{},seen:{},best:{},ing:{},pot:{},spells:{},year:1,view:1,tut:false,sound:true};
+// ach: earned achievements. tok: token balance. sprouts: Pocket Sprouts owned. lore: unlocked lore pages. stats: running tallies.
+let save={done:{},stars:{},seen:{},best:{},ing:{},pot:{},spells:{},year:1,view:1,ach:{},tok:0,sprouts:0,lore:{0:1},stats:{pot:0,stirs:0,swift:0},tut:false,sound:true};
 try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.done) save=Object.assign(save,s);}catch(e){}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
 function isUnlocked(r,l,y){ y=y||1; if(y>Math.min(save.year,YEARS)) return false;
@@ -368,6 +416,105 @@ function canCraft(S){ return !has(S.key) && S.year<=save.year && S.ing.every(i=>
 const craftable=()=>SPELLS.filter(canCraft);
 const examsFor=y=>SPELLS.filter(S=>S.year===y&&S.exam);
 const examsDone=y=>examsFor(y).every(S=>has(S.key));
+
+/* ======================= ACHIEVEMENTS & TOKENS ======================= */
+// Achievements pay out tokens. Tokens buy Pocket Sprouts (an extra empty vial in any brew) and unlock lore pages.
+const roomDone=(y,r)=>[0,1,2,3,4,5].every(l=>save.done[LK(y,r,l)]);
+const anyRoom=f=>{ for(let y=1;y<=YEARS;y++) for(let r=0;r<5;r++) if(f(y,r)) return true; return false; };
+const nDone=()=>Object.keys(save.done).length;
+const nStars3=()=>Object.values(save.stars).filter(v=>v===3).length;
+const nBonus=y=>[0,1,2,3,4].filter(r=>save.done[LK(y,r,BONUS)]).length;
+const ACH=[
+ {k:'first',   i:'🧪', n:'First Brew',            d:'Finish your first brew.',                         t:1, ok:()=>nDone()>=1},
+ {k:'room',    i:'🌿', n:'Top of the Class',      d:'Finish all six brews in a classroom.',            t:2, ok:()=>anyRoom(roomDone)},
+ {k:'allrooms',i:'🏰', n:'Every Classroom',       d:'Finish every classroom in a year.',               t:3, ok:()=>anyRoom((y,r)=>r===4&&roomDone(y,4))},
+ {k:'bonus',   i:'🎁', n:'Bonus Brewer',          d:'Finish a bonus brew.',                            t:2, ok:()=>nBonus(1)+nBonus(2)+nBonus(3)>=1},
+ {k:'bonus5',  i:'🏅', n:'Overachiever',          d:'Finish all five bonus brews in a year.',          t:4, ok:()=>[1,2,3].some(y=>nBonus(y)===5), p:()=>[Math.max(nBonus(1),nBonus(2),nBonus(3)),5]},
+ {k:'year2',   i:'🎓', n:'Second Year',           d:'Move up to your Second Year.',                    t:3, ok:()=>save.year>=2},
+ {k:'year3',   i:'⚗️', n:'Third Year',            d:'Move up to your Third Year.',                     t:3, ok:()=>save.year>=3},
+ {k:'pure',    i:'✦',  n:'Pure Brew',             d:'Earn three stars on a brew.',                     t:1, ok:()=>nStars3()>=1},
+ {k:'pure10',  i:'🌟', n:'Steady Hand',           d:'Earn three stars on ten brews.',                  t:3, ok:()=>nStars3()>=10, p:()=>[nStars3(),10]},
+ {k:'starroom',i:'🌌', n:'Starry Classroom',      d:'Three stars on all six brews of a classroom.',    t:3, ok:()=>anyRoom((y,r)=>[0,1,2,3,4,5].every(l=>save.stars[LK(y,r,l)]===3))},
+ {k:'pureb',   i:'🕯️', n:'Unveiled',              d:'Three stars on a bonus brew.',                    t:3, ok:()=>anyRoom((y,r)=>save.stars[LK(y,r,BONUS)]===3)},
+ {k:'swift',   i:'☄️', n:'Swift as a Comet',      d:'Finish a brew in as few pours as the cauldron would.', t:2, ok:()=>save.stats.swift>=1},
+ {k:'ing10',   i:'🌱', n:'Gatherer',              d:'Discover 10 ingredients.',                        t:1, ok:()=>Object.keys(save.ing).length>=10, p:()=>[Object.keys(save.ing).length,10]},
+ {k:'ingall',  i:'🧺', n:'Every Ingredient',      d:'Discover all 45 ingredients.',                    t:4, ok:()=>Object.keys(save.ing).length>=TOTAL_ING, p:()=>[Object.keys(save.ing).length,TOTAL_ING]},
+ {k:'pot100',  i:'🍾', n:'Busy Cauldron',         d:'Bottle 100 potions.',                             t:2, ok:()=>save.stats.pot>=100, p:()=>[save.stats.pot,100]},
+ {k:'pot500',  i:'🏺', n:'Potion Hoarder',        d:'Bottle 500 potions.',                             t:4, ok:()=>save.stats.pot>=500, p:()=>[save.stats.pot,500]},
+ {k:'spell1',  i:'📖', n:'Spellwright',           d:'Craft your first spell.',                         t:1, ok:()=>Object.keys(save.spells).length>=1},
+ {k:'spellall',i:'🔮', n:'Grand Grimoire',        d:'Craft every spell.',                              t:5, ok:()=>SPELLS.every(S=>has(S.key)), p:()=>[Object.keys(save.spells).length,SPELLS.length]},
+ {k:'pts10k',  i:'💫', n:'Ten Thousand Sparks',   d:'Earn 10,000 points in all.',                      t:2, ok:()=>totalPoints()>=10000, p:()=>[Math.min(totalPoints(),10000),10000]},
+ {k:'stir25',  i:'🥄', n:'Stirred, Not Skipped',  d:'Stir the cauldron by hand 25 times.',             t:1, ok:()=>save.stats.stirs>=25, p:()=>[save.stats.stirs,25]},
+ {k:'owl',     i:'🦉', n:'Night Owl',             d:'Finish a brew between midnight and 4 a.m.',       t:1, ok:c=>!!(c&&c.owl)},
+ {k:'lore',    i:'📜', n:'Keeper of Tales',       d:'Unlock every lore page.',                         t:3, ok:()=>LORE.every((_,i)=>save.lore[i]), p:()=>[Object.keys(save.lore).length,LORE.length]},
+];
+const SPROUT_COST=3;
+let achQ=[], achShowing=false;
+// Award anything newly earned. ctx carries one-off facts about the brew just finished.
+function checkAch(ctx,quiet){
+  const got=[]; let again=true;
+  while(again){ again=false; for(const A of ACH){ if(save.ach[A.k]) continue; let ok=false; try{ ok=A.ok(ctx); }catch(e){}
+      if(ok){ save.ach[A.k]=Date.now(); save.tok+=A.t; got.push(A); again=true; } } }
+  if(!got.length) return got;
+  save.newAch=1; persist();
+  if(quiet){ if(got.length) achQ.push({i:'🏆',n:`${got.length} achievement${got.length>1?'s':''} earned`,t:`+${got.reduce((a,A)=>a+A.t,0)} tokens · see Awards in the grimoire`}); }
+  else got.forEach(A=>achQ.push({i:A.i,n:A.n,t:`+${A.t} token${A.t>1?'s':''} · ${A.d}`}));
+  nextBanner(); return got;
+}
+function nextBanner(){
+  if(achShowing||!achQ.length) return; achShowing=true; const b=achQ.shift(), el=$('#achBanner');
+  el.innerHTML=`<div class="bi">${b.i}</div><div><div class="bk">${b.k||'Achievement'}</div><div class="bn">${b.n}</div><div class="bt">${b.t}</div></div>`;
+  el.classList.add('on'); try{SFX.chime()}catch(e){}
+  setTimeout(()=>{ el.classList.remove('on'); setTimeout(()=>{ achShowing=false; nextBanner(); },500); },3200);
+}
+
+/* ======================= LORE ======================= */
+// Pages of the grimoire, unlocked with tokens. Page 0 is open from the start.
+const LORE=[
+ {i:'🏰', t:'The Academy of Quiet Brews', s:'Where Gloamwick begins', c:0, b:[
+  'Gloamwick sits where the woods give up and the hills begin, and it has never once been on a map. You find it at dusk, or it finds you. Either way, the lamps are already lit.',
+  'It is called the Academy of Quiet Brews because nothing here is rushed. Sands are sorted grain by grain, potions are bottled one cork at a time, and the professors believe that a patient witch is a powerful one.',
+  'Five classrooms, five professors, and one great cauldron in the hall where every finished brew is stirred. Welcome, new witch. Mind the stairs; some of them move.']},
+ {i:'✨', t:'Why the Sands Glitter', s:'A first-year question', c:2, b:[
+  'Every first-year asks it. The answer is that the sands are not sand at all. They are ingredients that have forgotten what they are.',
+  'Rosehip, starfall, cinnabar, chamomile, bone dust: ground fine, shaken loose and muddled together, they lose their shape and keep only their color and their glitter.',
+  'Sort them, gather every grain of one kind into one vial, and they remember. That is why the sand turns back into petals and stars the first time you bottle it. You did not make the ingredient. You reminded it.']},
+ {i:'🌿', t:'Professor Hollowmere\'s Seed Tray', s:'The Moonlit Glasshouse', c:2, b:[
+  'Wren Hollowmere has taught Herbalism for longer than the Glasshouse has had glass. She keeps a seed tray on her desk that nobody has ever seen her water, and it has never once failed to bloom.',
+  'Her spell, Sprout, is the first one most witches learn. She teaches it by handing you an empty pot and waiting. Sooner or later, something grows. She says the spell is not about vials at all: it is about believing there is always a little more room.',
+  'If you see fireflies in the Glasshouse after dark, do not try to catch them. They are her students from long ago, still keeping the lamps.']},
+ {i:'🔭', t:'What Vesper Saw', s:'The Observatory Spire', c:3, b:[
+  'Orrin Vesper climbed the Spire as a student to look at a comet and did not come back down for eleven years. When he finally did, he was a professor, and the comet was named after him. He has never said what he saw up there.',
+  'He teaches Astronomy by asking you to look twice at everything. Starsight, his spell, is simply that habit made bright: look at a veiled layer long enough, carefully enough, and it has no choice but to show itself.',
+  'He keeps a telescope pointed not at the sky but at the Hushed Crypt. When asked why, he says only, "Someone should."']},
+ {i:'⚗️', t:'Cinderhall\'s First Explosion', s:'The Ember Forge', c:3, b:[
+  'Bastian Cinderhall\'s first explosion took the roof off the old Forge. His second built a better one. He has been the Professor of Alchemy ever since, on the grounds that nobody else wanted to sweep up.',
+  'He is loud, warm and covered in soot, and he believes every mistake is just transmutation that has not finished yet. His spell, Distill, makes the right pour for you, because he says a good teacher should sometimes just show you.',
+  'The Self-Stirring Spoon was his, originally. He left it in a cauldron overnight and it simply carried on. He claims he is not bothered that it prefers his students.']},
+ {i:'🫖', t:'Madame Lune\'s Teacups', s:'The Tea-Leaf Parlor', c:3, b:[
+  'Seraphine Lune owns three hundred and twelve teacups and remembers whose fortune was read in every one. The Parlor is always warm, always smells of rose and saffron, and always seems to have exactly one empty chair: yours.',
+  'She teaches Divination as a kind of kindness. Foretell does not decide anything for you; it only lights the wisest next step and trusts you to take it.',
+  'Students say she knew they were coming before they enrolled. She says that is nonsense, darling. She only knew which cup to warm.']},
+ {i:'🕯️', t:'The Crypt Has a Door', s:'The Hushed Crypt', c:3, b:[
+  'Nobody remembers building the Hushed Crypt. It was simply there one morning, under the east lawn, with a candle already burning on the step. Corvin Ashgrave walked in that afternoon and has been the Professor of Shadow Arts ever since.',
+  'He is quiet, courteous and far gentler than his ravens suggest. He teaches that rules are habits, and that a witch who knows exactly when to break one is more trustworthy than one who never does. That is all Unbind is: one rule, broken once, on purpose.',
+  'At the far end of the Crypt there is a second door. Ashgrave keeps the key. He says it is for later.']},
+ {i:'🫕', t:'The Great Cauldron', s:'In the Hall of Brews', c:4, b:[
+  'Every brew at Gloamwick ends in the same place: the great cauldron in the Hall, black iron, wide as a well, and older than the Academy itself. The founders built the walls around it because it refused to move.',
+  'It is not stirred to mix the potions. They are already sorted and bottled. It is stirred to seal them, to tell the brew it is finished and may rest. A brew left unstirred still works, but the cauldron always sounds a little disappointed.',
+  'On the rim, worn almost smooth, are the names of every witch who ever stirred it. Look closely. Yours is there too, very faint, as if the cauldron had been expecting you.']},
+ {i:'🌒', t:'On Veils', s:'Why some layers hide', c:4, b:[
+  'A veiled layer is not hidden by magic. It is hidden by shyness. Ingredients that have been muddled a long time grow bashful and will not show their color until the grains above them have moved aside.',
+  'This is why Second Years brew veiled from the start: the professors use older, shyer sands for harder lessons. The Gloamlight Charm does not force anything. It only lends a little ghostlight, so the shy ones feel brave enough to be seen.',
+  'Some witches talk to their veiled layers while they brew. The professors officially disapprove. Unofficially, all five of them do it.']},
+ {i:'🌙', t:'The Gloam', s:'The hour the Academy is named for', c:5, b:[
+  'The gloam is the hour between day and night, when the light goes soft and gold and everything looks a little more like itself. The Academy was founded in that hour and has, in a way, never left it.',
+  'The founders believed that magic is easiest in between things: between light and dark, between sand and ingredient, between a question and its answer. A witch who is comfortable in the in-between can brew anything.',
+  'That is the last lesson of the grimoire, and the first one too. Take your time. The lamps will stay lit. Gloamwick is always here at dusk, and so, now, are you.']},
+];
+const loreCost=i=>LORE[i].c;
+function buyLore(i){ if(save.lore[i]||save.tok<loreCost(i)) return false; save.tok-=loreCost(i); save.lore[i]=1; persist(); checkAch(); return true; }
+function buySprout(){ if(save.tok<SPROUT_COST) return false; save.tok-=SPROUT_COST; save.sprouts=(save.sprouts||0)+1; persist(); return true; }
 
 /* ======================= SOUND ======================= */
 const SFX={ctx:null,noise:null,
@@ -690,6 +837,8 @@ function updateHUD(){
   $('#btnSpell').classList.toggle('spent',G.charges<=0);
   $('#btnSpell').classList.toggle('armed',G.unbind);
   $('#btnUndo').classList.toggle('spent',G.undos<=0||!G.undo.length);
+  $('#btnPocket').hidden=!(save.sprouts>0); $('#ctPocket').textContent=save.sprouts||0;
+  $('#btnPocket').setAttribute('aria-label',`Pocket Sprout: grow an extra empty vial. ${save.sprouts||0} left`);
   $('#btnSpell').setAttribute('aria-label',`${R.spell.name}: ${R.spell.desc} ${G.charges} left`);
   $('#btnSound').textContent=save.sound?'♪':'✕';
 }
@@ -740,7 +889,7 @@ function brew(i){
   for(let k=0;k<26;k++){ const a=Math.random()*Math.PI*2, s=40+Math.random()*120; bursts.push({x:p.x,y:p.y-6,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,life:0,max:.7+Math.random()*.6,c:Math.random()<.5?hex:'#fff4d0',s:1.5+Math.random()*2.5}); }
   floats.push({txt:pot,x:p.x,y:p.y-24,t:0,c:hex});
   const ik=G.r+'-'+G.vials[i][0].c;
-  save.pot[ik]=(save.pot[ik]||0)+(has('hearth')?2:1);
+  save.pot[ik]=(save.pot[ik]||0)+(has('hearth')?2:1); save.stats.pot=(save.stats.pot||0)+1;
   persist();
   if(!save.ing[ik]){ save.ing[ik]=1; persist();
     setTimeout(()=>{ toast(`✦ New ingredient discovered: ${ing}! ✦`,2800); SFX.magic(); },700);
@@ -762,7 +911,11 @@ function showResults(key,stars,brewed,stirred,canBefore){
     if(!G||G.won!==true) return;
     G.stirred=stirred; SFX.win(); const R=room();
     const sc=tallyScore(); const prevBest=save.best[key]||0; const newBest=sc.total>prevBest;
-    save.best[key]=Math.max(prevBest,sc.total); persist();
+    save.best[key]=Math.max(prevBest,sc.total);
+    if(stirred&&!has('spoon')) save.stats.stirs=(save.stats.stirs||0)+1;
+    if(G.par&&G.moves<=G.par) save.stats.swift=(save.stats.swift||0)+1;
+    persist();
+    setTimeout(()=>checkAch({owl:new Date().getHours()<4}),600);
     const chips=brewed.map(([ing,hex,pot])=>`<li><span class="dot" style="background:${hex};box-shadow:0 0 10px ${hex}"></span>${pot}</li>`).join('');
     const last=G.l===5, bonus=G.l===BONUS; let next='Next brew', extra='';
     const cando=craftable().length;
@@ -979,6 +1132,12 @@ game.addEventListener('pointerdown',e=>{
 });
 $('#btnUndo').onclick=()=>{SFX.init();doUndo()};
 $('#btnSpell').onclick=()=>{SFX.init();castSpell()};
+$('#btnPocket').onclick=()=>{ SFX.init(); if(!G||anim||G.won) return;
+  if(!(save.sprouts>0)) return toast('No Pocket Sprouts left. Buy more with tokens in the grimoire.');
+  if(G.vials.length>=12) return toast('The shelf is full.');
+  save.sprouts--; persist(); G.vials.push([]); G.caps.push(spareCap()); G.helps++; layout(); SFX.magic(); updateHUD();
+  const p=POS[POS.length-1]; for(let k=0;k<20;k++){const a=Math.random()*6.28;bursts.push({x:p.x,y:p.y+p.h*.6,vx:Math.cos(a)*60,vy:-Math.random()*120,life:0,max:.8,c:'#c9f58a',s:2})}
+  toast('A Pocket Sprout grows a fresh vial.'); };
 $('#btnRestart').onclick=()=>{SFX.init(); if(G&&!anim) startLevel(G.r,G.l,G.y)};
 $('#btnMap').onclick=()=>{SFX.init();showMap()};
 $('#btnHelp').onclick=()=>{SFX.init(); if(!anim) showGuide(0)};
@@ -1022,7 +1181,8 @@ const GUIDE=[
   {k:'How to brew · 5 of 5', h:'Spellcraft & academy years', items:[
     ['🧺','<b>Your shelf</b><br>Every potion you bottle goes onto your shelf.'],
     ['📖','<b>Spellcraft</b><br>In the grimoire, combine discovered ingredients and bottled potions in the cauldron to craft spells. Crafted spells help in every brew, for good.'],
-    ['🎓','<b>Academy years</b><br>Craft all of your year\'s <b>exam spells</b> to move up a year, with new and harder brews in every classroom.']]},
+    ['🎓','<b>Academy years</b><br>Craft all of your year\'s <b>exam spells</b> to move up a year, with new and harder brews in every classroom.'],
+    ['🏆','<b>Achievements</b><br>Earn tokens to spend on Pocket Sprouts and sealed lore pages in the grimoire.']]},
 ];
 function showGuide(p,done){
   const P=GUIDE[p], last=p===GUIDE.length-1;
@@ -1043,15 +1203,18 @@ function showMap(tab){
   const tp=totalPoints(), ni=Object.keys(save.ing||{}).length;
   $('#mapTotal').textContent=`${YEAR_NAMES[Math.min(save.year,YEARS+1)]} · `+(tp?`✦ ${tp.toLocaleString()} points · `:'')+`${ni} of ${TOTAL_ING} ingredients`;
   const rooms=mapTab==='rooms';
-  $('#tabRooms').setAttribute('aria-selected',rooms); $('#tabCraft').setAttribute('aria-selected',!rooms);
+  if(mapTab==='awards') save.newAch=0;
+  document.querySelectorAll('.tab[data-tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===mapTab));
   $('#craftBadge').hidden=!craftable().length;
-  $('#mapList').hidden=!rooms; $('#craftList').hidden=rooms;
+  $('#awardBadge').hidden=!save.newAch;
+  $('#loreBadge').hidden=!LORE.some((L,i)=>!save.lore[i]&&save.tok>=L.c);
+  $('#mapList').hidden=!rooms; $('#craftList').hidden=mapTab!=='craft'; $('#awardList').hidden=mapTab!=='awards'; $('#loreList').hidden=mapTab!=='lore';
   // Year switcher appears once you have reached a second year.
   const yb=$('#yearBar'); yb.hidden=!rooms||save.year<2;
   if(!yb.hidden){ let h=''; for(let y=1;y<=YEARS;y++) h+=`<button class="yr" data-y="${y}" aria-pressed="${y===save.view}" ${y<=save.year?'':'disabled'}>${y<=save.year?'':'🔒 '}${YEAR_NAMES[y]}</button>`;
     if(save.year>YEARS) h+=`<button class="yr" disabled>${YEAR_NAMES[YEARS+1]} · soon</button>`;
     yb.innerHTML=h; yb.querySelectorAll('.yr:not([disabled])').forEach(b=>b.onclick=()=>{ SFX.init(); SFX.tick(); save.view=+b.dataset.y; persist(); showMap(); }); }
-  if(rooms) renderRooms(save.view); else renderCraft();
+  if(rooms) renderRooms(save.view); else if(mapTab==='craft') renderCraft(); else if(mapTab==='awards') renderAwards(); else renderLore();
 }
 function renderRooms(y){
   const el=$('#mapList'); el.innerHTML='';
@@ -1118,7 +1281,7 @@ function craftSpell(S){
     save.spells[S.key]=Date.now();
     let grad=0;
     if(S.exam && save.year<=YEARS && examsDone(save.year)){ save.year++; grad=save.year; if(save.year<=YEARS) save.view=save.year; }
-    persist(); SFX.win();
+    persist(); SFX.win(); setTimeout(()=>checkAch(),600);
     modal(`<div class="kicker">Spell crafted</div><div class="sigbig">${S.icon}</div><h2>${S.name}</h2>
       <div class="spellbox"><div class="sb-ic">✦</div><div>${S.effect}</div></div>
       <p class="quote small">“${S.lore}”</p>
@@ -1137,8 +1300,48 @@ function showGraduation(y){
   $('#mG').onclick=()=>showMap(open?'rooms':'craft');
   if(open) $('#mY').onclick=()=>startLevel(0,0,y);
 }
-$('#tabRooms').onclick=()=>{ SFX.init(); SFX.tick(); showMap('rooms'); };
-$('#tabCraft').onclick=()=>{ SFX.init(); SFX.tick(); showMap('craft'); };
+document.querySelectorAll('.tab[data-tab]').forEach(b=>b.onclick=()=>{ SFX.init(); SFX.tick(); showMap(b.dataset.tab); });
+const tokBar=lbl=>`<div class="tokbar"><div class="big">◈ ${save.tok}</div><div class="lbl">${lbl}</div></div>`;
+function renderAwards(){
+  const got=ACH.filter(A=>save.ach[A.k]).length;
+  let h=tokBar(`Tokens to spend. Earn more with achievements: ${got} of ${ACH.length} earned.`);
+  h+=`<div class="shop"><div class="si">🌱</div><div class="st"><b>Pocket Sprout · you have ${save.sprouts||0}</b>Grows an extra empty vial in any brew. Its button appears in your satchel.</div>
+    <button class="craft" id="buySprout" ${save.tok>=SPROUT_COST?'':'disabled'}>◈ ${SPROUT_COST}</button></div>`;
+  h+=`<div class="shop" id="goLore" style="cursor:pointer"><div class="si">📜</div><div class="st"><b>Lore pages</b>Unlock new pages of the grimoire on the Lore tab.</div><span class="cost" style="font:600 12px var(--f-display);color:var(--accent)">Open →</span></div>`;
+  h+='<div class="ygroup">Achievements</div><div class="achs">';
+  ACH.forEach(A=>{ const g=!!save.ach[A.k]; let pr=''; if(!g&&A.p){ try{ const [a,b]=A.p(); pr=` · ${Math.min(a,b)}/${b}`; }catch(e){} }
+    h+=`<div class="ach${g?' got':''}"><div class="ai">${A.i}</div><div class="an">${A.n}</div><div class="ad">${A.d}</div><div class="ar">${g?'✓ Earned':'◈ '+A.t+pr}</div></div>`; });
+  h+='</div>';
+  $('#awardList').innerHTML=h;
+  $('#buySprout').onclick=()=>{ if(buySprout()){ SFX.magic(); toastMap('🌱 A Pocket Sprout is in your satchel.'); showMap('awards'); } };
+  $('#goLore').onclick=()=>{ SFX.tick(); showMap('lore'); };
+}
+function renderLore(){
+  let h=tokBar('Spend tokens to unlock pages of the grimoire.');
+  LORE.forEach((L,i)=>{ const open=!!save.lore[i];
+    h+=`<button class="lore${open?'':' locked'}" data-i="${i}"><div class="li">${L.i}</div><div class="lt"><b>${open?L.t:'Sealed page'}</b><span>${L.s}</span></div>
+      <div class="cost">${open?'Read →':'◈ '+L.c}</div></button>`; });
+  $('#loreList').innerHTML=h;
+  document.querySelectorAll('.lore[data-i]').forEach(b=>b.onclick=()=>{ SFX.init(); const i=+b.dataset.i;
+    if(save.lore[i]) return readLore(i);
+    if(save.tok<loreCost(i)) return toastMap(`This page needs ◈ ${loreCost(i)}. Earn tokens with achievements.`);
+    modal(`<div class="kicker">Sealed page</div><div class="sigbig">${LORE[i].i}</div><h2>${LORE[i].s}</h2>
+      <p class="note">Break the seal for ◈ ${loreCost(i)}? You have ◈ ${save.tok}.</p>
+      <div class="row"><button class="btn ghost" id="mNo">Not yet</button><button class="btn" id="mYes">Unlock</button></div>`);
+    $('#mNo').onclick=()=>showMap('lore');
+    $('#mYes').onclick=()=>{ if(buyLore(i)){ SFX.magic(); readLore(i); } else showMap('lore'); }; });
+}
+function readLore(i){
+  const L=LORE[i];
+  modal(`<div class="kicker">${L.s}</div><div class="sigbig">${L.i}</div><h2>${L.t}</h2>
+    <div class="page">${L.b.map(p=>`<p>${p}</p>`).join('')}</div>
+    <div class="row">${i>0&&save.lore[i-1]?'<button class="btn ghost" id="lPrev">←</button>':''}<button class="btn" id="lBack">Close</button>${save.lore[i+1]?'<button class="btn ghost" id="lNext">→</button>':''}</div>`);
+  $('#lBack').onclick=()=>showMap('lore');
+  if($('#lPrev')) $('#lPrev').onclick=()=>readLore(i-1);
+  if($('#lNext')) $('#lNext').onclick=()=>readLore(i+1);
+}
+// toasts live on the game stage, which is hidden in the grimoire, so the grimoire reuses the achievement banner
+function toastMap(msg){ achQ.push({i:'✦',k:'Grimoire',n:msg,t:''}); nextBanner(); }
 
 /* ======================= RENDERING ======================= */
 function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
@@ -1358,6 +1561,8 @@ function frame(now){ const dt=Math.min(.05,(now-last)/1000); last=now; const t=n
 if(!save.pv){ Object.keys(save.done).forEach(k=>{ const m=/^(\d)-(\d)$/.exec(k); if(!m) return;
     levelColors(1,+m[1],+m[2]).forEach(c=>{ const p=m[1]+'-'+c; save.pot[p]=(save.pot[p]||0)+1; }); });
   save.pv=1; persist(); }
+save.stats=Object.assign({pot:0,stirs:0,swift:0},save.stats); save.lore=save.lore||{0:1}; save.lore[0]=1;
+checkAch(null,true);
 layout(); showMap(); requestAnimationFrame(frame);
 /* ---- Ownership: if this game is re-hosted anywhere but the official site, say so on screen ---- */
 (function guard(){

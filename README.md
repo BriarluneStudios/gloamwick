@@ -24,6 +24,10 @@ Every potion you bottle goes onto your shelf. In the grimoire's **Spellcraft** p
 
 Craft all of your year's **exam spells** to move up a year. Your Second Year brings new, harder brews to all five classrooms. In your Third Year the vials come in three sizes: tiny 3-layer vials, standard vials and great 5-layer flasks, with colors that come in matching amounts.
 
+## Achievements and lore
+
+Earn achievements for progress, skill and collecting. Each one pays out tokens to spend in the grimoire on Pocket Sprouts (an extra empty vial in any brew) and sealed lore pages about the Academy and its professors.
+
 Score points for every potion bottled, with bonuses for swift brewing and for brewing without help. A short how-to-play guide greets new witches (tap **?** to see it again). Progress saves in your browser.
 
 ## How it's built
