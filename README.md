@@ -18,6 +18,12 @@ A cozy, witchy sand-sorting puzzle game. Pour glittering enchanted sands across 
 
 30 levels that get harder brew by brew inside every classroom: more colors, trickier starting mixes, longer solves, and fewer undos as you go. Finish a classroom to unlock its **bonus brew**: harder, fully veiled, and worth double points. Every level is checked to be solvable.
 
+## Spellcraft and academy years
+
+Every potion you bottle goes onto your shelf. In the grimoire's **Spellcraft** page, combine discovered ingredients and bottled potions in the cauldron to craft spells that help in every brew for good: an extra undo, a self-stirring spoon, a charm that lifts the veil, and more.
+
+Craft all of your year's **exam spells** to move up a year. Your Second Year brings new, harder brews to all five classrooms.
+
 Score points for every potion bottled, with bonuses for swift brewing and for brewing without help. A short how-to-play guide greets new witches (tap **?** to see it again). Progress saves in your browser.
 
 ## How it's built

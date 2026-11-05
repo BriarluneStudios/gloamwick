@@ -165,8 +165,48 @@ body.mapmode #map{display:block}
 .tally li.tot{border-top:1px solid var(--line);padding-top:8px;margin-top:2px}
 .tally li.tot span{font-family:var(--f-display);color:var(--accent)!important;font-size:15px;letter-spacing:.06em}
 .best{font-size:15px;color:var(--ink3);font-style:italic;margin-top:-4px}
+.tabs{display:flex;gap:6px;padding:4px;border-radius:18px;background:rgba(0,0,0,.28);border:1px solid var(--line)}
+.tab{flex:1;position:relative;appearance:none;border:0;border-radius:14px;padding:11px 8px;background:transparent;color:var(--ink2);
+  font:600 12px var(--f-display);letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--panel);color:var(--accent);box-shadow:inset 0 0 18px -8px var(--accent)}
+.tab:focus-visible,.yr:focus-visible,.craft:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tab .badge{position:absolute;top:7px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.years{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.yr{appearance:none;border:1px solid var(--line);border-radius:999px;padding:7px 14px;background:transparent;color:var(--ink2);
+  font:600 11px var(--f-display);letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+.yr[aria-pressed="true"]{background:var(--accent);color:var(--night);border-color:var(--accent)}
+.yr:disabled{opacity:.4;cursor:default}
+.exam{border-radius:22px;padding:16px;border:1px solid color-mix(in srgb, var(--accent) 40%, transparent);background:rgba(0,0,0,.25);text-align:center;display:flex;flex-direction:column;gap:6px}
+.exam .k{font-family:var(--f-display);font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink3)}
+.exam h3{margin:0;font-family:var(--f-display);font-weight:600;font-size:18px;color:var(--accent);letter-spacing:.04em}
+.exam .slots{display:flex;justify-content:center;gap:10px;font-size:26px;margin-top:2px}
+.exam .slots span{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;border:1px dashed var(--line);filter:grayscale(1) opacity(.4)}
+.exam .slots span.on{border-style:solid;border-color:var(--accent);filter:none;box-shadow:0 0 16px -4px var(--accent)}
+.ygroup{font-family:var(--f-display);font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink3);text-align:center;margin-top:4px}
+.recipe{border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(160deg,#2a1d40,#120c1c);border:1px solid var(--line)}
+.recipe.known{border-color:color-mix(in srgb, var(--accent) 55%, transparent);box-shadow:inset 0 0 40px -24px var(--accent)}
+.recipe.ready{animation:orbpulse 1.8s ease-in-out infinite;--ra:var(--accent)}
+.recipe .rh{display:flex;gap:12px;align-items:center}
+.recipe .ri{flex:0 0 48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:24px;background:rgba(0,0,0,.35);border:1px solid var(--line)}
+.recipe:not(.known) .ri{filter:grayscale(.7)}
+.recipe .rn{font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.04em;color:var(--ink)}
+.recipe.known .rn{color:var(--accent)}
+.recipe .tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);font:600 9px var(--f-display);letter-spacing:.14em;color:var(--accent);vertical-align:2px}
+.recipe .re{font-size:16px;color:var(--ink2);line-height:1.3}
+.recipe .lore{font-size:16px;font-style:italic;color:var(--ink2);line-height:1.3}
+.req{display:flex;flex-direction:column;gap:5px}
+.req .rl{font-family:var(--f-display);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink3)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border-radius:999px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);font-size:15px;line-height:1.15}
+.chip.ok{border-color:color-mix(in srgb, var(--accent) 45%, transparent)}
+.chip.miss{color:var(--ink3)}
+.chip .n{font-family:var(--f-display);font-size:11px;font-variant-numeric:tabular-nums;color:var(--ink2)}
+.chip.ok .n{color:var(--accent)}
+.craft{appearance:none;border:0;border-radius:14px;padding:11px;font:600 12px var(--f-display);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;
+  background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 95%, #fff), color-mix(in srgb, var(--accent) 75%, #000));color:var(--night)}
+.craft:disabled{background:transparent;border:1px solid var(--line);color:var(--ink3);cursor:default}
 .crest .total{font-family:var(--f-display);font-size:13px;letter-spacing:.14em;color:var(--accent);margin-top:6px}
-@media (prefers-reduced-motion: reduce){ .card,.stars span.on,.orb.next,.spell.armed,.spell.nudge,#levelName .pts.bump{animation:none} }
+@media (prefers-reduced-motion: reduce){ .recipe.ready,.card,.stars span.on,.orb.next,.spell.armed,.spell.nudge,#levelName .pts.bump{animation:none} }
 </style>
 
 <canvas id="amb" aria-hidden="true"></canvas>
@@ -194,8 +234,14 @@ body.mapmode #map{display:block}
         <p>Sort the enchanted sands, discover every ingredient, brew every potion, and earn your place in each professor's classroom.</p>
         <div class="total" id="mapTotal"></div>
       </div>
+      <div class="tabs" role="tablist" aria-label="Grimoire pages">
+        <button class="tab" role="tab" id="tabRooms" aria-selected="true">Classrooms</button>
+        <button class="tab" role="tab" id="tabCraft" aria-selected="false">Spellcraft<span class="badge" id="craftBadge" hidden></span></button>
+      </div>
+      <div class="years" id="yearBar" hidden></div>
       <div id="mapList" style="display:flex;flex-direction:column;gap:18px"></div>
-      <div class="map-foot">Five classrooms · thirty brews · five bonus brews · ✦ stars for brewing without help · <a href="#" id="mapHelp" style="color:inherit">how to play</a><br>Gloamwick™ © 2026 Briarlune Studios · All rights reserved · <a href="https://briarlunestudios.github.io/gloamwick/" style="color:inherit">official site</a></div>
+      <div id="craftList" style="display:flex;flex-direction:column;gap:14px" hidden></div>
+      <div class="map-foot">Five classrooms · thirty brews a year · spells to craft · ✦ stars for brewing without help · <a href="#" id="mapHelp" style="color:inherit">how to play</a><br>Gloamwick™ © 2026 Briarlune Studios · All rights reserved · <a href="https://briarlunestudios.github.io/gloamwick/" style="color:inherit">official site</a></div>
     </div>
   </section>
   <div class="modal" id="modal" hidden><div class="card" id="modalCard"></div></div>
@@ -262,10 +308,54 @@ const HIDDEN_HEX='#2c2142';
 
 /* ======================= SAVE ======================= */
 const KEY='gloamwick-potion-sort-v1';
-let save={done:{},stars:{},seen:{},best:{},ing:{},tut:false,sound:true};
+// pot: bottled potions on your shelf ("room-color": count). spells: crafted spells. year: highest academy year reached.
+let save={done:{},stars:{},seen:{},best:{},ing:{},pot:{},spells:{},year:1,view:1,tut:false,sound:true};
 try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.done) save=Object.assign(save,s);}catch(e){}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
-function isUnlocked(r,l){ if(r>0 && !save.done[(r-1)+'-5']) return false; return l===0 || !!save.done[r+'-'+(l-1)]; }
+function isUnlocked(r,l,y){ y=y||1; if(y>Math.min(save.year,YEARS)) return false;
+  if(r>0 && !save.done[LK(y,r-1,5)]) return false; return l===0 || !!save.done[LK(y,r,l-1)]; }
+
+/* ======================= SPELLCRAFT ======================= */
+// Spells are crafted in the grimoire. Each recipe needs some discovered ingredients (catalysts, never used up)
+// and a few bottled potions (poured into the cauldron and used up). A crafted spell is yours for good.
+// Exam spells are required: craft every exam spell of your year to move up to the next academy year.
+// Potion refs are "room-color" (color index into ROOMS[room].colors).
+const SPELLS=[
+ {key:'lantern', year:1, exam:true, icon:'🏮', name:'Lantern of Patience',
+  effect:'+1 Undo in every brew.', lore:'A paper lantern that remembers every pour you wished you had not made.',
+  ing:['0-8','1-2'], pot:{'0-0':2,'1-5':1}},
+ {key:'spoon', year:1, exam:true, icon:'🥄', name:'Self-Stirring Spoon',
+  effect:'The cauldron stirs itself, and you still earn the stir bonus.', lore:'Professor Cinderhall swears it was an accident. The spoon swears otherwise.',
+  ing:['2-1','3-2'], pot:{'2-0':2,'3-1':1}},
+ {key:'gloam', year:1, exam:true, icon:'🌒', name:'Gloamlight Charm',
+  effect:'In veiled brews, the top two layers of every vial start uncovered.', lore:'A little ghostlight, kept in a nightshade husk. It shows what the dark would rather keep.',
+  ing:['1-4','4-4'], pot:{'3-6':2,'4-6':2}},
+ {key:'ladle', year:1, icon:'🪙', name:'Gilded Ladle',
+  effect:'+10% points on every brew.', lore:'Brewed coin and pearl salt. Everything it stirs comes out a little richer.',
+  ing:['0-1','2-8'], pot:{'0-3':2,'2-2':1}},
+ {key:'echo', year:1, icon:'🔔', name:'Echo Bell',
+  effect:'+1 charge of every professor\'s signature spell.', lore:'Ring it once and the last spell you cast answers a second time.',
+  ing:['1-7','4-5'], pot:{'1-6':1,'4-7':2}},
+ {key:'quill', year:2, exam:true, icon:'🪶', name:'Star-Chart Quill',
+  effect:'Double the swift-brewing bonus.', lore:'It writes down the shortest path before you have finished thinking it.',
+  ing:['1-3','3-4'], pot:{'1-3':3,'3-4':2,'4-3':2}},
+ {key:'wellspring', year:2, exam:true, icon:'🫙', name:'Wellspring Flask',
+  effect:'Every brew starts with one extra empty vial.', lore:'Whatever you pour out of it, there is always room for a little more.',
+  ing:['0-5','2-4','4-8'], pot:{'0-5':3,'2-4':2,'3-7':2}},
+ {key:'hearth', year:2, icon:'🔥', name:'Hearthstone',
+  effect:'Every potion you bottle puts two on your shelf.', lore:'A warm stone for the bottom of the satchel. Potions seem to multiply near it.',
+  ing:['0-0','4-1'], pot:{'0-0':2,'2-1':2,'4-1':2}},
+];
+const YEAR_NAMES=['','First Year','Second Year','Third Year'];
+const has=k=>!!(save.spells&&save.spells[k]);
+const potName=ref=>{ const [r,c]=ref.split('-').map(Number); return ROOMS[r].colors[c][2]; };
+const ingName=ref=>{ const [r,c]=ref.split('-').map(Number); return ROOMS[r].colors[c][0]; };
+const refHex=ref=>{ const [r,c]=ref.split('-').map(Number); return ROOMS[r].colors[c][1]; };
+const potCount=ref=>(save.pot&&save.pot[ref])||0;
+function canCraft(S){ return !has(S.key) && S.year<=save.year && S.ing.every(i=>save.ing[i]) && Object.entries(S.pot).every(([p,n])=>potCount(p)>=n); }
+const craftable=()=>SPELLS.filter(canCraft);
+const examsFor=y=>SPELLS.filter(S=>S.year===y&&S.exam);
+const examsDone=y=>examsFor(y).every(S=>has(S.key));
 
 /* ======================= SOUND ======================= */
 const SFX={ctx:null,noise:null,
@@ -328,13 +418,18 @@ const LEVEL_CACHE={}, LEVEL_PAR={};
 // Slot 6 in every room is the optional Bonus Brew. Colors per brew climb faster than before, and each seed was
 // picked offline so the shortest solve keeps growing (12 pours on the very first brew up to ~34 in the Crypt bonus).
 const BONUS=6;
-const NCOL=[[4,5,5,6,6,7,7],[6,6,7,7,8,8,9],[7,7,8,8,9,9,9],[8,8,9,9,9,9,9],[8,9,9,9,9,9,9]];
-const SEEDS=[[15,14,5,1,12,12,83],[38,27,81,73,46,100,30],[15,7,49,112,0,35,49],[29,17,23,24,78,46,3],[30,6,81,87,50,48,8]];
-function spec(r,l){ return {n:NCOL[r][l], empties:2, maxRun:l>=2?2:3}; }
-function undosFor(r,l){ return l===BONUS?2 : l>=4?(r>=2?2:3) : l>=2?4:5; }
-function buildLevel(r,l,att){
-  const {n,empties,maxRun}=spec(r,l);
-  const R=rng(9173+r*1009+l*131+att*7919);
+// Academy years: each year replays the five classrooms with its own, harder set of brews.
+// Year 2 adds more colors, veils every classroom and allows no starting pairs at all.
+const YEARS=2;
+const NCOL={1:[[4,5,5,6,6,7,7],[6,6,7,7,8,8,9],[7,7,8,8,9,9,9],[8,8,9,9,9,9,9],[8,9,9,9,9,9,9]],
+            2:[[6,6,7,7,8,8,9],[7,7,8,8,9,9,9],[8,8,9,9,9,9,9],[9,9,9,9,9,9,9],[9,9,9,9,9,9,9]]};
+const SEEDS={1:[[15,14,5,1,12,12,83],[38,27,81,73,46,100,30],[15,7,49,112,0,35,49],[29,17,23,24,78,46,3],[30,6,81,87,50,48,8]],
+             2:[[32,69,68,63,76,49,15],[29,77,18,6,78,78,39],[5,34,59,64,33,83,89],[37,19,24,13,46,24,24],[83,29,32,52,49,17,26]]};
+function spec(y,r,l){ return {n:NCOL[y][r][l], empties:2, maxRun:(y>=2||l>=2)?2:3}; }
+function undosFor(y,r,l){ const base=l===BONUS?2 : l>=4?(r>=2?2:3) : l>=2?4:5; return Math.max(1,base-(y-1)); }
+function buildLevel(y,r,l,att){
+  const {n,empties,maxRun}=spec(y,r,l);
+  const R=rng(9173+r*1009+l*131+att*7919+(y-1)*104729);
   const cols=shuffle([0,1,2,3,4,5,6,7,8],R).slice(0,n);
   const units=[]; cols.forEach(c=>{for(let i=0;i<CAP;i++) units.push(c)}); shuffle(units,R);
   const vials=[]; for(let i=0;i<n;i++) vials.push(units.slice(i*CAP,i*CAP+CAP));
@@ -343,15 +438,19 @@ function buildLevel(r,l,att){
   for(let e=0;e<empties;e++) vials.push([]);
   return vials;
 }
-function genLevel(r,l){
-  const k=r+'-'+l; if(LEVEL_CACHE[k]) return LEVEL_CACHE[k].map(v=>v.slice());
-  const seeded=buildLevel(r,l,SEEDS[r][l]); let sol;
+// Save keys: Year 1 keeps the original "room-brew" keys so existing progress carries over.
+const LK=(y,r,l)=>y===1?r+'-'+l:'y'+y+':'+r+'-'+l;
+function genLevel(y,r,l){
+  const k=LK(y,r,l); if(LEVEL_CACHE[k]) return LEVEL_CACHE[k].map(v=>v.slice());
+  const seeded=buildLevel(y,r,l,SEEDS[y][r][l]); let sol;
   if(seeded && (sol=solve(seeded,30000))){ LEVEL_CACHE[k]=seeded.map(v=>v.slice()); LEVEL_PAR[k]=sol.length; return seeded; }
   let last=null;
-  for(let att=0;att<200;att++){ const v=buildLevel(r,l,att); if(!v) continue; last=v;
+  for(let att=0;att<200;att++){ const v=buildLevel(y,r,l,att); if(!v) continue; last=v;
     if((sol=solve(v,30000))){ LEVEL_CACHE[k]=v.map(x=>x.slice()); LEVEL_PAR[k]=sol.length; return v; } }
   return last;
 }
+// The colors a brew uses, without solving it (for crediting potions to older saves).
+function levelColors(y,r,l){ const v=buildLevel(y,r,l,SEEDS[y][r][l]); return v?[...new Set(v.flat())]:[]; }
 
 /* ======================= COLOR HELPERS ======================= */
 function hexRgb(h){const n=parseInt(h.slice(1),16);return[n>>16&255,n>>8&255,n&255]}
@@ -506,16 +605,18 @@ function layout(){
 }
 
 /* ======================= GAME FLOW ======================= */
-function startLevel(r,l){
-  closeModal(); document.body.classList.remove('mapmode');
+function startLevel(r,l,y){
+  y=y||1; closeModal(); document.body.classList.remove('mapmode'); save.view=y;
   const R=ROOMS[r]; setTheme(R);
-  const raw=genLevel(r,l);
-  const veil=R.hidden||l===BONUS;
-  G={r,l,vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-1}))),undo:[],undos:undosFor(r,l),charges:R.spell.charges,unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[r+'-'+l]||null,nudged:false};
+  const raw=genLevel(y,r,l);
+  const veil=R.hidden||l===BONUS||y>=2, open=has('gloam')?2:1;
+  if(has('wellspring')) raw.push([]);
+  G={y,r,l,vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-open}))),undo:[],undos:undosFor(y,r,l)+(has('lantern')?1:0),charges:R.spell.charges+(has('echo')?1:0),unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[LK(y,r,l)]||null,nudged:false};
   sel=null; anim=null; hint=null; grains=[]; bursts=[]; floats=[]; lift=[]; shake=[]; sparks=[];
   layout(); updateHUD();
   if(!save.tut) showGuide(0,()=>{ if(l===0 && !save.seen[r]) showIntro(r); else firstTip(); });
   else if(l===0 && !save.seen[r]) showIntro(r);
+  else if(y>=2&&l===0) toast(`${YEAR_NAMES[y]} · ${R.place}. Every layer starts veiled.`,3200);
   else if(r===0&&l===0) firstTip();
   else if(l===BONUS) toast('Bonus brew! Every lower layer is veiled, and points are doubled.',3600);
 }
@@ -526,13 +627,14 @@ const PTS={potion:100, pure:250, swiftPer:25, swiftMax:250, help:40, stir:100};
 function tallyScore(){
   const potions=G.vials.filter(v=>v.length).length;
   const base=potions*PTS.potion;
-  const par=G.par||G.moves; const slack=Math.max(0,(par+4)-G.moves);
-  const swift=Math.min(PTS.swiftMax,slack*PTS.swiftPer);
+  const par=G.par||G.moves; const slack=Math.max(0,(par+4)-G.moves), q=has('quill')?2:1;
+  const swift=Math.min(PTS.swiftMax*q,slack*PTS.swiftPer*q);
   const pure=G.helps===0?PTS.pure:0;
   const help=G.helps*PTS.help;
   const stir=G.stirred?PTS.stir:0;
   const sub=Math.max(0,base+swift+pure+stir-help), bonusX=G.l===BONUS?sub:0;
-  return {potions,base,swift,pure,stir,help,bonusX,total:sub+bonusX};
+  const ladle=has('ladle')?Math.round((sub+bonusX)*.1):0;
+  return {potions,base,swift,pure,stir,help,bonusX,ladle,total:sub+bonusX+ladle};
 }
 function totalPoints(){ return Object.values(save.best||{}).reduce((a,b)=>a+b,0); }
 function updateHUD(){
@@ -540,7 +642,7 @@ function updateHUD(){
   $('#roomName').textContent=R.place;
   const live=Math.max(0,G.vials.filter(isDone).length*PTS.potion-G.helps*PTS.help);
   const bumped=live>G.pts; G.pts=live;
-  $('#levelName').innerHTML=`${G.l===BONUS?'✦ Bonus brew':`Brew ${G.l+1} of 6`} · <span class="pts${bumped?' bump':''}">✦ ${G.pts} pts</span>`;
+  $('#levelName').innerHTML=`${G.y>1?'Year '+G.y+' · ':''}${G.l===BONUS?'✦ Bonus brew':`Brew ${G.l+1} of 6`} · <span class="pts${bumped?' bump':''}">✦ ${G.pts} pts</span>`;
   $('#ctUndo').textContent=G.undos;
   $('#spIc').textContent=R.spell.icon; $('#spNm').textContent=R.spell.name; $('#ctSpell').textContent=G.charges;
   $('#btnSpell').classList.toggle('spent',G.charges<=0);
@@ -596,6 +698,8 @@ function brew(i){
   for(let k=0;k<26;k++){ const a=Math.random()*Math.PI*2, s=40+Math.random()*120; bursts.push({x:p.x,y:p.y-6,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,life:0,max:.7+Math.random()*.6,c:Math.random()<.5?hex:'#fff4d0',s:1.5+Math.random()*2.5}); }
   floats.push({txt:pot,x:p.x,y:p.y-24,t:0,c:hex});
   const ik=G.r+'-'+G.vials[i][0].c;
+  save.pot[ik]=(save.pot[ik]||0)+(has('hearth')?2:1);
+  persist();
   if(!save.ing[ik]){ save.ing[ik]=1; persist();
     setTimeout(()=>{ toast(`✦ New ingredient discovered: ${ing}! ✦`,2800); SFX.magic(); },700);
     for(let k=0;k<30;k++){ const a=Math.random()*6.28, sp=30+Math.random()*90; bursts.push({x:p.x+(Math.random()-.5)*GEO.W,y:p.y+Math.random()*GEO.H,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-40,life:0,max:.9+Math.random()*.5,c:'#ffffff',s:1.6+Math.random()*2}); } }
@@ -603,23 +707,27 @@ function brew(i){
   SFX.chime(); try{navigator.vibrate&&navigator.vibrate(18)}catch(e){}
 }
 function win(){
-  G.won=true; const key=G.r+'-'+G.l; const stars=G.helps===0?3:G.helps<=2?2:1;
+  G.won=true; const key=LK(G.y,G.r,G.l); const stars=G.helps===0?3:G.helps<=2?2:1;
   save.done[key]=1; save.stars[key]=Math.max(save.stars[key]||0,stars); persist();
   setTimeout(()=>{
     if(!G||G.won!==true) return;
     const R=room(); const brewed=G.vials.filter(v=>v.length).map(v=>R.colors[v[0].c]);
-    showCauldron(brewed, stirred=>showResults(key,stars,brewed,stirred));
+    const canBefore=craftable().length;
+    showCauldron(brewed, stirred=>showResults(key,stars,brewed,stirred,canBefore));
   },900);
 }
-function showResults(key,stars,brewed,stirred){
+function showResults(key,stars,brewed,stirred,canBefore){
     if(!G||G.won!==true) return;
     G.stirred=stirred; SFX.win(); const R=room();
     const sc=tallyScore(); const prevBest=save.best[key]||0; const newBest=sc.total>prevBest;
     save.best[key]=Math.max(prevBest,sc.total); persist();
     const chips=brewed.map(([ing,hex,pot])=>`<li><span class="dot" style="background:${hex};box-shadow:0 0 10px ${hex}"></span>${pot}</li>`).join('');
     const last=G.l===5, bonus=G.l===BONUS; let next='Next brew', extra='';
+    const cando=craftable().length;
     if(last){ next='✦ Bonus brew';
-      extra=(G.r<4?`<p class="note">The way to <b>${ROOMS[G.r+1].place}</b> is open.</p>`:'<p class="note">Every classroom mastered. Gloamwick names you Graduate Witch. ✦</p>')
+      extra=(G.r<4?`<p class="note">The way to <b>${ROOMS[G.r+1].place}</b> is open.</p>`
+        : examsDone(G.y)?`<p class="note">Every classroom of your ${YEAR_NAMES[G.y]} mastered. ✦</p>`
+        : `<p class="note">Every classroom of your ${YEAR_NAMES[G.y]} mastered. Craft your exam spells in the grimoire to move up a year. ✦</p>`)
         +`<p class="note dim">A harder, veiled bonus brew awaits, worth double points. ${G.r<4?'<a href="#" id="mSkip" style="color:inherit">Skip to the next classroom →</a>':''}</p>`; }
     if(bonus){ next=G.r<4?'Next classroom':'Brew it again'; extra='<p class="note">Bonus brew conquered. The professor is genuinely impressed. ✦</p>'; }
     const line=R.praise[Math.floor(Math.random()*R.praise.length)];
@@ -630,18 +738,22 @@ function showResults(key,stars,brewed,stirred){
         <li><span>${sc.potions} potions × ${PTS.potion}</span><span>${sc.base}</span></li>
         ${sc.swift?`<li><span>Swift brewing</span><span>+${sc.swift}</span></li>`:''}
         ${sc.pure?`<li><span>Pure brew, no help</span><span>+${sc.pure}</span></li>`:''}
-        ${sc.stir?`<li><span>Stirred by hand</span><span>+${sc.stir}</span></li>`:''}
+        ${sc.stir?`<li><span>${has('spoon')?'🥄 Stirred by the spoon':'Stirred by hand'}</span><span>+${sc.stir}</span></li>`:''}
         ${sc.help?`<li class="neg"><span>Help used</span><span>−${sc.help}</span></li>`:''}
         ${sc.bonusX?`<li><span>Bonus brew ×2</span><span>+${sc.bonusX}</span></li>`:''}
+        ${sc.ladle?`<li><span>🪙 Gilded Ladle</span><span>+${sc.ladle}</span></li>`:''}
         <li class="tot"><span>Points</span><span>${sc.total}</span></li>
       </ul>
       <div class="best">${newBest&&prevBest?'New best for this brew! ':''}Best ${save.best[key]} · Total ${totalPoints()}</div>${extra}
+      <p class="note dim">${has('hearth')?brewed.length*2:brewed.length} potions added to your shelf.</p>
+      ${cando>canBefore?`<button class="btn ghost" id="mCraft">✦ A spell is ready to craft</button>`:''}
       <p class="quote small">“${line}” — ${R.short}</p>
       ${stars<3?'<p class="note dim">Brew without spells or undos for all three stars.</p>':''}
       <div class="row"><button class="btn ghost" id="mMap">Grimoire</button><button class="btn" id="mNext">${next}</button></div>`);
     $('#mMap').onclick=()=>{closeModal();showMap()};
-    $('#mNext').onclick=()=>{ if(G.l<BONUS) startLevel(G.r,G.l+1); else if(G.r<4) startLevel(G.r+1,0); else startLevel(G.r,G.l); };
-    if($('#mSkip')) $('#mSkip').onclick=e=>{ e.preventDefault(); startLevel(G.r+1,0); };
+    $('#mNext').onclick=()=>{ if(G.l<BONUS) startLevel(G.r,G.l+1,G.y); else if(G.r<4) startLevel(G.r+1,0,G.y); else startLevel(G.r,G.l,G.y); };
+    if($('#mSkip')) $('#mSkip').onclick=e=>{ e.preventDefault(); startLevel(G.r+1,0,G.y); };
+    if($('#mCraft')) $('#mCraft').onclick=()=>{ closeModal(); showMap('craft'); };
 }
 
 /* ======================= CAULDRON: interactive brewing ======================= */
@@ -649,17 +761,19 @@ function showResults(key,stars,brewed,stirred){
 // (drag in circles, or tap the cauldron) to seal the brew. Stirring earns a small bonus; skipping is fine.
 const STIR_TURNS=2;
 let CAUL=null;
-function showCauldron(brewed,done){
-  const R=room(), acc=R.accent;
-  modal(`<div class="kicker">Final step</div><h2>Stir the cauldron</h2>
-    <p class="note" id="cHint">Swirl your finger around the cauldron to seal the brew.</p>
+// o (optional): {kicker, title, hint, acc, auto, skip} so the grimoire can reuse the cauldron for spellcrafting.
+function showCauldron(brewed,done,o){
+  o=o||{}; const acc=o.acc||room().accent, auto=o.auto!==undefined?o.auto:has('spoon');
+  const hint=auto?'Your Self-Stirring Spoon stirs the brew. 🥄':(o.hint||'Swirl your finger around the cauldron to seal the brew.');
+  modal(`<div class="kicker">${o.kicker||'Final step'}</div><h2>${o.title||'Stir the cauldron'}</h2>
+    <p class="note" id="cHint">${hint}</p>
     <canvas id="caul" style="width:100%;max-width:300px;aspect-ratio:.92;margin:0 auto;display:block;touch-action:none;cursor:grab"></canvas>
-    <div class="row"><button class="btn ghost" id="cSkip">Skip</button></div>`);
+    <div class="row"><button class="btn ghost" id="cSkip">${o.skip||'Skip'}</button></div>`);
   const cv=$('#caul'); const rect=cv.getBoundingClientRect(); const w=rect.width||280, h=rect.height||304;
   cv.width=Math.round(w*DPR); cv.height=Math.round(h*DPR); const c=cv.getContext('2d');
   const cols=brewed.map(b=>b[1]);
   const C={cx:w/2, cy:h*.58, rx:w*.33, ry:w*.1};
-  CAUL={c,w,h,C,cols,acc,prog:0,ang:0,last:null,spoon:-Math.PI/2,swirl:0,bubbles:[],drops:[],smoke:[],pops:[],popSnd:0,pourT:0,done:false,doneT:0,fin:false,raf:0,lastT:performance.now(),cb:done};
+  CAUL={c,w,h,C,cols,acc,prog:0,ang:0,last:null,spoon:-Math.PI/2,swirl:0,bubbles:[],drops:[],smoke:[],pops:[],popSnd:0,pourT:0,done:false,doneT:0,fin:false,raf:0,lastT:performance.now(),cb:done,auto,sealed:o.sealed||'The brew is sealed. ✦'};
   // potions pour in one after another before stirring begins
   cols.forEach((col,i)=>CAUL.drops.push({col,t:-i*.16,x:C.cx+(i-(cols.length-1)/2)*Math.min(26,C.rx*1.6/cols.length)}));
   const toLocal=e=>{ const r=cv.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; };
@@ -682,7 +796,7 @@ function addStir(d){
   if(K.prog>=1){ K.done=true; SFX.magic(); SFX.chime(); try{navigator.vibrate&&navigator.vibrate([20,40,30])}catch(e){}
     for(let k=0;k<40;k++){ const a=-Math.PI*Math.random(),s=60+Math.random()*140; K.pops.push({x:K.C.cx+(Math.random()-.5)*K.C.rx,y:K.C.cy,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,life:0,max:.9+Math.random()*.6,col:Math.random()<.5?K.acc:'#fff4d0'}); }
     for(let k=0;k<26;k++) K.smoke.push({x:K.C.cx+(Math.random()-.5)*K.C.rx*1.4,y:K.C.cy,vx:(Math.random()-.5)*50,vy:-50-Math.random()*70,r:14+Math.random()*14,gr:26,life:0,max:1.4+Math.random()*.8,off:Math.random()*9,fin:true});
-    const hnt=$('#cHint'); if(hnt) hnt.textContent='The brew is sealed. ✦';
+    const hnt=$('#cHint'); if(hnt) hnt.textContent=K.sealed;
     setTimeout(()=>finishCauldron(true),1300); }
 }
 function finishCauldron(stirred){ const K=CAUL; if(!K||K.fin) return; K.fin=true; cancelAnimationFrame(K.raf); CAUL=null; K.cb(stirred); }
@@ -690,6 +804,7 @@ function drawCauldron(now){
   const K=CAUL; if(!K) return; const dt=Math.min(.05,(now-K.lastT)/1000); K.lastT=now; const t=now/1000;
   const {c,w,h,C,cols,acc}=K; c.setTransform(DPR,0,0,DPR,0,0); c.clearRect(0,0,w,h);
   K.pourT+=dt;
+  if(K.auto && !K.done){ addStir(dt*Math.PI*2.4); K.spoon+=dt*Math.PI*2.4; }
   const n=cols.length, P=K.prog;
   // colors drift through every potion you brewed, warming toward the professor's color as you stir
   const cyc=off=>{ const f=(((t*.45+off)%n)+n)%n, i=Math.floor(f); return mix(mix(cols[i],cols[(i+1)%n],f-i),acc,K.done?.85:P*.45); };
@@ -822,7 +937,7 @@ game.addEventListener('pointerdown',e=>{
 });
 $('#btnUndo').onclick=()=>{SFX.init();doUndo()};
 $('#btnSpell').onclick=()=>{SFX.init();castSpell()};
-$('#btnRestart').onclick=()=>{SFX.init(); if(G&&!anim) startLevel(G.r,G.l)};
+$('#btnRestart').onclick=()=>{SFX.init(); if(G&&!anim) startLevel(G.r,G.l,G.y)};
 $('#btnMap').onclick=()=>{SFX.init();showMap()};
 $('#btnHelp').onclick=()=>{SFX.init(); if(!anim) showGuide(0)};
 $('#mapHelp').onclick=e=>{e.preventDefault(); SFX.init(); showGuide(0)};
@@ -845,23 +960,27 @@ function showIntro(r){
   $('#mBegin').onclick=()=>{ save.seen[r]=1; persist(); closeModal(); if(r===0) toast('Tap a vial, then tap where to pour.',3200); };
 }
 const GUIDE=[
-  {k:'How to brew · 1 of 4', h:'Welcome to Gloamwick', items:[
+  {k:'How to brew · 1 of 5', h:'Welcome to Gloamwick', items:[
     ['🧪','<b>Vials</b><br>Each glass vial holds layers of enchanted sand. Four layers fill a vial.'],
     ['👆','<b>Pour</b><br>Tap a vial to lift it, then tap another vial to pour the top layer into it.'],
     ['✋','<b>The one rule</b><br>A layer only pours onto the <i>same color</i>, or into an <i>empty</i> vial.']]},
-  {k:'How to brew · 2 of 4', h:'Bottle the potions', items:[
+  {k:'How to brew · 2 of 5', h:'Bottle the potions', items:[
     ['🍾','<b>Potion</b><br>Fill a vial with four layers of one color and it corks into a named potion. The first time you bottle one, its sand turns into the <i>real ingredient</i>: petals, roots, stars, crystals. Collect them all.'],
     ['🫕','<b>Stir the cauldron</b><br>Bottle every color, then swirl your finger to stir them all into the cauldron and seal the brew.'],
     ['❓','<b>Veiled layers</b><br>In later classrooms, lower layers hide until you uncover them.']]},
-  {k:'How to brew · 3 of 4', h:'Your satchel', items:[
+  {k:'How to brew · 3 of 5', h:'Your satchel', items:[
     ['↶','<b>Undo</b><br>Takes back your last pour. You get a few per brew.'],
     ['🌱','<b>The professor\'s spell</b><br>The glowing middle button. In the Glasshouse it\'s <b>Sprout</b>, which grows you an <i>extra empty vial</i> when you\'re stuck. Each classroom teaches a new spell.'],
     ['⟲','<b>Restart</b><br>Starts the brew over, fresh.']]},
-  {k:'How to brew · 4 of 4', h:'Points & stars', items:[
+  {k:'How to brew · 4 of 5', h:'Points & stars', items:[
     ['💯','<b>Points</b><br>+100 for every potion, a bonus for brewing in few pours, and a big bonus for no help at all.'],
     ['⭐','<b>Stars</b><br>Three ✦ for a brew with no undos or spells.'],
     ['🎁','<b>Bonus brews</b><br>Finish a classroom to unlock its harder, veiled bonus brew, worth double points.'],
     ['☾','<b>Grimoire</b><br>The moon button opens your map of classrooms, scores and stars. Tap <b>?</b> any time to see this again.']]},
+  {k:'How to brew · 5 of 5', h:'Spellcraft & academy years', items:[
+    ['🧺','<b>Your shelf</b><br>Every potion you bottle goes onto your shelf.'],
+    ['📖','<b>Spellcraft</b><br>In the grimoire, combine discovered ingredients and bottled potions in the cauldron to craft spells. Crafted spells help in every brew, for good.'],
+    ['🎓','<b>Academy years</b><br>Craft all of your year\'s <b>exam spells</b> to move up a year, with new and harder brews in every classroom.']]},
 ];
 function showGuide(p,done){
   const P=GUIDE[p], last=p===GUIDE.length-1;
@@ -874,32 +993,110 @@ function showGuide(p,done){
   if($('#gBack')) $('#gBack').onclick=()=>{ SFX.tick(); showGuide(p-1,done); };
   if($('#gSkip')) $('#gSkip').onclick=finish;
 }
-function showMap(){
+let mapTab='rooms';
+function showMap(tab){
   closeModal(); document.body.classList.add('mapmode'); setTheme(MAPTHEME);
-  const tp=totalPoints(), ni=Object.keys(save.ing||{}).length; $('#mapTotal').textContent=(tp?`✦ ${tp.toLocaleString()} points · `:'')+`${ni} of ${TOTAL_ING} ingredients discovered`;
+  if(tab) mapTab=tab;
+  const yMax=Math.min(save.year,YEARS); save.view=Math.max(1,Math.min(save.view||yMax,yMax));
+  const tp=totalPoints(), ni=Object.keys(save.ing||{}).length;
+  $('#mapTotal').textContent=`${YEAR_NAMES[Math.min(save.year,3)]} · `+(tp?`✦ ${tp.toLocaleString()} points · `:'')+`${ni} of ${TOTAL_ING} ingredients`;
+  const rooms=mapTab==='rooms';
+  $('#tabRooms').setAttribute('aria-selected',rooms); $('#tabCraft').setAttribute('aria-selected',!rooms);
+  $('#craftBadge').hidden=!craftable().length;
+  $('#mapList').hidden=!rooms; $('#craftList').hidden=rooms;
+  // Year switcher appears once you have reached a second year.
+  const yb=$('#yearBar'); yb.hidden=!rooms||save.year<2;
+  if(!yb.hidden){ let h=''; for(let y=1;y<=YEARS;y++) h+=`<button class="yr" data-y="${y}" aria-pressed="${y===save.view}" ${y<=save.year?'':'disabled'}>${y<=save.year?'':'🔒 '}${YEAR_NAMES[y]}</button>`;
+    if(save.year>YEARS) h+=`<button class="yr" disabled>${YEAR_NAMES[3]} · soon</button>`;
+    yb.innerHTML=h; yb.querySelectorAll('.yr:not([disabled])').forEach(b=>b.onclick=()=>{ SFX.init(); SFX.tick(); save.view=+b.dataset.y; persist(); showMap(); }); }
+  if(rooms) renderRooms(save.view); else renderCraft();
+}
+function renderRooms(y){
   const el=$('#mapList'); el.innerHTML='';
   let nextFound=false;
   ROOMS.forEach((R,ri)=>{
-    const unlocked=isUnlocked(ri,0);
+    const unlocked=isUnlocked(ri,0,y);
     const card=document.createElement('div'); card.className='room'+(unlocked?'':' locked');
     card.style.setProperty('--ra',R.accent); card.style.setProperty('--rb0',R.bg[1]); card.style.setProperty('--rb1',R.bg[2]);
     let orbs='';
     for(let l=0;l<6;l++){
-      const ok=isUnlocked(ri,l), dn=save.done[ri+'-'+l], st=save.stars[ri+'-'+l]||0;
+      const k=LK(y,ri,l), ok=isUnlocked(ri,l,y), dn=save.done[k], st=save.stars[k]||0;
       let cls='orb'+(dn?' done':''); if(ok&&!dn&&!nextFound){cls+=' next'; nextFound=true;}
       orbs+=`<button class="${cls}" data-r="${ri}" data-l="${l}" ${ok?'':'disabled'} aria-label="${R.place}, brew ${l+1}${dn?`, ${st} stars`:''}">${ok?l+1:'·'}${dn?`<span class="st">${'✦'.repeat(st)}</span>`:''}</button>`;
     }
+    const lockMsg = ri>0 ? `Locked. Finish all six brews in ${ROOMS[ri-1].place} to enter.` : `Locked. Craft every ${YEAR_NAMES[y-1]} exam spell to become a ${YEAR_NAMES[y]}.`;
     card.innerHTML=`<div class="rhead"><div class="rsig">${R.sigil}</div><div style="min-width:0"><div class="rname">${R.place}</div><div class="rprof">${R.prof} · ${R.subject}</div></div></div>
       <div class="orbs">${orbs}</div>
-      ${(()=>{ const k=ri+'-'+BONUS, ok=isUnlocked(ri,BONUS), dn=save.done[k], st=save.stars[k]||0, bp=save.best[k];
+      ${(()=>{ const k=LK(y,ri,BONUS), ok=isUnlocked(ri,BONUS,y), dn=save.done[k], st=save.stars[k]||0, bp=save.best[k];
         return `<button class="orb bonus${dn?' done':''}" data-r="${ri}" data-l="${BONUS}" ${ok?'':'disabled'} aria-label="${R.place}, bonus brew">
           ✦ Bonus brew${ok?(dn?` · ${'✦'.repeat(st)} · ${bp} pts`:' · double points'):' · locked'}</button>`; })()}
-      <div class="rspell">${unlocked?`${R.spell.icon} <b>${R.spell.name}</b> · ${R.spell.desc}`:`Locked. Finish all six brews in ${ROOMS[ri-1].place} to enter.`}</div>`;
+      <div class="rspell">${unlocked?`${R.spell.icon} <b>${R.spell.name}</b> · ${R.spell.desc}`:lockMsg}</div>`;
     el.appendChild(card);
   });
-  el.querySelectorAll('.orb:not([disabled])').forEach(b=>b.onclick=()=>{SFX.init();startLevel(+b.dataset.r,+b.dataset.l)});
+  el.querySelectorAll('.orb:not([disabled])').forEach(b=>b.onclick=()=>{SFX.init();startLevel(+b.dataset.r,+b.dataset.l,y)});
   const nx=el.querySelector('.orb.next'); if(nx) setTimeout(()=>{ try{nx.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){} },60);
 }
+function renderCraft(){
+  const el=$('#craftList'); const yc=Math.min(save.year,YEARS); let h='';
+  if(save.year>YEARS) h+=`<div class="exam"><div class="k">${YEAR_NAMES[3]}</div><h3>Every exam passed</h3>
+      <p class="note">The professors are preparing your next year: odd little vials and great round flasks. Keep brewing and crafting until then.</p></div>`;
+  else { const ex=examsFor(yc), got=ex.filter(S=>has(S.key)).length;
+    h+=`<div class="exam"><div class="k">${YEAR_NAMES[yc]} exams · ${got} of ${ex.length}</div><h3>Craft ${ex.length} exam spells to become a ${YEAR_NAMES[yc+1]}</h3>
+      <div class="slots">${ex.map(S=>`<span class="${has(S.key)?'on':''}" title="${S.name}">${S.icon}</span>`).join('')}</div>
+      <p class="note dim">Bottle potions in the classrooms. Ingredients you have discovered are never used up; potions are.</p></div>`; }
+  for(let y=yc;y>=1;y--){
+    h+=`<div class="ygroup">${YEAR_NAMES[y]} spells</div>`;
+    SPELLS.filter(S=>S.year===y).sort((a,b)=>(has(a.key)-has(b.key))||(b.exam?1:0)-(a.exam?1:0)).forEach(S=>{ h+=recipeCard(S); });
+  }
+  el.innerHTML=h;
+  el.querySelectorAll('.craft[data-k]').forEach(b=>b.onclick=()=>{ SFX.init(); craftSpell(SPELLS.find(S=>S.key===b.dataset.k)); });
+}
+function recipeCard(S){
+  const known=has(S.key), ready=canCraft(S);
+  const tag=S.exam?'<span class="tag">EXAM</span>':'';
+  if(known) return `<div class="recipe known"><div class="rh"><div class="ri">${S.icon}</div><div><div class="rn">${S.name}${tag}</div><div class="re">${S.effect}</div></div></div>
+    <div class="lore">“${S.lore}”</div></div>`;
+  const ings=S.ing.map(i=>{ const ok=!!save.ing[i], [r]=i.split('-').map(Number);
+    return ok?`<span class="chip ok"><span class="dot" style="background:${refHex(i)}"></span>${ingName(i)}<span class="n">✓</span></span>`
+             :`<span class="chip miss">✧ Undiscovered, from ${ROOMS[r].place.replace(/^The /,'the ')}</span>`; }).join('');
+  const pots=Object.entries(S.pot).map(([p,n])=>{ const c=potCount(p), ok=c>=n, seen=c>0||save.ing[p];
+    return `<span class="chip ${ok?'ok':'miss'}"><span class="dot" style="background:${seen?refHex(p):'#3a2f48'}"></span>${seen?potName(p):'An unbrewed potion'}<span class="n">${Math.min(c,n)}/${n}</span></span>`; }).join('');
+  return `<div class="recipe${ready?' ready':''}"><div class="rh"><div class="ri">${S.icon}</div><div><div class="rn">${S.name}${tag}</div><div class="re">${S.effect}</div></div></div>
+    <div class="req"><div class="rl">Ingredients · catalysts, not used up</div><div class="chips">${ings}</div></div>
+    <div class="req"><div class="rl">Potions · poured in</div><div class="chips">${pots}</div></div>
+    <button class="craft" ${ready?`data-k="${S.key}"`:'disabled'}>${ready?'✦ Craft spell':'Not ready yet'}</button></div>`;
+}
+function craftSpell(S){
+  if(!S||!canCraft(S)) return;
+  const brewed=Object.keys(S.pot).map(p=>[null,refHex(p)]);
+  showCauldron(brewed, stirred=>{
+    if(!stirred) return showMap('craft');   // cancelled: nothing is used up
+    if(!canCraft(S)) return showMap('craft');
+    Object.entries(S.pot).forEach(([p,n])=>{ save.pot[p]-=n; });
+    save.spells[S.key]=Date.now();
+    let grad=0;
+    if(S.exam && save.year<=YEARS && examsDone(save.year)){ save.year++; grad=save.year; if(save.year<=YEARS) save.view=save.year; }
+    persist(); SFX.win();
+    modal(`<div class="kicker">Spell crafted</div><div class="sigbig">${S.icon}</div><h2>${S.name}</h2>
+      <div class="spellbox"><div class="sb-ic">✦</div><div>${S.effect}</div></div>
+      <p class="quote small">“${S.lore}”</p>
+      <div class="row"><button class="btn" id="mOk">${grad?'Continue':'Back to the grimoire'}</button></div>`);
+    $('#mOk').onclick=()=>grad?showGraduation(grad):showMap('craft');
+  }, {kicker:'Spellcraft', title:S.name, hint:'Stir the potions together to craft the spell.', acc:MAPTHEME.accent, skip:'Cancel', sealed:'The spell takes shape. ✦'});
+}
+function showGraduation(y){
+  SFX.magic();
+  const open=y<=YEARS;
+  modal(`<div class="kicker">Gloamwick Academy</div><div class="sigbig">🎓</div><h2>You are a ${YEAR_NAMES[y]}!</h2>
+    <p class="quote">“Every exam spell, crafted by your own hand. Welcome to your ${YEAR_NAMES[y]}.”</p>
+    ${open?`<p class="note">All five classrooms have new, harder brews this year. Every layer starts veiled, and you get one fewer undo.</p>`
+          :`<p class="note">The professors are still preparing your ${YEAR_NAMES[y]}: odd little vials and great round flasks. It opens soon.</p>`}
+    <div class="row"><button class="btn ghost" id="mG">Grimoire</button>${open?`<button class="btn" id="mY">Begin ${YEAR_NAMES[y]}</button>`:''}</div>`);
+  $('#mG').onclick=()=>showMap(open?'rooms':'craft');
+  if(open) $('#mY').onclick=()=>startLevel(0,0,y);
+}
+$('#tabRooms').onclick=()=>{ SFX.init(); SFX.tick(); showMap('rooms'); };
+$('#tabCraft').onclick=()=>{ SFX.init(); SFX.tick(); showMap('craft'); };
 
 /* ======================= RENDERING ======================= */
 function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
@@ -1113,6 +1310,10 @@ function frame(now){ const dt=Math.min(.05,(now-last)/1000); last=now; const t=n
   if(!reduce||(Math.floor(t*10)%3===0)) drawAmb(t,reduce?dt*.2:dt);
   drawGame(t,dt); requestAnimationFrame(frame); }
 
+// Older saves: credit one of each potion from every brew already finished, so the shelf isn't empty.
+if(!save.pv){ Object.keys(save.done).forEach(k=>{ const m=/^(\d)-(\d)$/.exec(k); if(!m) return;
+    levelColors(1,+m[1],+m[2]).forEach(c=>{ const p=m[1]+'-'+c; save.pot[p]=(save.pot[p]||0)+1; }); });
+  save.pv=1; persist(); }
 layout(); showMap(); requestAnimationFrame(frame);
 /* ---- Ownership: if this game is re-hosted anywhere but the official site, say so on screen ---- */
 (function guard(){
@@ -1127,7 +1328,7 @@ layout(); showMap(); requestAnimationFrame(frame);
   b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top,0px));background:#7a1f2b;color:#fff;font:600 14px Georgia,serif;text-align:center;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.5)';
   document.body.appendChild(b);
 })();
-window.__gw={get G(){return G}, get POS(){return POS}, get GEO(){return GEO}, startLevel, solve, genLevel};
+window.__gw={get G(){return G}, get POS(){return POS}, get GEO(){return GEO}, get save(){return save}, persist, showMap, startLevel, solve, genLevel};
 })();
 </script>
 
