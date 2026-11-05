@@ -1,0 +1,1134 @@
+<!doctype html>
+<!--
+  Gloamwick(TM) Potion Sort
+  Copyright (c) 2026 Briarlune Studios. All rights reserved.
+  Official version: https://briarlunestudios.github.io/gloamwick/
+  Free to play. You may not copy, modify, build upon, redistribute, re-host or sell
+  this game or any part of it (code, design, world, characters, names, text or art)
+  without written permission from Briarlune Studios. See LICENSE.
+--><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Gloamwick™ Potion Sort</title>
+<meta name="author" content="Briarlune Studios">
+<meta name="copyright" content="© 2026 Briarlune Studios. All rights reserved.">
+<meta name="description" content="A cozy, witchy sand-sorting puzzle game. Pour glittering sands across five professors' classrooms. Free, plays in your browser.">
+<meta property="og:title" content="Gloamwick Potion Sort">
+<meta property="og:description" content="A cozy, witchy sand-sorting puzzle game. Five professors' classrooms, each with its own potions and spell. Free in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
+<style>
+/* Layout: one-screen game — candlelit HUD on top, shelf of glass vials in the middle, spell satchel at the bottom. Grimoire map overlays as its own screen. */
+:root{
+  color-scheme: dark;
+  --bg0:#1a1230; --bg1:#2b1d45; --bg2:#0b0716;
+  --accent:#f3d98a;
+  --ink:#f4ead5; --ink2:#c9bc9f; --ink3:#8f8470;
+  --panel:rgba(20,13,30,.74); --panel-solid:#1b1326;
+  --line:rgba(233,200,120,.24);
+  --gold:#e9c46a; --night:#120c1c;
+  --f-display:'Cinzel', 'Trajan Pro', Georgia, serif;
+  --f-body:'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
+}
+html,body{height:100%;margin:0}
+body{
+  background:var(--bg2);
+  background-image:
+    radial-gradient(120% 70% at 50% -10%, var(--bg1) 0%, var(--bg0) 45%, var(--bg2) 100%);
+  color:var(--ink); font-family:var(--f-body); overflow:hidden;
+  -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none;
+}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(130% 95% at 50% 45%, transparent 55%, rgba(0,0,0,.55) 100%);z-index:1}
+#amb{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;z-index:2}
+
+header#hud{display:flex;align-items:center;gap:10px;
+  padding-top:max(10px, env(safe-area-inset-top,0px)); padding-bottom:6px;
+  padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px))}
+.icon{flex:0 0 auto;width:42px;height:42px;border-radius:14px;border:1px solid var(--line);background:var(--panel);
+  color:var(--ink);font-size:18px;cursor:pointer;display:grid;place-items:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.icon:focus-visible,.spell:focus-visible,.btn:focus-visible,.orb:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hud-title{flex:1;min-width:0;text-align:center}
+#roomName{font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.08em;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#levelName{font-size:16px;color:var(--ink2);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+#stage{position:relative;flex:1;min-height:0}
+#game{position:absolute;inset:0;width:100%;height:100%;touch-action:manipulation;cursor:pointer}
+#toast{position:absolute;left:50%;top:4px;transform:translate(-50%,-6px);opacity:0;transition:opacity .3s, transform .3s;
+  padding:8px 16px;border-radius:14px;background:var(--panel);border:1px solid var(--line);
+  font-size:17px;font-style:italic;max-width:calc(100% - 32px);width:max-content;text-align:center;pointer-events:none;z-index:3;backdrop-filter:blur(6px)}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+
+footer#spells{display:flex;justify-content:center;gap:10px;
+  padding-top:6px;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px))}
+.spell{position:relative;flex:1;max-width:140px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px 9px;
+  border-radius:18px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;cursor:pointer;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:transform .15s}
+.spell:active{transform:scale(.96)}
+.spell .ic{font-size:22px;line-height:1}
+.spell .nm{font-family:var(--f-display);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
+.spell .ct{position:absolute;top:-8px;right:-5px;min-width:22px;height:22px;padding:0 5px;box-sizing:border-box;border-radius:11px;
+  background:var(--accent);color:var(--night);font:700 12px/22px var(--f-display);font-variant-numeric:tabular-nums}
+.spell.sig{border-color:color-mix(in srgb, var(--accent) 55%, transparent);box-shadow:0 0 22px -8px var(--accent), inset 0 0 18px -10px var(--accent)}
+.spell.spent{opacity:.5}
+.spell.armed{animation:armed 1s ease-in-out infinite}
+@keyframes armed{50%{box-shadow:0 0 34px -2px var(--accent), inset 0 0 22px -6px var(--accent)}}
+
+/* ---------- Grimoire map ---------- */
+body.mapmode #hud, body.mapmode #stage, body.mapmode #spells{visibility:hidden}
+#map{position:absolute;inset:0;overflow-y:auto;display:none;z-index:4;-webkit-overflow-scrolling:touch}
+body.mapmode #map{display:block}
+.map-inner{max-width:560px;margin:0 auto;box-sizing:border-box;
+  padding-block:max(28px, calc(env(safe-area-inset-top,0px) + 18px)) calc(40px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:16px}
+.crest{text-align:center;display:flex;flex-direction:column;gap:4px;padding-bottom:6px}
+.crest .k{font-family:var(--f-display);font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--ink3)}
+.crest h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:clamp(34px, 10vw, 52px);letter-spacing:.06em;line-height:1;
+  color:var(--accent);text-shadow:0 0 30px rgba(243,217,138,.35)}
+.crest p{margin:6px auto 0;font-size:18px;font-style:italic;color:var(--ink2);max-width:34ch;text-wrap:balance}
+.room{position:relative;border-radius:22px;padding:18px 16px 16px;display:flex;flex-direction:column;gap:12px;overflow:hidden;
+  background:linear-gradient(160deg, var(--rb0), var(--rb1));border:1px solid color-mix(in srgb, var(--ra) 30%, transparent);
+  box-shadow:0 10px 30px -18px #000, inset 0 0 40px -22px var(--ra)}
+.room.locked{filter:saturate(.35) brightness(.7)}
+.rhead{display:flex;gap:12px;align-items:center}
+.rsig{flex:0 0 auto;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:24px;
+  background:radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--ra) 40%, transparent), rgba(0,0,0,.35));
+  border:1px solid color-mix(in srgb, var(--ra) 45%, transparent)}
+.rname{font-family:var(--f-display);font-weight:600;font-size:16px;letter-spacing:.05em;color:var(--ra)}
+.rprof{font-size:16px;color:var(--ink2);font-style:italic}
+.orbs{display:grid;grid-template-columns:repeat(6, 1fr);gap:8px}
+.orb{position:relative;aspect-ratio:1;max-width:100%;border-radius:50%;border:1px solid color-mix(in srgb, var(--ra) 45%, transparent);
+  background:rgba(0,0,0,.28);color:var(--ink);font:600 15px var(--f-display);cursor:pointer;display:grid;place-items:center;padding:0}
+.orb.done{background:radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--ra) 75%, #fff 10%), color-mix(in srgb, var(--ra) 30%, #000 40%));color:var(--night);
+  box-shadow:0 0 14px -4px var(--ra)}
+.orb.next{animation:orbpulse 1.8s ease-in-out infinite}
+@keyframes orbpulse{50%{box-shadow:0 0 18px 0 var(--ra)}}
+.orb:disabled{opacity:.35;cursor:default}
+.orb.bonus{aspect-ratio:auto;border-radius:14px;padding:9px 12px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ra);display:block;width:100%}
+.orb.bonus.done{color:var(--night)}
+.orb .st{position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:1px;color:var(--ra);white-space:nowrap}
+.rspell{font-size:16px;color:var(--ink2);line-height:1.3;padding-top:4px}
+.rspell b{font-family:var(--f-display);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
+.map-foot{text-align:center;font-size:15px;color:var(--ink3);font-style:italic}
+
+/* ---------- Modal ---------- */
+.modal{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;
+  background:rgba(6,3,12,.62);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+  padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px))}
+.modal[hidden]{display:none}
+.card{width:100%;max-width:380px;max-height:calc(100% - 40px);overflow-y:auto;box-sizing:border-box;
+  background:linear-gradient(180deg, color-mix(in srgb, var(--bg1) 85%, #000), var(--panel-solid));
+  border:1px solid var(--line);border-radius:24px;padding:26px 20px 20px;text-align:center;
+  box-shadow:0 30px 60px -20px #000, inset 0 0 50px -30px var(--accent);display:flex;flex-direction:column;gap:10px;
+  animation:rise .45s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes rise{from{transform:translateY(18px) scale(.97);opacity:0}}
+.card h2{margin:0;font-family:var(--f-display);font-weight:600;font-size:24px;letter-spacing:.04em;color:var(--accent);text-wrap:balance}
+.kicker{font-family:var(--f-display);font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink3)}
+.sigbig{font-size:44px;line-height:1;filter:drop-shadow(0 0 16px var(--accent))}
+.prof{font-size:18px;font-style:italic;color:var(--ink2);margin-top:-4px}
+.quote{font-size:19px;font-style:italic;line-height:1.35;margin:4px 0;color:var(--ink);text-wrap:balance}
+.quote.small{font-size:16px;color:var(--ink2)}
+.spellbox{display:flex;gap:12px;align-items:center;text-align:left;padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:rgba(0,0,0,.25);font-size:16px;line-height:1.3}
+.spellbox .sb-ic{font-size:28px}
+.spellbox b{font-family:var(--f-display);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.dim{color:var(--ink3)}
+.note{font-size:16px;color:var(--ink2);margin:0;font-style:italic}
+.btn{appearance:none;border:0;border-radius:16px;padding:13px 18px;font:600 13px var(--f-display);letter-spacing:.12em;text-transform:uppercase;
+  background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 95%, #fff), color-mix(in srgb, var(--accent) 75%, #000));
+  color:var(--night);cursor:pointer;box-shadow:0 8px 20px -10px var(--accent);flex:1}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);box-shadow:none}
+.row{display:flex;gap:10px;margin-top:6px}
+.stars{display:flex;justify-content:center;gap:10px;font-size:34px;color:rgba(255,255,255,.15)}
+.stars span.on{color:var(--accent);text-shadow:0 0 18px var(--accent);animation:pop .5s backwards}
+.stars span.on:nth-child(2){animation-delay:.15s}.stars span.on:nth-child(3){animation-delay:.3s}
+@keyframes pop{from{transform:scale(0) rotate(-40deg)}}
+.brewed{list-style:none;margin:4px 0;padding:0;display:flex;flex-direction:column;gap:6px;text-align:left}
+.brewed li{display:flex;gap:10px;align-items:center;font-size:17px;padding:6px 10px;border-radius:12px;background:rgba(0,0,0,.22)}
+.dot{flex:0 0 auto;width:14px;height:14px;border-radius:50%}
+#levelName .pts{color:var(--accent);font-style:normal;font-family:var(--f-display);font-size:13px;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+#levelName .pts.bump{animation:bump .4s}
+@keyframes bump{40%{text-shadow:0 0 14px var(--accent)}}
+.spell.nudge{animation:armed .9s ease-in-out 3}
+.guide{display:flex;flex-direction:column;gap:10px;text-align:left}
+.guide .gi{display:flex;gap:12px;align-items:flex-start;font-size:17px;line-height:1.3;padding:8px 10px;border-radius:14px;background:rgba(0,0,0,.22)}
+.guide .gi .g-ic{flex:0 0 34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:19px;border:1px solid var(--line);background:var(--panel)}
+.guide .gi b{font-family:var(--f-display);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.pips{display:flex;justify-content:center;gap:7px;margin-top:2px}
+.pips i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.18)}
+.pips i.on{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.tally{list-style:none;margin:2px 0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:17px}
+.tally li{display:flex;justify-content:space-between;padding:3px 10px}
+.tally li span:last-child{font-family:var(--f-display);font-size:14px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.tally li.neg span:last-child{color:var(--ink3)}
+.tally li.tot{border-top:1px solid var(--line);padding-top:8px;margin-top:2px}
+.tally li.tot span{font-family:var(--f-display);color:var(--accent)!important;font-size:15px;letter-spacing:.06em}
+.best{font-size:15px;color:var(--ink3);font-style:italic;margin-top:-4px}
+.crest .total{font-family:var(--f-display);font-size:13px;letter-spacing:.14em;color:var(--accent);margin-top:6px}
+@media (prefers-reduced-motion: reduce){ .card,.stars span.on,.orb.next,.spell.armed,.spell.nudge,#levelName .pts.bump{animation:none} }
+</style>
+
+<canvas id="amb" aria-hidden="true"></canvas>
+<div id="app">
+  <header id="hud">
+    <button class="icon" id="btnMap" aria-label="Open the grimoire">☾</button>
+    <div class="hud-title"><div id="roomName">Gloamwick</div><div id="levelName"></div></div>
+    <button class="icon" id="btnHelp" aria-label="How to play">?</button>
+    <button class="icon" id="btnSound" aria-label="Toggle sound">♪</button>
+  </header>
+  <main id="stage">
+    <canvas id="game" aria-label="Potion vials. Tap a vial, then tap another to pour."></canvas>
+    <div id="toast" role="status" aria-live="polite"></div>
+  </main>
+  <footer id="spells">
+    <button class="spell" id="btnUndo"><span class="ic">↶</span><span class="nm">Undo</span><span class="ct" id="ctUndo">5</span></button>
+    <button class="spell sig" id="btnSpell"><span class="ic" id="spIc">✦</span><span class="nm" id="spNm">Spell</span><span class="ct" id="ctSpell">1</span></button>
+    <button class="spell" id="btnRestart"><span class="ic">⟲</span><span class="nm">Restart</span></button>
+  </footer>
+  <section id="map" aria-label="Grimoire">
+    <div class="map-inner">
+      <div class="crest">
+        <div class="k">Academy of Quiet Brews</div>
+        <h1>Gloamwick<sup style="font-size:.3em;vertical-align:super;letter-spacing:0">™</sup></h1>
+        <p>Sort the enchanted sands, discover every ingredient, brew every potion, and earn your place in each professor's classroom.</p>
+        <div class="total" id="mapTotal"></div>
+      </div>
+      <div id="mapList" style="display:flex;flex-direction:column;gap:18px"></div>
+      <div class="map-foot">Five classrooms · thirty brews · five bonus brews · ✦ stars for brewing without help · <a href="#" id="mapHelp" style="color:inherit">how to play</a><br>Gloamwick™ © 2026 Briarlune Studios · All rights reserved · <a href="https://briarlunestudios.github.io/gloamwick/" style="color:inherit">official site</a></div>
+    </div>
+  </section>
+  <div class="modal" id="modal" hidden><div class="card" id="modalCard"></div></div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s);
+const CAP=4;
+let DPR=Math.min(window.devicePixelRatio||1,2.5);
+
+/* ======================= WORLD DATA ======================= */
+// colors: [ingredient, hex, potion]
+const ROOMS=[
+{ place:'The Moonlit Glasshouse', prof:'Professor Wren Hollowmere', short:'Prof. Hollowmere', subject:'Herbalism', sigil:'🌿',
+  quote:'Patience, petal. Every root finds its row in time.',
+  bg:['#123526','#1f4a33','#06120c'], accent:'#bfe57d', mote:'firefly', moteColor:'#dcff8f', hidden:false,
+  spell:{key:'sprout', name:'Sprout', icon:'🌱', desc:'Coax a fresh empty vial up from the soil.', charges:1},
+  praise:['Look at that, blooming already.','Tidy as a seed tray. Lovely work.','The ferns are applauding, in their way.'],
+  colors:[
+   ['Rosehip','#d8473f','Rosehip Courage Cordial'],['Marigold','#ea8f2e','Marigold Sunwake Tonic'],['Buttercup Pollen','#efd34d','Pollen Giggle Draught'],
+   ['Fernmoss','#5fb043','Fernmoss Mending Salve'],['Dew Lichen','#3dc0a1','Lichen Rainbreath Tea'],['Bluebell','#4d86da','Bluebell Sleepsong'],
+   ['Thistle','#9b62d0','Thistle Thornward'],['Foxglove','#ea86b9','Foxglove Heart’s Ease'],['Moonflower','#f2edda','Moonflower Night Bloom']]},
+{ place:'The Observatory Spire', prof:'Professor Orrin Vesper', short:'Prof. Vesper', subject:'Astronomy', sigil:'🔭',
+  quote:'The stars hide nothing from those who look twice.',
+  bg:['#0d1338','#1e2462','#04051a'], accent:'#b4c0ff', mote:'star', moteColor:'#dfe6ff', hidden:true,
+  spell:{key:'starsight', name:'Starsight', icon:'✨', desc:'Unveil every hidden layer.', charges:1},
+  praise:['Charted perfectly. The heavens approve.','A tidy constellation of a brew.','You see what others miss. Good.'],
+  colors:[
+   ['Mars Rust','#e0533f','Marsrust Bravery Brew'],['Sunfire Ash','#f19f39','Sunfire Wake Elixir'],['Starfall Gold','#f7dc68','Starfall Wishing Draught'],
+   ['Aurora Glass','#57d39a','Aurora Dreamwalk Tonic'],['Nebula Mist','#3fc7e2','Nebula Far-Sight Mist'],['Midnight Azure','#3e64db','Midnight Calm Elixir'],
+   ['Twilight Dust','#a66ef2','Twilight Memory Draught'],['Comet Tail','#f08bd1','Comet Swiftness Philter'],['Moonsilver','#e9effd','Moonsilver Night-Eye Drops']]},
+{ place:'The Ember Forge', prof:'Professor Bastian Cinderhall', short:'Prof. Cinderhall', subject:'Alchemy', sigil:'⚗️',
+  quote:'Heat, pressure, and a steady hand. That is all transmutation is.',
+  bg:['#3a130a','#5a2210','#120502'], accent:'#ffb560', mote:'ember', moteColor:'#ffad4d', hidden:true,
+  spell:{key:'distill', name:'Distill', icon:'🔥', desc:'The cauldron makes the next right pour for you.', charges:2},
+  praise:['Forged clean. Not a grain wasted.','Hot work, well done.','I would put that on my own shelf.'],
+  colors:[
+   ['Cinnabar','#cb3b2e','Cinnabar Heartfire'],['Ember Salt','#f07c24','Ember Salt Warming Draught'],['Sulfur Bloom','#e9c43b','Sulfur Bloom Purge'],
+   ['Verdigris','#4aa96b','Verdigris Rustbane'],['Copper Brine','#2ba8a2','Copper Brine Tonic'],['Cobalt','#3063cb','Cobalt Steadfast Elixir'],
+   ['Amethyst Grit','#8c50c6','Amethyst Clarity Philter'],['Rose Quartz','#ee9cab','Rose Quartz Kindness Brew'],['Pearl Salt','#f3eee5','Pearl Salt Ward']]},
+{ place:'The Tea-Leaf Parlor', prof:'Madame Seraphine Lune', short:'Madame Lune', subject:'Divination', sigil:'🔮',
+  quote:'Sit, dear. The leaves already know your next move.',
+  bg:['#341830','#55294b','#150912'], accent:'#f6b6d4', mote:'steam', moteColor:'#ffc6e0', hidden:true,
+  spell:{key:'foretell', name:'Foretell', icon:'🫖', desc:'Glimpse the wisest next pour in the leaves.', charges:3},
+  praise:['Just as I foresaw, darling.','The cup is clear and so is your future.','Oh, the leaves are thrilled with you.'],
+  colors:[
+   ['Pomegranate Seed','#d4485a','Pomegranate Fate Tea'],['Saffron','#f09b3f','Saffron Fortune Brew'],['Chamomile','#f5dc78','Chamomile Soft Omen'],
+   ['Matcha Leaf','#8cc152','Matcha Clear-Mind Steep'],['Mint Steep','#5fd1b9','Mint Truthful Tisane'],['Butterfly Pea','#5b80e7','Butterfly Pea Dreamtea'],
+   ['Lavender','#b17bd9','Lavender Lullaby'],['Rose Petal','#f6a4c8','Rose Petal Heart-Read'],['Sugar Moon','#fbf3e6','Sugar Moon Sweet Sleep']]},
+{ place:'The Hushed Crypt', prof:'Professor Corvin Ashgrave', short:'Prof. Ashgrave', subject:'Shadow Arts', sigil:'🕯️',
+  quote:'Rules are only habits the dark has not broken yet.',
+  bg:['#120e1e','#251a3b','#040308'], accent:'#9fead9', mote:'wisp', moteColor:'#8ff5df', hidden:true,
+  spell:{key:'unbind', name:'Unbind', icon:'🌑', desc:'Your next pour ignores the color rule.', charges:1},
+  praise:['Quietly done. I barely heard you.','Even the ravens are impressed.','The dark keeps no secrets from you.'],
+  colors:[
+   ['Bloodmoon Ash','#b8323e','Bloodmoon Tincture'],['Witchfire','#e86b2a','Witchfire Draught'],['Candle Tallow','#e7d08b','Tallow Candlewake'],
+   ['Gravemoss','#6d9e3c','Gravemoss Whisper Brew'],['Ghostlight','#49e1c9','Ghostlight Elixir'],['Raven Ink','#3752bb','Raven Ink Secret-Keeper'],
+   ['Nightshade','#7e40ba','Nightshade Veil'],['Wraith Rose','#d97ca8','Wraith Rose Remembrance'],['Bone Dust','#ddd7cd','Bone Dust Ward']]},
+];
+const MAPTHEME={bg:['#1d1433','#2f2050','#0b0716'],accent:'#f3d98a',mote:'dust',moteColor:'#f6dc94'};
+const HIDDEN_HEX='#2c2142';
+
+/* ======================= SAVE ======================= */
+const KEY='gloamwick-potion-sort-v1';
+let save={done:{},stars:{},seen:{},best:{},ing:{},tut:false,sound:true};
+try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.done) save=Object.assign(save,s);}catch(e){}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
+function isUnlocked(r,l){ if(r>0 && !save.done[(r-1)+'-5']) return false; return l===0 || !!save.done[r+'-'+(l-1)]; }
+
+/* ======================= SOUND ======================= */
+const SFX={ctx:null,noise:null,
+  init(){ if(this.ctx){ if(this.ctx.state==='suspended') this.ctx.resume(); return; }
+    try{ const C=window.AudioContext||window.webkitAudioContext; if(!C) return; this.ctx=new C();
+      const len=this.ctx.sampleRate; const b=this.ctx.createBuffer(1,len,this.ctx.sampleRate); const d=b.getChannelData(0);
+      for(let i=0;i<len;i++) d[i]=Math.random()*2-1; this.noise=b; }catch(e){ this.ctx=null; } },
+  ok(){ return save.sound && this.ctx && this.ctx.state!=='closed'; },
+  pour(delay,dur){ if(!this.ok()) return; const c=this.ctx, now=c.currentTime+delay;
+    const src=c.createBufferSource(); src.buffer=this.noise; src.loop=true;
+    const bp=c.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=3200; bp.Q.value=.7;
+    const hp=c.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=900;
+    const env=c.createGain(); const gr=c.createGain();
+    env.gain.setValueAtTime(0,now); env.gain.linearRampToValueAtTime(.16,now+.05); env.gain.setValueAtTime(.16,now+dur-.08); env.gain.linearRampToValueAtTime(0,now+dur);
+    for(let t=0;t<dur;t+=.012) gr.gain.setValueAtTime(.35+Math.random()*.65, now+t);
+    src.connect(bp).connect(hp).connect(env).connect(gr).connect(c.destination); src.start(now); src.stop(now+dur+.05); },
+  tone(f,delay,dur,vol,type){ if(!this.ok()) return; const c=this.ctx, now=c.currentTime+delay;
+    const o=c.createOscillator(); o.type=type||'sine'; o.frequency.value=f; const g=c.createGain();
+    g.gain.setValueAtTime(0,now); g.gain.linearRampToValueAtTime(vol,now+.012); g.gain.exponentialRampToValueAtTime(.0001,now+dur);
+    o.connect(g).connect(c.destination); o.start(now); o.stop(now+dur+.05); },
+  tick(){ this.tone(740,0,.09,.04,'triangle'); },
+  nope(){ this.tone(180,0,.14,.06,'triangle'); this.tone(150,.07,.14,.05,'triangle'); },
+  chime(){ [1046,1318,1568,2093].forEach((f,i)=>this.tone(f,i*.07,.9,.05)); },
+  magic(){ [587,740,880,1175,1480].forEach((f,i)=>this.tone(f,i*.05,.7,.035,'triangle')); },
+  win(){ [523,659,784,1046,1318,1568].forEach((f,i)=>this.tone(f,i*.11,1.3,.05)); }
+};
+
+/* ======================= RNG / SOLVER / GENERATOR ======================= */
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function shuffle(a,R){for(let i=a.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function runLen(v){ if(!v.length) return 0; const c=v[v.length-1]; let n=0; for(let i=v.length-1;i>=0&&v[i]===c;i--) n++; return n; }
+const full=v=>v.length===CAP && v.every(x=>x===v[0]);
+
+function solve(start,limit){
+  // best-first search: few colour breaks + few vials per colour = close to solved
+  const key=s=>s.map(v=>v.join(',')).sort().join('|');
+  const hScore=s=>{ let t=0; const where={}; s.forEach((v,vi)=>{ for(let i=0;i<v.length;i++){ if(i&&v[i]!==v[i-1]) t++; (where[v[i]]||(where[v[i]]=new Set)).add(vi); } });
+    for(const k in where) t+=where[k].size-1; return t; };
+  const heap=[]; const push=n=>{heap.push(n);let i=heap.length-1;while(i>0){const p=(i-1)>>1;if(heap[p].f<=heap[i].f)break;[heap[p],heap[i]]=[heap[i],heap[p]];i=p;}};
+  const pop=()=>{const top=heap[0],end=heap.pop();if(heap.length){heap[0]=end;let i=0;for(;;){const l=2*i+1,r=l+1;let m=i;if(l<heap.length&&heap[l].f<heap[m].f)m=l;if(r<heap.length&&heap[r].f<heap[m].f)m=r;if(m===i)break;[heap[m],heap[i]]=[heap[i],heap[m]];i=m;}}return top;};
+  const s0=start.map(v=>v.slice()); const seen=new Set([key(s0)]);
+  push({s:s0,g:0,h:hScore(s0),f:0,par:null,mv:null}); let nodes=0;
+  while(heap.length){
+    const nd=pop();
+    if(nd.h===0){ const path=[]; for(let q=nd;q.par;q=q.par) path.push(q.mv); return path.reverse(); }
+    if(++nodes>limit) return null;
+    const s=nd.s;
+    for(let a=0;a<s.length;a++){ const A=s[a]; if(!A.length||full(A)) continue; const c=A[A.length-1]; const n=runLen(A); let emptyUsed=false;
+      for(let b=0;b<s.length;b++){ if(a===b) continue; const B=s[b]; if(B.length>=CAP) continue;
+        if(!B.length){ if(emptyUsed||n===A.length) continue; emptyUsed=true; } else if(B[B.length-1]!==c) continue;
+        const ns=s.map(v=>v.slice()); const amt=Math.min(n,CAP-B.length); for(let i=0;i<amt;i++) ns[b].push(ns[a].pop());
+        const k=key(ns); if(seen.has(k)) continue; seen.add(k);
+        const h=hScore(ns); push({s:ns,g:nd.g+1,h,f:nd.g+1+h*3,par:nd,mv:[a,b]}); } }
+  }
+  return null;
+}
+const LEVEL_CACHE={}, LEVEL_PAR={};
+// Difficulty ramps inside every classroom: more colors every two brews, no starting pairs from brew 4 on,
+// and each slot uses a pre-picked layout whose solution gets longer brew by brew (verified offline).
+// Slot 6 in every room is the optional Bonus Brew. Colors per brew climb faster than before, and each seed was
+// picked offline so the shortest solve keeps growing (12 pours on the very first brew up to ~34 in the Crypt bonus).
+const BONUS=6;
+const NCOL=[[4,5,5,6,6,7,7],[6,6,7,7,8,8,9],[7,7,8,8,9,9,9],[8,8,9,9,9,9,9],[8,9,9,9,9,9,9]];
+const SEEDS=[[15,14,5,1,12,12,83],[38,27,81,73,46,100,30],[15,7,49,112,0,35,49],[29,17,23,24,78,46,3],[30,6,81,87,50,48,8]];
+function spec(r,l){ return {n:NCOL[r][l], empties:2, maxRun:l>=2?2:3}; }
+function undosFor(r,l){ return l===BONUS?2 : l>=4?(r>=2?2:3) : l>=2?4:5; }
+function buildLevel(r,l,att){
+  const {n,empties,maxRun}=spec(r,l);
+  const R=rng(9173+r*1009+l*131+att*7919);
+  const cols=shuffle([0,1,2,3,4,5,6,7,8],R).slice(0,n);
+  const units=[]; cols.forEach(c=>{for(let i=0;i<CAP;i++) units.push(c)}); shuffle(units,R);
+  const vials=[]; for(let i=0;i<n;i++) vials.push(units.slice(i*CAP,i*CAP+CAP));
+  if(vials.some(v=>v.every(x=>x===v[0]))) return null;
+  if(vials.some(v=>runLen(v)>=maxRun)) return null;
+  for(let e=0;e<empties;e++) vials.push([]);
+  return vials;
+}
+function genLevel(r,l){
+  const k=r+'-'+l; if(LEVEL_CACHE[k]) return LEVEL_CACHE[k].map(v=>v.slice());
+  const seeded=buildLevel(r,l,SEEDS[r][l]); let sol;
+  if(seeded && (sol=solve(seeded,30000))){ LEVEL_CACHE[k]=seeded.map(v=>v.slice()); LEVEL_PAR[k]=sol.length; return seeded; }
+  let last=null;
+  for(let att=0;att<200;att++){ const v=buildLevel(r,l,att); if(!v) continue; last=v;
+    if((sol=solve(v,30000))){ LEVEL_CACHE[k]=v.map(x=>x.slice()); LEVEL_PAR[k]=sol.length; return v; } }
+  return last;
+}
+
+/* ======================= COLOR HELPERS ======================= */
+function hexRgb(h){const n=parseInt(h.slice(1),16);return[n>>16&255,n>>8&255,n&255]}
+function rgba(h,a){const[r,g,b]=hexRgb(h);return`rgba(${r},${g},${b},${a})`}
+function mix(h,w,t){const a=hexRgb(h),b=hexRgb(w);return'#'+a.map((v,i)=>Math.round(v+(b[i]-v)*t).toString(16).padStart(2,'0')).join('')}
+const cl=v=>v<0?0:v>255?255:v;
+const PAT={};
+/* ---- Ingredient motifs: little flecks of the real ingredient mixed into each sand ---- */
+const MOTIFS=[
+  ['berry','petal','dots','leaf','drop','bell','thorn','petal','moon'],          // Glasshouse
+  ['crystal','ember','star','shard','swirl','star','dots','comet','moon'],       // Observatory
+  ['crystal','ember','dots','shard','drop','crystal','shard','crystal','pearl'], // Forge
+  ['seed','root','petal','leaf','leaf','bell','sprig','petal','moon'],           // Parlor
+  ['moon','ember','drop','root','swirl','feather','berry','petal','bone'],       // Crypt
+];
+const motifOf=c=>MOTIFS[G.r][c];
+function motifPath(c,m){
+  c.beginPath();
+  switch(m){
+    case 'star': for(let k=0;k<10;k++){ const a=-Math.PI/2+k*Math.PI/5, rr=k%2?.42:1; c.lineTo(Math.cos(a)*rr,Math.sin(a)*rr); } c.closePath(); break;
+    case 'comet': c.arc(.45,-.1,.42,0,6.28); c.moveTo(.1,.2); c.quadraticCurveTo(-.4,.55,-1,.65); c.quadraticCurveTo(-.4,.2,.05,-.35); c.closePath(); break;
+    case 'petal': c.moveTo(0,-1); c.quadraticCurveTo(.75,-.2,0,1); c.quadraticCurveTo(-.75,-.2,0,-1); break;
+    case 'leaf': c.moveTo(-1,.6); c.quadraticCurveTo(-.2,-1.1,1,-.7); c.quadraticCurveTo(.4,.6,-1,.6); break;
+    case 'sprig': for(let k=0;k<3;k++){ const y=-.7+k*.6; c.ellipse(-.3,y,.32,.16,-.6,0,6.28); c.ellipse(.3,y+.15,.32,.16,.6,0,6.28); } break;
+    case 'bell': c.moveTo(-.7,.5); c.quadraticCurveTo(-.6,-.9,0,-.9); c.quadraticCurveTo(.6,-.9,.7,.5); c.lineTo(.35,.25); c.lineTo(0,.6); c.lineTo(-.35,.25); c.closePath(); break;
+    case 'crystal': c.moveTo(0,-1); c.lineTo(.5,-.35); c.lineTo(.4,.9); c.lineTo(-.4,.9); c.lineTo(-.5,-.35); c.closePath(); break;
+    case 'shard': c.moveTo(-.2,-1); c.lineTo(.8,.1); c.lineTo(.1,.95); c.lineTo(-.7,.2); c.closePath(); break;
+    case 'ember': c.moveTo(0,-1); c.bezierCurveTo(.7,-.3,.75,.4,0,.9); c.bezierCurveTo(-.75,.4,-.5,-.1,-.15,-.3); c.quadraticCurveTo(-.05,-.6,0,-1); break;
+    case 'drop': c.moveTo(0,-1); c.bezierCurveTo(.25,-.4,.7,0,.6,.4); c.arc(0,.4,.6,0,Math.PI); c.bezierCurveTo(-.7,0,-.25,-.4,0,-1); break;
+    case 'moon': c.arc(0,0,.85,.5,Math.PI*2-.5); c.arc(.45,0,.6,Math.PI*2-.9,.9,true); c.closePath(); break;
+    case 'berry': c.arc(-.3,.15,.45,0,6.28); c.moveTo(.75,.15); c.arc(.3,.15,.45,0,6.28); c.moveTo(.45,-.4); c.arc(0,-.4,.45,0,6.28); break;
+    case 'seed': c.ellipse(0,0,.45,.85,.4,0,6.28); break;
+    case 'pearl': c.arc(0,0,.7,0,6.28); break;
+    case 'dots': for(const [dx,dy] of [[0,0],[.7,.5],[-.6,.55],[.4,-.7],[-.5,-.5]]){ c.moveTo(dx+.24,dy); c.arc(dx,dy,.24,0,6.28); } break;
+    case 'thorn': c.moveTo(-1,.3); c.lineTo(1,-.1); c.lineTo(1,.15); c.lineTo(-1,.55); c.closePath(); c.moveTo(-.3,.35); c.lineTo(-.1,-.5); c.lineTo(.1,.28); c.moveTo(.4,.2); c.lineTo(.65,.75); c.lineTo(.75,.1); break;
+    case 'root': c.moveTo(-.1,-1); c.bezierCurveTo(.3,-.3,-.4,.2,.1,1); c.moveTo(0,-.2); c.quadraticCurveTo(.5,0,.8,.5); c.moveTo(-.05,.25); c.quadraticCurveTo(-.5,.4,-.7,.8); break;
+    case 'swirl': for(let k=0;k<=24;k++){ const a=k*.42, rr=.08+k*.038; c.lineTo(Math.cos(a)*rr,Math.sin(a)*rr); } break;
+    case 'feather': c.moveTo(0,1); c.lineTo(0,-1); c.moveTo(0,-.95); c.quadraticCurveTo(.6,-.4,.1,.55); c.moveTo(0,-.95); c.quadraticCurveTo(-.6,-.4,-.1,.55); break;
+    case 'bone': c.moveTo(-.65,-.12); c.lineTo(.65,-.12); c.arc(.75,-.25,.2,Math.PI*.6,Math.PI*1.9,true); c.moveTo(.95,.12); c.arc(.75,.25,.2,Math.PI*.1,Math.PI*1.4,true); c.lineTo(-.65,.12); c.arc(-.75,.25,.2,-Math.PI*.6,-Math.PI*1.9,true); c.moveTo(-.95,-.12); c.arc(-.75,-.25,.2,-Math.PI*.1,-Math.PI*1.4,true); c.closePath(); break;
+  }
+}
+const LINE_MOTIFS={root:1,swirl:1,feather:1};
+function drawMotifs(cx,hex,m,G,s){
+  const light=mix(hex,'#ffffff',.55), dark=mix(hex,'#000000',.45);
+  // spread flecks on a jittered grid so every layer of sand shows a few, tiling seamlessly
+  const N=4, cell=G/N;
+  for(let i=0;i<N;i++) for(let j=0;j<N;j++){ if(Math.random()<.3) continue;
+    const x=(i+.2+Math.random()*.6)*cell, y=(j+.2+Math.random()*.6)*cell, size=3.6+Math.random()*1.8, rot=Math.random()*6.28;
+    for(const [ox,oy] of [[0,0],[G,0],[-G,0],[0,G],[0,-G]]){
+      cx.save(); cx.translate((x+ox)*s,(y+oy)*s); cx.rotate(rot); cx.scale(size*s,size*s);
+      motifPath(cx,m); cx.lineJoin='round'; cx.lineCap='round';
+      if(LINE_MOTIFS[m]){ cx.lineWidth=.42; cx.strokeStyle=dark; cx.stroke(); cx.lineWidth=.2; cx.strokeStyle=light; cx.stroke(); }
+      else { cx.lineWidth=.32; cx.strokeStyle=dark; cx.stroke(); cx.fillStyle=light; cx.fill(); }
+      cx.restore(); }
+  }
+}
+// Every color starts as glittering sand. Bottle it once and it becomes its real ingredient for good.
+const known=c=>!!(save.ing&&save.ing[G.r+'-'+c]);
+const TOTAL_ING=ROOMS.length*9;
+function ingredientPattern(ctx,hex,motif){
+  const key='ing'+hex+motif+DPR; if(PAT[key]) return PAT[key];
+  const G=72, S=Math.round(G*DPR); const c=document.createElement('canvas'); c.width=c.height=S; const x=c.getContext('2d');
+  // dim jar-shadow backdrop so the pieces read as a heap, not a flat color
+  x.fillStyle=mix(hex,'#0a0610',.62); x.fillRect(0,0,S,S);
+  const line=!!LINE_MOTIFS[motif];
+  const pieces=(lyr)=>{ const N=lyr?26:20;
+    for(let k=0;k<N;k++){ const px=Math.random()*G, py=Math.random()*G, size=(line?6.5:5.4)+Math.random()*2.6, rot=Math.random()*6.28;
+      const shade=lyr?.0+Math.random()*.18:-.35+Math.random()*.15;
+      const col=shade>=0?mix(hex,'#ffffff',shade):mix(hex,'#000000',-shade);
+      for(const [ox,oy] of [[0,0],[G,0],[-G,0],[0,G],[0,-G],[G,G],[-G,-G],[G,-G],[-G,G]]){
+        if(px+ox<-12||px+ox>G+12||py+oy<-12||py+oy>G+12) continue;
+        x.save(); x.translate((px+ox)*DPR,(py+oy)*DPR); x.rotate(rot); x.scale(size*DPR,size*DPR);
+        motifPath(x,motif); x.lineJoin='round'; x.lineCap='round';
+        if(line){ x.lineWidth=.5; x.strokeStyle=mix(col,'#000000',.45); x.stroke(); x.lineWidth=.3; x.strokeStyle=col; x.stroke(); }
+        else { x.fillStyle=col; x.fill(); x.lineWidth=.14; x.strokeStyle=mix(hex,'#000000',.55); x.stroke();
+          if(lyr){ x.save(); x.clip(); x.fillStyle='rgba(255,255,255,.28)'; x.beginPath(); x.ellipse(-.25,-.35,.5,.3,-.5,0,6.28); x.fill(); x.restore(); } }
+        x.restore(); } } };
+  pieces(0); pieces(1);
+  // a few glints so it still feels magical
+  for(let k=0;k<14;k++){ x.fillStyle=k%3?'rgba(255,250,235,.9)':mix(hex,'#ffffff',.7); const gx=Math.random()*S, gy=Math.random()*S, gs=DPR*(.6+Math.random()*.8); x.fillRect(gx,gy,gs,gs); }
+  const p=ctx.createPattern(c,'repeat'); try{ p.setTransform(new DOMMatrix([1/DPR,0,0,1/DPR,0,0])); }catch(e){}
+  PAT[key]=p; return p;
+}
+function sandPattern(ctx,hex,hidden,motif){
+  if(!hidden && motif) return ingredientPattern(ctx,hex,motif);
+  const key=hex+(hidden?'h':'')+(motif||'')+DPR; if(PAT[key]) return PAT[key];
+  const G=72; // grains per tile edge (css px)
+  const g=document.createElement('canvas'); g.width=g.height=G; const x=g.getContext('2d');
+  const img=x.createImageData(G,G), d=img.data; const [r,gg,b]=hexRgb(hex);
+  const ph=Math.random()*10;
+  for(let yy=0;yy<G;yy++) for(let xx=0;xx<G;xx++){
+    const i=(yy*G+xx)*4; const R=Math.random();
+    let n=(Math.random()-.5)*44 + Math.sin(xx*.35+ph)*Math.cos(yy*.29+ph)*9;
+    if(R<.09) n-=34; else if(R<.13) n+=34;
+    let rr=r+n, g2=gg+n, bb=b+n;
+    if(hidden){ rr=r+n*.6+ (R<.05?40:0); g2=gg+n*.5; bb=b+n*.8+(R<.05?60:0); }
+    else if(R>.986){ rr=255; g2=250; bb=236; }      // glitter grain
+    else if(R>.975){ rr=r+(255-r)*.6; g2=gg+(255-gg)*.6; bb=b+(255-b)*.6; }
+    d[i]=cl(rr); d[i+1]=cl(g2); d[i+2]=cl(bb); d[i+3]=255;
+  }
+  x.putImageData(img,0,0);
+  const S=Math.round(G*DPR); const c=document.createElement('canvas'); c.width=c.height=S; const cx=c.getContext('2d');
+  cx.imageSmoothingEnabled=false; cx.drawImage(g,0,0,S,S);
+  if(!hidden && motif) drawMotifs(cx,hex,motif,G,DPR);
+  const p=ctx.createPattern(c,'repeat');
+  try{ p.setTransform(new DOMMatrix([1/DPR,0,0,1/DPR,0,0])); }catch(e){}
+  PAT[key]=p; return p;
+}
+let GLOW=null, GLOWCOL='';
+function glowSprite(col){ if(GLOW&&GLOWCOL===col) return GLOW; const c=document.createElement('canvas'); c.width=c.height=64; const x=c.getContext('2d');
+  const gr=x.createRadialGradient(32,32,0,32,32,32); gr.addColorStop(0,rgba(col,1)); gr.addColorStop(.25,rgba(col,.5)); gr.addColorStop(1,rgba(col,0));
+  x.fillStyle=gr; x.fillRect(0,0,64,64); GLOW=c; GLOWCOL=col; return c; }
+
+/* ======================= STATE ======================= */
+const stage=$('#stage'), game=$('#game'), gx=game.getContext('2d'), amb=$('#amb'), ax=amb.getContext('2d');
+let G=null, GEO={W:50,U:44,H:200}, POS=[], SHELVES=[], sel=null, anim=null, hint=null;
+let lift=[], shake=[], sparks=[], grains=[], bursts=[], floats=[];
+const ease=k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+const lerp=(a,b,k)=>a+(b-a)*k;
+const room=()=>ROOMS[G.r];
+const colOf=c=>room().colors[c][1];
+const isDone=v=>v.length===CAP && v.every(u=>u.c===v[0].c);
+
+function setTheme(T){
+  const s=document.documentElement.style;
+  s.setProperty('--bg0',T.bg[0]); s.setProperty('--bg1',T.bg[1]); s.setProperty('--bg2',T.bg[2]); s.setProperty('--accent',T.accent);
+  setAmbient(T.mote,T.moteColor);
+}
+
+/* ======================= LAYOUT ======================= */
+function sizeCanvas(cv,w,h){ cv.width=Math.round(w*DPR); cv.height=Math.round(h*DPR); }
+function layout(){
+  DPR=Math.min(window.devicePixelRatio||1,2.5);
+  const w=stage.clientWidth, h=stage.clientHeight; sizeCanvas(game,w,h);
+  sizeCanvas(amb,innerWidth,innerHeight);
+  if(!G) return;
+  const n=G.vials.length, rows=n<=5?1:2, per=Math.ceil(n/rows);
+  // Slimmer vials: capped smaller and given more breathing room between them.
+  let W=Math.min(40,(w-12)/per*.45), U=W*.8, H=12+CAP*U+W*.22, pad=56;
+  let rowH=H+pad; const avail=h-28;
+  if(rows*rowH>avail){ const s=avail/(rows*rowH); W*=s; U*=s; H=12+CAP*U+W*.22; pad*=s; rowH=H+pad; }
+  GEO={W,U,H};
+  const top=(h-rows*rowH)/2+pad*.62;
+  POS=[]; SHELVES=[];
+  for(let ri=0;ri<rows;ri++){
+    const cnt=ri<rows-1?per:n-per*(rows-1); const spread=Math.min(w-12,cnt*W*1.72); const y=top+ri*rowH;
+    for(let j=0;j<cnt;j++) POS.push({x:w/2-spread/2+(j+.5)*spread/cnt, y});
+    SHELVES.push({x0:w/2-spread/2-6, x1:w/2+spread/2+6, y:y+H+4});
+  }
+  while(lift.length<n){lift.push(0);shake.push(0);}
+  while(sparks.length<n) sparks.push(Array.from({length:13},()=>({x:Math.random()*1.7-.85,y:Math.random(),s:1.3+Math.random()*2.3,ph:Math.random()*6.28,sp:.5+Math.random()*1.5})));
+}
+
+/* ======================= GAME FLOW ======================= */
+function startLevel(r,l){
+  closeModal(); document.body.classList.remove('mapmode');
+  const R=ROOMS[r]; setTheme(R);
+  const raw=genLevel(r,l);
+  const veil=R.hidden||l===BONUS;
+  G={r,l,vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-1}))),undo:[],undos:undosFor(r,l),charges:R.spell.charges,unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[r+'-'+l]||null,nudged:false};
+  sel=null; anim=null; hint=null; grains=[]; bursts=[]; floats=[]; lift=[]; shake=[]; sparks=[];
+  layout(); updateHUD();
+  if(!save.tut) showGuide(0,()=>{ if(l===0 && !save.seen[r]) showIntro(r); else firstTip(); });
+  else if(l===0 && !save.seen[r]) showIntro(r);
+  else if(r===0&&l===0) firstTip();
+  else if(l===BONUS) toast('Bonus brew! Every lower layer is veiled, and points are doubled.',3600);
+}
+function firstTip(){ toast('Tap a vial, then tap where to pour.',3200); }
+// Points: 100 per potion bottled, a swift-brewing bonus for finishing near the cauldron's own pour count,
+// a pure-brew bonus for no undos or spells, and a small cost for each bit of help.
+const PTS={potion:100, pure:250, swiftPer:25, swiftMax:250, help:40, stir:100};
+function tallyScore(){
+  const potions=G.vials.filter(v=>v.length).length;
+  const base=potions*PTS.potion;
+  const par=G.par||G.moves; const slack=Math.max(0,(par+4)-G.moves);
+  const swift=Math.min(PTS.swiftMax,slack*PTS.swiftPer);
+  const pure=G.helps===0?PTS.pure:0;
+  const help=G.helps*PTS.help;
+  const stir=G.stirred?PTS.stir:0;
+  const sub=Math.max(0,base+swift+pure+stir-help), bonusX=G.l===BONUS?sub:0;
+  return {potions,base,swift,pure,stir,help,bonusX,total:sub+bonusX};
+}
+function totalPoints(){ return Object.values(save.best||{}).reduce((a,b)=>a+b,0); }
+function updateHUD(){
+  const R=room();
+  $('#roomName').textContent=R.place;
+  const live=Math.max(0,G.vials.filter(isDone).length*PTS.potion-G.helps*PTS.help);
+  const bumped=live>G.pts; G.pts=live;
+  $('#levelName').innerHTML=`${G.l===BONUS?'✦ Bonus brew':`Brew ${G.l+1} of 6`} · <span class="pts${bumped?' bump':''}">✦ ${G.pts} pts</span>`;
+  $('#ctUndo').textContent=G.undos;
+  $('#spIc').textContent=R.spell.icon; $('#spNm').textContent=R.spell.name; $('#ctSpell').textContent=G.charges;
+  $('#btnSpell').classList.toggle('spent',G.charges<=0);
+  $('#btnSpell').classList.toggle('armed',G.unbind);
+  $('#btnUndo').classList.toggle('spent',G.undos<=0||!G.undo.length);
+  $('#btnSpell').setAttribute('aria-label',`${R.spell.name}: ${R.spell.desc} ${G.charges} left`);
+  $('#btnSound').textContent=save.sound?'♪':'✕';
+}
+function snapshot(){ return G.vials.map(v=>v.map(u=>({c:u.c,h:u.h}))); }
+function pushUndo(){ G.undo.push(snapshot()); if(G.undo.length>60) G.undo.shift(); }
+function canPour(a,b){
+  if(a===b) return false; const A=G.vials[a], B=G.vials[b];
+  if(!A.length||isDone(A)||B.length>=CAP) return false;
+  if(!B.length||G.unbind) return true;
+  return B[B.length-1].c===A[A.length-1].c;
+}
+function topRunModel(A){ const c=A[A.length-1].c; let n=0; for(let i=A.length-1;i>=0&&A[i].c===c;i--) n++; return n; }
+function startPour(a,b){
+  const A=G.vials[a], B=G.vials[b];
+  let n=G.unbind?topRunModel(A):topRunModel(A); n=Math.min(n,CAP-B.length);
+  pushUndo();
+  for(let k=0;k<n;k++) A[A.length-1-k].h=false;
+  const dur={up:.1,move:.24,pour:.16+.09*n,back:.22};
+  anim={from:a,to:b,c:A[A.length-1].c,n,t:0,dur,total:dur.up+dur.move+dur.pour+dur.back,dir:POS[a].x<=POS[b].x?1:-1,y0:POS[a].y+lift[a],p:0};
+  lift[a]=0;
+  if(G.unbind){ G.unbind=false; updateHUD(); }
+  SFX.pour(dur.up+dur.move,dur.pour);
+  sel=null; hint=null;
+}
+function finishPour(){
+  const {from,to,n}=anim; const A=G.vials[from], B=G.vials[to];
+  for(let i=0;i<n;i++){ const u=A.pop(); u.h=false; B.push(u); }
+  if(A.length) A[A.length-1].h=false;
+  G.moves++; anim=null;
+  if(isDone(B)){ B.forEach(u=>u.h=false); brew(to); }
+  updateHUD();
+  if(G.vials.every(v=>!v.length||isDone(v))) return win();
+  if(!anyMove()) return stuckTip(true);
+  // Gentle nudge the first time the shelf has no empty vial left, so the spell isn't a secret.
+  if(!G.nudged && G.charges>0 && G.moves>=3 && !G.vials.some(v=>!v.length)){ G.nudged=true; stuckTip(false); }
+}
+function stuckTip(hard){
+  const sp=room().spell;
+  if(G.charges>0){
+    toast(hard?`Stuck? Tap ${sp.icon} ${sp.name}: ${sp.desc.charAt(0).toLowerCase()+sp.desc.slice(1)}`:`Running low on room? ${sp.icon} ${sp.name} can help.`,3600);
+    const b=$('#btnSpell'); b.classList.remove('nudge'); void b.offsetWidth; b.classList.add('nudge');
+  } else if(hard) toast(G.undos>0?'No pours left. Try Undo.':'No pours left. Restart to try again.',3200);
+}
+function anyMove(){ for(let a=0;a<G.vials.length;a++) for(let b=0;b<G.vials.length;b++) if(canPour(a,b)) return true; return false; }
+function brew(i){
+  const R=room(), [ing,hex,pot]=R.colors[G.vials[i][0].c];
+  const p=POS[i];
+  for(let k=0;k<26;k++){ const a=Math.random()*Math.PI*2, s=40+Math.random()*120; bursts.push({x:p.x,y:p.y-6,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,life:0,max:.7+Math.random()*.6,c:Math.random()<.5?hex:'#fff4d0',s:1.5+Math.random()*2.5}); }
+  floats.push({txt:pot,x:p.x,y:p.y-24,t:0,c:hex});
+  const ik=G.r+'-'+G.vials[i][0].c;
+  if(!save.ing[ik]){ save.ing[ik]=1; persist();
+    setTimeout(()=>{ toast(`✦ New ingredient discovered: ${ing}! ✦`,2800); SFX.magic(); },700);
+    for(let k=0;k<30;k++){ const a=Math.random()*6.28, sp=30+Math.random()*90; bursts.push({x:p.x+(Math.random()-.5)*GEO.W,y:p.y+Math.random()*GEO.H,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-40,life:0,max:.9+Math.random()*.5,c:'#ffffff',s:1.6+Math.random()*2}); } }
+  floats.push({txt:'+'+PTS.potion,x:p.x,y:p.y+GEO.H*.45,t:0,c:room().accent,small:true});
+  SFX.chime(); try{navigator.vibrate&&navigator.vibrate(18)}catch(e){}
+}
+function win(){
+  G.won=true; const key=G.r+'-'+G.l; const stars=G.helps===0?3:G.helps<=2?2:1;
+  save.done[key]=1; save.stars[key]=Math.max(save.stars[key]||0,stars); persist();
+  setTimeout(()=>{
+    if(!G||G.won!==true) return;
+    const R=room(); const brewed=G.vials.filter(v=>v.length).map(v=>R.colors[v[0].c]);
+    showCauldron(brewed, stirred=>showResults(key,stars,brewed,stirred));
+  },900);
+}
+function showResults(key,stars,brewed,stirred){
+    if(!G||G.won!==true) return;
+    G.stirred=stirred; SFX.win(); const R=room();
+    const sc=tallyScore(); const prevBest=save.best[key]||0; const newBest=sc.total>prevBest;
+    save.best[key]=Math.max(prevBest,sc.total); persist();
+    const chips=brewed.map(([ing,hex,pot])=>`<li><span class="dot" style="background:${hex};box-shadow:0 0 10px ${hex}"></span>${pot}</li>`).join('');
+    const last=G.l===5, bonus=G.l===BONUS; let next='Next brew', extra='';
+    if(last){ next='✦ Bonus brew';
+      extra=(G.r<4?`<p class="note">The way to <b>${ROOMS[G.r+1].place}</b> is open.</p>`:'<p class="note">Every classroom mastered. Gloamwick names you Graduate Witch. ✦</p>')
+        +`<p class="note dim">A harder, veiled bonus brew awaits, worth double points. ${G.r<4?'<a href="#" id="mSkip" style="color:inherit">Skip to the next classroom →</a>':''}</p>`; }
+    if(bonus){ next=G.r<4?'Next classroom':'Brew it again'; extra='<p class="note">Bonus brew conquered. The professor is genuinely impressed. ✦</p>'; }
+    const line=R.praise[Math.floor(Math.random()*R.praise.length)];
+    modal(`<div class="kicker">Brew complete · ${G.moves} pour${G.moves===1?"":"s"}</div><h2>${brewed.length} potions bottled</h2>
+      <div class="stars" aria-label="${stars} of 3 stars">${[0,1,2].map(i=>`<span class="${i<stars?'on':''}">✦</span>`).join('')}</div>
+      <ul class="brewed">${chips}</ul>
+      <ul class="tally">
+        <li><span>${sc.potions} potions × ${PTS.potion}</span><span>${sc.base}</span></li>
+        ${sc.swift?`<li><span>Swift brewing</span><span>+${sc.swift}</span></li>`:''}
+        ${sc.pure?`<li><span>Pure brew, no help</span><span>+${sc.pure}</span></li>`:''}
+        ${sc.stir?`<li><span>Stirred by hand</span><span>+${sc.stir}</span></li>`:''}
+        ${sc.help?`<li class="neg"><span>Help used</span><span>−${sc.help}</span></li>`:''}
+        ${sc.bonusX?`<li><span>Bonus brew ×2</span><span>+${sc.bonusX}</span></li>`:''}
+        <li class="tot"><span>Points</span><span>${sc.total}</span></li>
+      </ul>
+      <div class="best">${newBest&&prevBest?'New best for this brew! ':''}Best ${save.best[key]} · Total ${totalPoints()}</div>${extra}
+      <p class="quote small">“${line}” — ${R.short}</p>
+      ${stars<3?'<p class="note dim">Brew without spells or undos for all three stars.</p>':''}
+      <div class="row"><button class="btn ghost" id="mMap">Grimoire</button><button class="btn" id="mNext">${next}</button></div>`);
+    $('#mMap').onclick=()=>{closeModal();showMap()};
+    $('#mNext').onclick=()=>{ if(G.l<BONUS) startLevel(G.r,G.l+1); else if(G.r<4) startLevel(G.r+1,0); else startLevel(G.r,G.l); };
+    if($('#mSkip')) $('#mSkip').onclick=e=>{ e.preventDefault(); startLevel(G.r+1,0); };
+}
+
+/* ======================= CAULDRON: interactive brewing ======================= */
+// After the last vial is corked, every potion pours into the professor's cauldron and you stir it
+// (drag in circles, or tap the cauldron) to seal the brew. Stirring earns a small bonus; skipping is fine.
+const STIR_TURNS=2;
+let CAUL=null;
+function showCauldron(brewed,done){
+  const R=room(), acc=R.accent;
+  modal(`<div class="kicker">Final step</div><h2>Stir the cauldron</h2>
+    <p class="note" id="cHint">Swirl your finger around the cauldron to seal the brew.</p>
+    <canvas id="caul" style="width:100%;max-width:300px;aspect-ratio:.92;margin:0 auto;display:block;touch-action:none;cursor:grab"></canvas>
+    <div class="row"><button class="btn ghost" id="cSkip">Skip</button></div>`);
+  const cv=$('#caul'); const rect=cv.getBoundingClientRect(); const w=rect.width||280, h=rect.height||304;
+  cv.width=Math.round(w*DPR); cv.height=Math.round(h*DPR); const c=cv.getContext('2d');
+  const cols=brewed.map(b=>b[1]);
+  const C={cx:w/2, cy:h*.58, rx:w*.33, ry:w*.1};
+  CAUL={c,w,h,C,cols,acc,prog:0,ang:0,last:null,spoon:-Math.PI/2,swirl:0,bubbles:[],drops:[],smoke:[],pops:[],popSnd:0,pourT:0,done:false,doneT:0,fin:false,raf:0,lastT:performance.now(),cb:done};
+  // potions pour in one after another before stirring begins
+  cols.forEach((col,i)=>CAUL.drops.push({col,t:-i*.16,x:C.cx+(i-(cols.length-1)/2)*Math.min(26,C.rx*1.6/cols.length)}));
+  const toLocal=e=>{ const r=cv.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; };
+  let down=false;
+  cv.addEventListener('pointerdown',e=>{ SFX.init(); down=true; try{cv.setPointerCapture(e.pointerId)}catch(_){}; const [x,y]=toLocal(e); CAUL.last=Math.atan2((y-C.cy)/C.ry*C.rx/1.6,x-C.cx);
+    // a plain tap nudges the stir forward too, so it works without swirling
+    addStir(Math.PI/4); });
+  cv.addEventListener('pointermove',e=>{ if(!down||!CAUL||CAUL.done) return; const [x,y]=toLocal(e); const a=Math.atan2((y-C.cy)/C.ry*C.rx/1.6,x-C.cx);
+    if(CAUL.last!==null){ let d=a-CAUL.last; if(d>Math.PI) d-=2*Math.PI; if(d<-Math.PI) d+=2*Math.PI; addStir(Math.abs(d)); CAUL.spoon=a; }
+    CAUL.last=a; });
+  const up=()=>{ down=false; if(CAUL) CAUL.last=null; };
+  cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
+  $('#cSkip').onclick=()=>finishCauldron(false);
+  CAUL.raf=requestAnimationFrame(drawCauldron);
+}
+function addStir(d){
+  const K=CAUL; if(!K||K.done) return; if(K.pourT<.9+K.cols.length*.16) return;
+  K.ang+=d; K.swirl+=d; K.prog=Math.min(1,K.ang/(STIR_TURNS*Math.PI*2));
+  if(Math.random()<d*1.4) SFX.tone(260+K.prog*500+Math.random()*80,0,.12,.025,'sine');
+  if(K.prog>=1){ K.done=true; SFX.magic(); SFX.chime(); try{navigator.vibrate&&navigator.vibrate([20,40,30])}catch(e){}
+    for(let k=0;k<40;k++){ const a=-Math.PI*Math.random(),s=60+Math.random()*140; K.pops.push({x:K.C.cx+(Math.random()-.5)*K.C.rx,y:K.C.cy,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,life:0,max:.9+Math.random()*.6,col:Math.random()<.5?K.acc:'#fff4d0'}); }
+    for(let k=0;k<26;k++) K.smoke.push({x:K.C.cx+(Math.random()-.5)*K.C.rx*1.4,y:K.C.cy,vx:(Math.random()-.5)*50,vy:-50-Math.random()*70,r:14+Math.random()*14,gr:26,life:0,max:1.4+Math.random()*.8,off:Math.random()*9,fin:true});
+    const hnt=$('#cHint'); if(hnt) hnt.textContent='The brew is sealed. ✦';
+    setTimeout(()=>finishCauldron(true),1300); }
+}
+function finishCauldron(stirred){ const K=CAUL; if(!K||K.fin) return; K.fin=true; cancelAnimationFrame(K.raf); CAUL=null; K.cb(stirred); }
+function drawCauldron(now){
+  const K=CAUL; if(!K) return; const dt=Math.min(.05,(now-K.lastT)/1000); K.lastT=now; const t=now/1000;
+  const {c,w,h,C,cols,acc}=K; c.setTransform(DPR,0,0,DPR,0,0); c.clearRect(0,0,w,h);
+  K.pourT+=dt;
+  const n=cols.length, P=K.prog;
+  // colors drift through every potion you brewed, warming toward the professor's color as you stir
+  const cyc=off=>{ const f=(((t*.45+off)%n)+n)%n, i=Math.floor(f); return mix(mix(cols[i],cols[(i+1)%n],f-i),acc,K.done?.85:P*.45); };
+  const top=C.cy, bot=h*.9;
+  const filled=Math.min(1,K.pourT/(.6+n*.16));
+  // ---- emitters ----
+  if(filled>.3){
+    if(Math.random()<dt*(5+P*26)) K.smoke.push({x:C.cx+(Math.random()-.5)*C.rx*1.3,y:top-2,vx:(Math.random()-.5)*14,vy:-(18+Math.random()*22+P*25),r:8+Math.random()*8,gr:14+Math.random()*10,life:0,max:2+Math.random()*1.4,off:Math.random()*n});
+    if(Math.random()<dt*(4+P*18)){ const a=Math.random()*6.28, rr=Math.sqrt(Math.random())*.8;
+      K.bubbles.push({x:C.cx+Math.cos(a)*C.rx*rr,y:top+2+Math.sin(a)*C.ry*rr,r:0,rmax:4+Math.random()*7+P*5,life:0,max:.5+Math.random()*.9,off:Math.random()*n}); }
+  }
+  // ---- smoke behind the pot ----
+  const smoke=(front)=>{ for(let k=K.smoke.length-1;k>=0;k--){ const m=K.smoke[k]; if(!!m.front!==front) continue;
+      if(!front){ m.life+=dt; if(m.life>m.max){K.smoke.splice(k,1);continue;} m.x+=(m.vx+Math.sin(t*1.3+m.off*2)*10)*dt; m.y+=m.vy*dt; m.vy*=.995; m.r+=m.gr*dt; }
+      const k01=m.life/m.max, a=(k01<.15?k01/.15:1-(k01-.15)/.85)*(m.fin?.6:.42);
+      const col=m.fin?mix(acc,'#ffffff',.2):cyc(m.off);
+      const g=c.createRadialGradient(m.x,m.y,0,m.x,m.y,m.r); g.addColorStop(0,rgba(col,a)); g.addColorStop(.55,rgba(col,a*.45)); g.addColorStop(1,rgba(col,0));
+      c.fillStyle=g; c.fillRect(m.x-m.r,m.y-m.r,m.r*2,m.r*2); } };
+  smoke(false);
+  // fire
+  const fg=c.createRadialGradient(C.cx,h*.97,4,C.cx,h*.97,w*.42); fg.addColorStop(0,rgba(cyc(.5),.55)); fg.addColorStop(1,rgba(acc,0)); c.fillStyle=fg; c.fillRect(0,h*.5,w,h*.5);
+  for(let k=0;k<7;k++){ const fx=C.cx+(k-3)*w*.05, fh=12+8*Math.sin(t*9+k*1.7)+P*10;
+    c.fillStyle=rgba(k%2?'#ffb347':acc,.8); c.beginPath(); c.moveTo(fx-6,h*.98); c.quadraticCurveTo(fx-4,h*.98-fh*.6,fx,h*.98-fh); c.quadraticCurveTo(fx+4,h*.98-fh*.6,fx+6,h*.98); c.fill(); }
+  // pot
+  c.fillStyle='#17121f'; c.beginPath(); c.moveTo(C.cx-C.rx,top); c.bezierCurveTo(C.cx-C.rx*1.35,top+(bot-top)*.55,C.cx-C.rx*.7,bot,C.cx,bot); c.bezierCurveTo(C.cx+C.rx*.7,bot,C.cx+C.rx*1.35,top+(bot-top)*.55,C.cx+C.rx,top); c.closePath(); c.fill();
+  const sh=c.createLinearGradient(C.cx-C.rx*1.3,0,C.cx+C.rx*1.3,0); sh.addColorStop(0,'rgba(255,255,255,0)'); sh.addColorStop(.3,'rgba(255,255,255,.09)'); sh.addColorStop(.5,'rgba(255,255,255,0)'); sh.addColorStop(1,'rgba(0,0,0,.3)'); c.fillStyle=sh; c.fill();
+  // the brew's glow licks up the side of the pot
+  const pg=c.createLinearGradient(0,top,0,top+(bot-top)*.5); pg.addColorStop(0,rgba(cyc(1.3),.35*filled)); pg.addColorStop(1,'rgba(0,0,0,0)'); c.fillStyle=pg; c.fill();
+  c.fillStyle='#120d18'; [-.6,.6].forEach(lx=>{ c.beginPath(); c.ellipse(C.cx+lx*C.rx,bot-2,7,10,0,0,6.28); c.fill(); });
+  // ---- liquid surface ----
+  c.save(); c.beginPath(); c.ellipse(C.cx,top+2,C.rx*.94,C.ry*.9,0,0,6.28); c.clip();
+  c.fillStyle='#0c0812'; c.fillRect(C.cx-C.rx,top-C.ry,C.rx*2,C.ry*2+4);
+  if(filled>0){
+    const avg='#'+[0,1,2].map(ch=>Math.round(cols.reduce((tt,hx)=>tt+hexRgb(hx)[ch],0)/n).toString(16).padStart(2,'0')).join('');
+    c.globalAlpha=filled; c.fillStyle=mix(mix(avg,'#000000',.15),acc,P*.8); c.fillRect(C.cx-C.rx,top-C.ry,C.rx*2,C.ry*2+4);
+    const tw=2.2+K.swirl*.25, span=6.283/n*.55;
+    for(let i=0;i<n;i++){ const a0=K.swirl*1.1+t*.25+i*6.283/n; c.fillStyle=mix(cols[i],acc,P*.85); c.beginPath();
+      for(let k=0;k<=20;k++){ const rr=k/20, a=a0+tw*rr; c.lineTo(C.cx+Math.cos(a)*C.rx*rr*1.05, top+2+Math.sin(a)*C.ry*rr*1.05); }
+      for(let k=20;k>=0;k--){ const rr=k/20, a=a0+span*(.4+rr*.6)+tw*rr; c.lineTo(C.cx+Math.cos(a)*C.rx*rr*1.05, top+2+Math.sin(a)*C.ry*rr*1.05); }
+      c.closePath(); c.fill(); }
+    // inner glow pulse
+    const ig=c.createRadialGradient(C.cx,top+2,0,C.cx,top+2,C.rx); ig.addColorStop(0,rgba(cyc(2.1),.35+.15*Math.sin(t*3))); ig.addColorStop(1,'rgba(0,0,0,0)');
+    c.fillStyle=ig; c.fillRect(C.cx-C.rx,top-C.ry,C.rx*2,C.ry*2+4);
+    if(K.done){ c.globalAlpha=Math.min(1,(K.doneT+=dt)*1.5)*.75; c.fillStyle=acc; c.fillRect(C.cx-C.rx,top-C.ry,C.rx*2,C.ry*2+4); }
+    c.globalAlpha=1;
+  }
+  c.restore();
+  // ---- bubbles swell on the surface, then pop into droplets ----
+  for(let k=K.bubbles.length-1;k>=0;k--){ const b=K.bubbles[k]; b.life+=dt;
+    if(b.life>=b.max){ K.bubbles.splice(k,1); const col=cyc(b.off);
+      K.pops.push({x:b.x,y:b.y-b.r*.6,r:b.r,life:0,max:.35,ring:true,col});
+      for(let q=0;q<5;q++){ const a=-Math.PI*(.15+Math.random()*.7); K.pops.push({x:b.x,y:b.y-b.r*.6,vx:Math.cos(a)*(30+Math.random()*50),vy:Math.sin(a)*(50+Math.random()*60),life:0,max:.45+Math.random()*.3,col}); }
+      if(now-K.popSnd>70){ K.popSnd=now; SFX.tone(500+Math.random()*500,0,.06,.018,'sine'); }
+      continue; }
+    const k01=b.life/b.max; b.r=b.rmax*Math.min(1,k01*1.6); const col=cyc(b.off), wob=1+.08*Math.sin(t*14+b.off*3);
+    const by=b.y-b.r*.55;
+    const bg=c.createRadialGradient(b.x-b.r*.3,by-b.r*.35,b.r*.1,b.x,by,b.r); bg.addColorStop(0,rgba(mix(col,'#ffffff',.55),.9)); bg.addColorStop(.7,rgba(col,.75)); bg.addColorStop(1,rgba(mix(col,'#000000',.3),.85));
+    c.fillStyle=bg; c.beginPath(); c.ellipse(b.x,by,b.r*wob,b.r/wob,0,0,6.28); c.fill();
+    c.strokeStyle='rgba(255,255,255,.45)'; c.lineWidth=.8; c.stroke();
+    c.fillStyle='rgba(255,255,255,.85)'; c.beginPath(); c.arc(b.x-b.r*.35,by-b.r*.4,Math.max(.8,b.r*.18),0,6.28); c.fill(); }
+  // rim (drawn after bubbles so they sit inside the pot mouth)
+  c.strokeStyle='#3a2f48'; c.lineWidth=7; c.beginPath(); c.ellipse(C.cx,top,C.rx,C.ry,0,Math.PI*0,Math.PI); c.stroke();
+  c.strokeStyle='#3a2f48'; c.lineWidth=7; c.beginPath(); c.ellipse(C.cx,top,C.rx,C.ry,0,Math.PI,Math.PI*2); c.stroke();
+  c.strokeStyle='rgba(255,255,255,.18)'; c.lineWidth=1.2; c.beginPath(); c.ellipse(C.cx,top-2,C.rx,C.ry,0,Math.PI*1.05,Math.PI*1.95); c.stroke();
+  // ---- pops: rings and droplets ----
+  for(let k=K.pops.length-1;k>=0;k--){ const q=K.pops[k]; q.life+=dt; if(q.life>q.max){K.pops.splice(k,1);continue;} const a=1-q.life/q.max;
+    if(q.ring){ c.strokeStyle=rgba(mix(q.col,'#ffffff',.4),a*.8); c.lineWidth=1.2; c.beginPath(); c.ellipse(q.x,q.y,q.r*(1+q.life*5),q.r*.5*(1+q.life*5),0,0,6.28); c.stroke(); }
+    else { q.vy+=260*dt; q.x+=q.vx*dt; q.y+=q.vy*dt; c.fillStyle=rgba(q.col,a); c.beginPath(); c.arc(q.x,q.y,1.6,0,6.28); c.fill(); } }
+  // potions pouring in
+  for(const d of K.drops){ d.t+=dt; if(d.t<0||d.t>.6) continue; const k=d.t/.6;
+    c.fillStyle=d.col; c.globalAlpha=1-k*.3; c.fillRect(d.x-1.5,top-60+k*30,3,30*(1-k)+8); c.beginPath(); c.arc(d.x,top-62+k*30,5,0,6.28); c.fill(); c.globalAlpha=1;
+    if(Math.random()<.5) K.bubbles.push({x:d.x,y:top+2,r:0,rmax:3+Math.random()*3,life:0,max:.3+Math.random()*.3,off:cols.indexOf(d.col)}); }
+  // ---- smoke in front, drifting up past the rim ----
+  // (re-use the same particles: older ones cross in front once they rise above the rim)
+  for(const m of K.smoke) if(!m.front && m.y<top-C.ry*2) m.front=true;
+  smoke(true);
+  for(let k=K.smoke.length-1;k>=0;k--){ const m=K.smoke[k]; if(!m.front) continue; m.life+=dt; if(m.life>m.max){K.smoke.splice(k,1);continue;} m.x+=(m.vx+Math.sin(t*1.3+m.off*2)*10)*dt; m.y+=m.vy*dt; m.vy*=.995; m.r+=m.gr*dt; }
+  // spoon
+  if(filled>=1 && !K.done){ const a=K.spoon, sx=C.cx+Math.cos(a)*C.rx*.55, sy=top+2+Math.sin(a)*C.ry*.55;
+    c.strokeStyle='#8a5a32'; c.lineWidth=6; c.lineCap='round'; c.beginPath(); c.moveTo(sx,sy); c.lineTo(sx+Math.cos(a)*14-6,sy-62); c.stroke();
+    c.strokeStyle='#b07a48'; c.lineWidth=2; c.beginPath(); c.moveTo(sx-1,sy-2); c.lineTo(sx+Math.cos(a)*14-7,sy-60); c.stroke();
+    if(P===0){ const ga=t*3; c.globalAlpha=.55+.35*Math.sin(t*4); c.strokeStyle=acc; c.lineWidth=2; c.setLineDash([5,6]);
+      c.beginPath(); c.ellipse(C.cx,top+2,C.rx*.62,C.ry*.62,0,ga,ga+4.6); c.stroke(); c.setLineDash([]); c.globalAlpha=1; } }
+  // progress: a glowing line along the bottom
+  c.lineCap='round'; c.lineWidth=4; c.strokeStyle='rgba(255,255,255,.1)'; c.beginPath(); c.moveTo(w*.18,h-4); c.lineTo(w*.82,h-4); c.stroke();
+  if(P>0){ c.strokeStyle=acc; c.shadowColor=acc; c.shadowBlur=10; c.beginPath(); c.moveTo(w*.18,h-4); c.lineTo(w*.18+w*.64*P,h-4); c.stroke(); c.shadowBlur=0; }
+  K.raf=requestAnimationFrame(drawCauldron);
+}
+
+function doUndo(){
+  if(!G||anim||G.won) return;
+  if(!G.undo.length) return toast('Nothing to undo yet.');
+  if(G.undos<=0) return toast('Out of undos for this brew.');
+  const s=G.undo.pop(); while(s.length<G.vials.length) s.push([]);
+  G.vials=s; G.undos--; G.helps++; sel=null; hint=null; SFX.tick(); updateHUD();
+}
+function findHint(){ const s=G.vials.map(v=>v.map(u=>u.c)); const p=solve(s,60000); return p&&p[0]; }
+function castSpell(){
+  if(!G||anim||G.won) return; const R=room(), sp=R.spell;
+  if(G.charges<=0) return toast(`${sp.name} is spent for this brew.`);
+  switch(sp.key){
+    case 'sprout':{ if(G.vials.length>=12) return toast('The shelf is full.'); G.vials.push([]); layout();
+      const p=POS[POS.length-1]; for(let k=0;k<20;k++){const a=Math.random()*6.28;bursts.push({x:p.x,y:p.y+GEO.H*.6,vx:Math.cos(a)*60,vy:-Math.random()*120,life:0,max:.8,c:'#c9f58a',s:2})}
+      toast('A fresh vial sprouts from the soil.'); break; }
+    case 'starsight':{ let any=false; G.vials.forEach(v=>v.forEach(u=>{ if(u.h){u.h=false;any=true;} }));
+      if(!any) return toast('Nothing left hidden. The stars agree.');
+      POS.forEach(p=>{for(let k=0;k<8;k++){const a=Math.random()*6.28;bursts.push({x:p.x+(Math.random()-.5)*GEO.W,y:p.y+Math.random()*GEO.H,vx:Math.cos(a)*30,vy:Math.sin(a)*30,life:0,max:.9,c:'#eef2ff',s:2})}});
+      toast('Starsight! Every layer revealed.'); break; }
+    case 'distill':{ const m=findHint(); if(!m) return toast('Even the cauldron is stumped. Try Undo.'); G.charges--; G.helps++; SFX.magic(); updateHUD(); startPour(m[0],m[1]); return; }
+    case 'foretell':{ const m=findHint(); if(!m) return toast('The leaves are murky. Try Undo.'); hint={a:m[0],b:m[1],t:0}; toast('The leaves point the way.'); break; }
+    case 'unbind':{ if(G.unbind) return toast('Already unbound. Make your pour.'); G.unbind=true; toast('Unbound. Your next pour ignores color.',2600); break; }
+  }
+  G.charges--; G.helps++; SFX.magic(); updateHUD();
+}
+
+/* ======================= INPUT ======================= */
+function hitVial(x,y){ const {W,H}=GEO; for(let i=0;i<POS.length;i++){ const p=POS[i]; if(Math.abs(x-p.x)<W*.82 && y>p.y-36 && y<p.y+H+18) return i; } return -1; }
+game.addEventListener('pointerdown',e=>{
+  SFX.init(); if(!G||anim||G.won) return;
+  const r=game.getBoundingClientRect(); const i=hitVial(e.clientX-r.left,e.clientY-r.top);
+  if(i<0){ sel=null; return; }
+  const v=G.vials[i];
+  if(sel===null){
+    if(!v.length||isDone(v)){ shake[i]=.35; SFX.nope(); return; }
+    sel=i; SFX.tick(); return;
+  }
+  if(sel===i){ sel=null; return; }
+  if(canPour(sel,i)){ startPour(sel,i); return; }
+  shake[i]=.35; SFX.nope(); sel=null;
+});
+$('#btnUndo').onclick=()=>{SFX.init();doUndo()};
+$('#btnSpell').onclick=()=>{SFX.init();castSpell()};
+$('#btnRestart').onclick=()=>{SFX.init(); if(G&&!anim) startLevel(G.r,G.l)};
+$('#btnMap').onclick=()=>{SFX.init();showMap()};
+$('#btnHelp').onclick=()=>{SFX.init(); if(!anim) showGuide(0)};
+$('#mapHelp').onclick=e=>{e.preventDefault(); SFX.init(); showGuide(0)};
+
+$('#btnSound').onclick=()=>{SFX.init(); save.sound=!save.sound; persist(); updateHUD(); toast(save.sound?'Sound on':'Sound off',1200)};
+addEventListener('resize',()=>layout());
+
+/* ======================= UI SCREENS ======================= */
+let toastT=null;
+function toast(msg,ms){ const t=$('#toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),ms||2000); }
+function modal(html){ $('#modalCard').innerHTML=html; $('#modal').hidden=false; }
+function closeModal(){ $('#modal').hidden=true; if(CAUL){ cancelAnimationFrame(CAUL.raf); CAUL=null; } }
+function showIntro(r){
+  const R=ROOMS[r];
+  modal(`<div class="sigbig">${R.sigil}</div><div class="kicker">${R.subject}</div><h2>${R.place}</h2><div class="prof">${R.prof}</div>
+    <p class="quote">“${R.quote}”</p>
+    <div class="spellbox"><div class="sb-ic">${R.spell.icon}</div><div><b>${R.spell.name}</b><br>${R.spell.desc} <span class="dim">${R.spell.charges}× per brew</span></div></div>
+    ${R.hidden?'<p class="note">Lower layers in this room are veiled until you uncover them.</p>':'<p class="note">Pour matching ingredients together until every vial holds one potion.</p>'}
+    <button class="btn" id="mBegin">Begin brewing</button>`);
+  $('#mBegin').onclick=()=>{ save.seen[r]=1; persist(); closeModal(); if(r===0) toast('Tap a vial, then tap where to pour.',3200); };
+}
+const GUIDE=[
+  {k:'How to brew · 1 of 4', h:'Welcome to Gloamwick', items:[
+    ['🧪','<b>Vials</b><br>Each glass vial holds layers of enchanted sand. Four layers fill a vial.'],
+    ['👆','<b>Pour</b><br>Tap a vial to lift it, then tap another vial to pour the top layer into it.'],
+    ['✋','<b>The one rule</b><br>A layer only pours onto the <i>same color</i>, or into an <i>empty</i> vial.']]},
+  {k:'How to brew · 2 of 4', h:'Bottle the potions', items:[
+    ['🍾','<b>Potion</b><br>Fill a vial with four layers of one color and it corks into a named potion. The first time you bottle one, its sand turns into the <i>real ingredient</i>: petals, roots, stars, crystals. Collect them all.'],
+    ['🫕','<b>Stir the cauldron</b><br>Bottle every color, then swirl your finger to stir them all into the cauldron and seal the brew.'],
+    ['❓','<b>Veiled layers</b><br>In later classrooms, lower layers hide until you uncover them.']]},
+  {k:'How to brew · 3 of 4', h:'Your satchel', items:[
+    ['↶','<b>Undo</b><br>Takes back your last pour. You get a few per brew.'],
+    ['🌱','<b>The professor\'s spell</b><br>The glowing middle button. In the Glasshouse it\'s <b>Sprout</b>, which grows you an <i>extra empty vial</i> when you\'re stuck. Each classroom teaches a new spell.'],
+    ['⟲','<b>Restart</b><br>Starts the brew over, fresh.']]},
+  {k:'How to brew · 4 of 4', h:'Points & stars', items:[
+    ['💯','<b>Points</b><br>+100 for every potion, a bonus for brewing in few pours, and a big bonus for no help at all.'],
+    ['⭐','<b>Stars</b><br>Three ✦ for a brew with no undos or spells.'],
+    ['🎁','<b>Bonus brews</b><br>Finish a classroom to unlock its harder, veiled bonus brew, worth double points.'],
+    ['☾','<b>Grimoire</b><br>The moon button opens your map of classrooms, scores and stars. Tap <b>?</b> any time to see this again.']]},
+];
+function showGuide(p,done){
+  const P=GUIDE[p], last=p===GUIDE.length-1;
+  modal(`<div class="kicker">${P.k}</div><h2>${P.h}</h2>
+    <div class="guide">${P.items.map(([ic,tx])=>`<div class="gi"><div class="g-ic">${ic}</div><div>${tx}</div></div>`).join('')}</div>
+    <div class="pips">${GUIDE.map((_,i)=>`<i class="${i===p?'on':''}"></i>`).join('')}</div>
+    <div class="row">${p>0?'<button class="btn ghost" id="gBack">Back</button>':'<button class="btn ghost" id="gSkip">Skip</button>'}<button class="btn" id="gNext">${last?'Start brewing':'Next'}</button></div>`);
+  const finish=()=>{ save.tut=true; persist(); closeModal(); if(done) done(); };
+  $('#gNext').onclick=()=>{ SFX.init(); SFX.tick(); last?finish():showGuide(p+1,done); };
+  if($('#gBack')) $('#gBack').onclick=()=>{ SFX.tick(); showGuide(p-1,done); };
+  if($('#gSkip')) $('#gSkip').onclick=finish;
+}
+function showMap(){
+  closeModal(); document.body.classList.add('mapmode'); setTheme(MAPTHEME);
+  const tp=totalPoints(), ni=Object.keys(save.ing||{}).length; $('#mapTotal').textContent=(tp?`✦ ${tp.toLocaleString()} points · `:'')+`${ni} of ${TOTAL_ING} ingredients discovered`;
+  const el=$('#mapList'); el.innerHTML='';
+  let nextFound=false;
+  ROOMS.forEach((R,ri)=>{
+    const unlocked=isUnlocked(ri,0);
+    const card=document.createElement('div'); card.className='room'+(unlocked?'':' locked');
+    card.style.setProperty('--ra',R.accent); card.style.setProperty('--rb0',R.bg[1]); card.style.setProperty('--rb1',R.bg[2]);
+    let orbs='';
+    for(let l=0;l<6;l++){
+      const ok=isUnlocked(ri,l), dn=save.done[ri+'-'+l], st=save.stars[ri+'-'+l]||0;
+      let cls='orb'+(dn?' done':''); if(ok&&!dn&&!nextFound){cls+=' next'; nextFound=true;}
+      orbs+=`<button class="${cls}" data-r="${ri}" data-l="${l}" ${ok?'':'disabled'} aria-label="${R.place}, brew ${l+1}${dn?`, ${st} stars`:''}">${ok?l+1:'·'}${dn?`<span class="st">${'✦'.repeat(st)}</span>`:''}</button>`;
+    }
+    card.innerHTML=`<div class="rhead"><div class="rsig">${R.sigil}</div><div style="min-width:0"><div class="rname">${R.place}</div><div class="rprof">${R.prof} · ${R.subject}</div></div></div>
+      <div class="orbs">${orbs}</div>
+      ${(()=>{ const k=ri+'-'+BONUS, ok=isUnlocked(ri,BONUS), dn=save.done[k], st=save.stars[k]||0, bp=save.best[k];
+        return `<button class="orb bonus${dn?' done':''}" data-r="${ri}" data-l="${BONUS}" ${ok?'':'disabled'} aria-label="${R.place}, bonus brew">
+          ✦ Bonus brew${ok?(dn?` · ${'✦'.repeat(st)} · ${bp} pts`:' · double points'):' · locked'}</button>`; })()}
+      <div class="rspell">${unlocked?`${R.spell.icon} <b>${R.spell.name}</b> · ${R.spell.desc}`:`Locked. Finish all six brews in ${ROOMS[ri-1].place} to enter.`}</div>`;
+    el.appendChild(card);
+  });
+  el.querySelectorAll('.orb:not([disabled])').forEach(b=>b.onclick=()=>{SFX.init();startLevel(+b.dataset.r,+b.dataset.l)});
+  const nx=el.querySelector('.orb.next'); if(nx) setTimeout(()=>{ try{nx.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){} },60);
+}
+
+/* ======================= RENDERING ======================= */
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function innerPath(c,r,g,H){ c.beginPath(); c.moveTo(-r+g,7); c.lineTo(-r+g,H-r); c.arc(0,H-r,r-g,Math.PI,0,true); c.lineTo(r-g,7); c.closePath(); }
+function outerPath(c,r,H){ c.beginPath(); c.moveTo(-r,5); c.lineTo(-r,H-r); c.arc(0,H-r,r,Math.PI,0,true); c.lineTo(r,5); }
+function star(c,x,y,s){ c.beginPath(); c.moveTo(x,y-s); c.quadraticCurveTo(x,y,x+s,y); c.quadraticCurveTo(x,y,x,y+s); c.quadraticCurveTo(x,y,x-s,y); c.quadraticCurveTo(x,y,x,y-s); c.fill(); }
+
+function displayUnits(i){
+  const base=G.vials[i].map(u=>({c:u.c,h:u.h,f:1}));
+  if(!anim) return base;
+  if(i===anim.from){ for(let k=0;k<anim.n;k++){ const u=base[base.length-1-k]; if(u) u.f=1-anim.p; } }
+  if(i===anim.to && anim.p>0){ for(let k=0;k<anim.n;k++) base.push({c:anim.c,h:false,f:anim.p}); }
+  return base;
+}
+function segments(units){
+  const segs=[];
+  for(const u of units){ if(u.f<=0) continue; const L=segs[segs.length-1];
+    if(L && !u.h && !L.h && L.c===u.c) L.amt+=u.f; else segs.push({c:u.c,h:u.h,amt:u.f}); }
+  return segs;
+}
+
+function drawVial(c,i,ox,oy,ang,t,opt){
+  const {W,H,U}=GEO, r=W/2, g=Math.max(2,W*.055); const v=G.vials[i]; const done=isDone(v);
+  c.save(); c.translate(ox,oy); if(ang) c.rotate(ang);
+  // aura
+  const auraCol = done?colOf(v[0].c) : opt.glow;
+  if(auraCol){ const pulse=done?.55+.45*Math.sin(t*2.2+i):1; const gr=c.createRadialGradient(0,H*.55,2,0,H*.55,H*.78);
+    gr.addColorStop(0,rgba(auraCol,(done?.3:.38)*pulse)); gr.addColorStop(1,rgba(auraCol,0)); c.fillStyle=gr; c.fillRect(-H,-H*.25,H*2,H*1.6); }
+  innerPath(c,r,g,H); c.fillStyle='rgba(255,255,255,.05)'; c.fill();
+  // sand
+  const segs=segments(displayUnits(i));
+  c.save(); innerPath(c,r,g,H); c.clip();
+  let y=H-g; const segY=[];
+  segs.forEach((sg,s)=>{
+    const hh=sg.amt*U; if(hh<.05) return; const y0=y-hh; const isTop=s===segs.length-1;
+    c.fillStyle=sandPattern(c, sg.h?HIDDEN_HEX:colOf(sg.c), sg.h, (sg.h||!known(sg.c))?null:motifOf(sg.c));
+    c.beginPath();
+    const bump=isTop?Math.min(3.2,hh*.45):0;
+    const topY = isTop? y0 : y0-2.5;
+    c.moveTo(-r,topY+bump); if(isTop) c.quadraticCurveTo(0,topY-bump,r,topY+bump); else c.lineTo(r,topY);
+    if(s>0){ const ph=sg.c*1.7+i*.9; for(let k=8;k>=0;k--){ const xx=-r+2*r*k/8; c.lineTo(xx, y+Math.sin(k*1.3+ph)*1.4); } }
+    else { c.lineTo(r,y+2); c.lineTo(-r,y+2); }
+    c.closePath(); c.fill();
+    if(s>0){ const gr=c.createLinearGradient(0,y-3,0,y+3); gr.addColorStop(0,'rgba(0,0,0,0)'); gr.addColorStop(.5,'rgba(0,0,0,.16)'); gr.addColorStop(1,'rgba(0,0,0,0)'); c.fillStyle=gr; c.fillRect(-r,y-3,2*r,6); }
+    if(isTop && !sg.h){ c.strokeStyle='rgba(255,250,235,.28)'; c.lineWidth=1.1; c.beginPath(); c.moveTo(-r,y0+bump+.7); c.quadraticCurveTo(0,y0-bump+.7,r,y0+bump+.7); c.stroke(); }
+    if(sg.h && hh>U*.5){ c.save(); c.fillStyle='rgba(214,190,255,.62)'; c.shadowColor='rgba(170,130,255,.9)'; c.shadowBlur=8;
+      c.font=`600 ${Math.round(U*.48)}px Cinzel, Georgia, serif`; c.textAlign='center'; c.textBaseline='middle';
+      c.fillText('?',0,y0+hh/2+1+Math.sin(t*2+i+s)*1.2); c.restore(); }
+    segY.push({y0,y1:y,sg}); y=y0;
+  });
+  const filled=(H-g)-y;
+  if(filled>1){
+    c.globalCompositeOperation='lighter';
+    // glisten sparkles
+    for(const sp of sparks[i]||[]){
+      const yy=(H-g)-sp.y*filled; const seg=segY.find(q=>yy<=q.y1&&yy>=q.y0); if(!seg||seg.sg.h) continue;
+      const a=Math.pow(Math.max(0,Math.sin(t*sp.sp*2+sp.ph)),9); if(a<.03) continue;
+      const xx=sp.x*(r-g); c.globalAlpha=a; c.fillStyle=mix(colOf(seg.sg.c),'#ffffff',.75);
+      star(c,xx,yy,sp.s*(.6+a*.7)); c.fillStyle='#fff'; c.fillRect(xx-.6,yy-.6,1.2,1.2);
+    }
+    // slow shimmer sweep
+    const k=((t*.22+i*.37)%1.8)-.4; const yb=(H-g)-k*filled;
+    const gr=c.createLinearGradient(-r,yb+W*.3,r,yb-W*.3); gr.addColorStop(0,'rgba(255,255,255,0)'); gr.addColorStop(.5,'rgba(255,245,220,.10)'); gr.addColorStop(1,'rgba(255,255,255,0)');
+    c.globalAlpha=1; c.fillStyle=gr; c.fillRect(-r,y,2*r,filled+2);
+    c.globalCompositeOperation='source-over'; c.globalAlpha=1;
+  }
+  c.restore();
+  // cylinder shading
+  innerPath(c,r,g,H);
+  const sh=c.createLinearGradient(-r,0,r,0);
+  sh.addColorStop(0,'rgba(0,0,0,.42)'); sh.addColorStop(.17,'rgba(0,0,0,.08)'); sh.addColorStop(.3,'rgba(255,255,255,.1)'); sh.addColorStop(.42,'rgba(255,255,255,0)');
+  sh.addColorStop(.78,'rgba(0,0,0,.1)'); sh.addColorStop(1,'rgba(0,0,0,.45)'); c.fillStyle=sh; c.fill();
+  // glass
+  const hl=c.createLinearGradient(0,14,0,H-r); hl.addColorStop(0,'rgba(255,255,255,.38)'); hl.addColorStop(1,'rgba(255,255,255,.04)');
+  c.fillStyle=hl; rr(c,-r+g+2.2,14,Math.max(2,W*.06),Math.max(4,H-r-18),2); c.fill();
+  c.fillStyle='rgba(255,255,255,.12)'; rr(c,r-g-3.4,18,1.6,Math.max(4,H-r-30),1); c.fill();
+  outerPath(c,r,H); c.lineWidth=1.6; c.strokeStyle= opt.ring? rgba(opt.ring,.95) : 'rgba(255,255,255,.34)'; c.stroke();
+  // lip
+  rr(c,-r-2.5,0,W+5,6.5,3.2); c.fillStyle='rgba(255,255,255,.16)'; c.fill(); c.strokeStyle='rgba(255,255,255,.4)'; c.lineWidth=1; c.stroke();
+  if(done){
+    const hex=colOf(v[0].c);
+    const cg=c.createLinearGradient(0,-9,0,6); cg.addColorStop(0,'#b88752'); cg.addColorStop(1,'#6b4526');
+    c.fillStyle=cg; rr(c,-r+g+.5,-9,W-2*g-1,14,3); c.fill();
+    c.strokeStyle='rgba(40,20,8,.45)'; c.lineWidth=.8; for(let k=1;k<4;k++){ c.beginPath(); c.moveTo(-r+g+2,-9+k*3.4); c.lineTo(r-g-2,-9+k*3.4); c.stroke(); }
+    c.fillStyle=hex; c.beginPath(); c.arc(0,-9,W*.15,0,Math.PI*2); c.fill();
+    c.fillStyle='rgba(255,255,255,.45)'; c.beginPath(); c.arc(-W*.04,-9-W*.05,W*.05,0,Math.PI*2); c.fill();
+  }
+  c.restore();
+}
+
+function animPose(dt){
+  const a=anim; a.t+=dt; const d=a.dur, P=POS[a.from], T=POS[a.to], {W}=GEO;
+  const M={x:T.x-a.dir*W*.16, y:T.y-W*.42}, ANG=a.dir*1.8;
+  let x,y,ang,p=0,pouring=false; const t=a.t;
+  if(t<d.up){ const k=ease(t/d.up); x=P.x; y=a.y0-12*k; ang=0; }
+  else if(t<d.up+d.move){ const k=ease((t-d.up)/d.move); x=lerp(P.x,M.x,k); y=lerp(a.y0-12,M.y,k); ang=ANG*k; }
+  else if(t<d.up+d.move+d.pour){ const k=(t-d.up-d.move)/d.pour; x=M.x; y=M.y; ang=ANG; p=k; pouring=true; }
+  else { const k=ease(Math.min(1,(t-d.up-d.move-d.pour)/d.back)); x=lerp(M.x,P.x,k); y=lerp(M.y,P.y,k); ang=ANG*(1-k); p=1; }
+  a.p=p; a.pose={x,y,ang,pouring,M};
+  if(pouring){
+    const hex=colOf(a.c); const cnt=Math.ceil(dt*260);
+    if(known(a.c)){ const m=motifOf(a.c); if(Math.random()<dt*38) grains.push({x:M.x+(Math.random()-.5)*4,y:M.y+2,vx:(Math.random()-.5)*16,vy:30+Math.random()*50,c:Math.random()<.4?mix(hex,'#ffffff',.25):hex,to:a.to,m,rot:Math.random()*6.28,spin:(Math.random()-.5)*14,sz:3.2+Math.random()*1.4}); }
+    else for(let k=0;k<cnt;k++) grains.push({x:M.x+(Math.random()-.5)*2.4,y:M.y+2,vx:(Math.random()-.5)*10,vy:40+Math.random()*60,c:Math.random()<.18?mix(hex,'#ffffff',.5):Math.random()<.3?mix(hex,'#000000',.25):hex,to:a.to});
+  }
+}
+function surfaceY(i){ const T=POS[i]; let n=G.vials[i].length; if(anim&&anim.to===i) n+=anim.p*anim.n; return T.y+GEO.H-3-n*GEO.U; }
+
+function drawGame(t,dt){
+  const c=gx; c.setTransform(DPR,0,0,DPR,0,0); c.clearRect(0,0,game.width/DPR,game.height/DPR);
+  if(!G) return;
+  if(anim) animPose(dt);
+  // shelves
+  for(const s of SHELVES){
+    c.fillStyle='rgba(0,0,0,.28)'; c.beginPath(); c.ellipse((s.x0+s.x1)/2,s.y+12,(s.x1-s.x0)/2,7,0,0,Math.PI*2); c.fill();
+    const g=c.createLinearGradient(0,s.y,0,s.y+9); g.addColorStop(0,'#5a3b22'); g.addColorStop(1,'#2a190c');
+    c.fillStyle=g; rr(c,s.x0,s.y,s.x1-s.x0,9,3); c.fill();
+    c.fillStyle=rgba(room().accent,.25); c.fillRect(s.x0+3,s.y,s.x1-s.x0-6,1);
+  }
+  const acc=room().accent;
+  for(let i=0;i<G.vials.length;i++){
+    const target=(sel===i)?-20:0; lift[i]+=(target-lift[i])*Math.min(1,dt*16);
+    if(shake[i]>0) shake[i]=Math.max(0,shake[i]-dt);
+    if(anim&&i===anim.from) continue;
+    const p=POS[i]; const sx=shake[i]>0?Math.sin(t*70)*5*(shake[i]/.35):0;
+    let opt={};
+    if(sel===i) opt={glow:acc,ring:acc};
+    if(hint){ if(i===hint.a) opt={glow:'#ffe49a',ring:'#ffe49a'}; if(i===hint.b) opt={glow:acc,ring:acc}; }
+    if(G.unbind&&sel===i) opt={glow:'#a28bff',ring:'#c9b8ff'};
+    drawVial(c,i,p.x+sx,p.y+lift[i],0,t,opt);
+  }
+  // hint arrow
+  if(hint){ hint.t+=dt; const p=POS[hint.b]; const bob=Math.sin(t*5)*4; c.fillStyle=acc; c.globalAlpha=.9;
+    c.beginPath(); c.moveTo(p.x,p.y-12+bob); c.lineTo(p.x-8,p.y-24+bob); c.lineTo(p.x+8,p.y-24+bob); c.closePath(); c.fill(); c.globalAlpha=1; }
+  // stream
+  if(anim&&anim.pose&&anim.pose.pouring&&!known(anim.c)){ const M=anim.pose.M, sy=surfaceY(anim.to); const hex=colOf(anim.c);
+    const gr=c.createLinearGradient(0,M.y,0,sy); gr.addColorStop(0,rgba(hex,.85)); gr.addColorStop(1,rgba(hex,.35));
+    c.fillStyle=gr; c.fillRect(M.x-1.3,M.y+1,2.6,Math.max(0,sy-M.y)); }
+  for(let k=grains.length-1;k>=0;k--){ const q=grains[k]; q.vy+=1500*dt; q.x+=q.vx*dt; q.y+=q.vy*dt;
+    if(q.y>=surfaceY(q.to)){ grains.splice(k,1); continue; }
+    if(q.m){ q.rot+=q.spin*dt; c.save(); c.translate(q.x,q.y); c.rotate(q.rot); c.scale(q.sz,q.sz); motifPath(c,q.m);
+      if(LINE_MOTIFS[q.m]){ c.lineWidth=.45; c.strokeStyle=q.c; c.stroke(); } else { c.fillStyle=q.c; c.fill(); } c.restore(); }
+    else { c.fillStyle=q.c; c.fillRect(q.x-.8,q.y-.8,1.7,1.7); } }
+  if(anim){ const P=anim.pose; drawVial(c,anim.from,P.x,P.y,P.ang,t,{}); if(anim.t>=anim.total) finishPour(); }
+  // bursts
+  c.globalCompositeOperation='lighter';
+  for(let k=bursts.length-1;k>=0;k--){ const b=bursts[k]; b.life+=dt; if(b.life>b.max){bursts.splice(k,1);continue;}
+    b.vy+=120*dt; b.vx*=.98; b.x+=b.vx*dt; b.y+=b.vy*dt; c.globalAlpha=1-b.life/b.max; c.fillStyle=b.c; star(c,b.x,b.y,b.s*1.6); }
+  c.globalAlpha=1; c.globalCompositeOperation='source-over';
+  // floating potion names
+  const cw=game.width/DPR;
+  for(let k=floats.length-1;k>=0;k--){ const f=floats[k]; f.t+=dt; if(f.t>2.4){floats.splice(k,1);continue;}
+    const a=f.t<.25?f.t/.25:f.t>1.7?1-(f.t-1.7)/.7:1;
+    if(f.small){ c.globalAlpha=a; c.font='600 15px Cinzel, Georgia, serif'; c.textAlign='center'; c.textBaseline='middle';
+      const fy=f.y-f.t*30; c.lineWidth=4; c.strokeStyle='rgba(10,6,16,.85)'; c.lineJoin='round'; c.strokeText(f.txt,f.x,fy);
+      c.shadowColor=f.c; c.shadowBlur=10; c.fillStyle=f.c; c.fillText(f.txt,f.x,fy); c.shadowBlur=0; c.globalAlpha=1; continue; }
+    c.font='italic 600 17px "Cormorant Garamond", Georgia, serif'; const tw=c.measureText(f.txt).width;
+    const x=Math.max(tw/2+8,Math.min(cw-tw/2-8,f.x)); const y=f.y-f.t*22;
+    c.globalAlpha=a; c.textAlign='center'; c.textBaseline='middle';
+    c.fillStyle='rgba(10,6,16,.6)'; rr(c,x-tw/2-10,y-12,tw+20,24,12); c.fill();
+    c.shadowColor=f.c; c.shadowBlur=12; c.fillStyle='#fff6df'; c.fillText(f.txt,x,y+1); c.shadowBlur=0; c.globalAlpha=1; }
+}
+
+/* ======================= AMBIENCE ======================= */
+const AMB={kind:'dust',color:'#f6dc94',parts:[],shoot:null};
+function setAmbient(kind,color){ AMB.kind=kind; AMB.color=color; AMB.parts=[]; AMB.shoot=null;
+  const N={star:110,ember:50,steam:22,firefly:34,wisp:22,dust:46}[kind]||40;
+  for(let i=0;i<N;i++) AMB.parts.push(spawn(true)); }
+function spawn(init){ const w=innerWidth,h=innerHeight,R=Math.random; const p={x:R()*w,y:R()*h,ph:R()*6.28,s:R()};
+  switch(AMB.kind){
+    case 'firefly': p.vx=(R()-.5)*16; p.vy=(R()-.5)*12; p.r=7+R()*8; break;
+    case 'star': p.r=.4+R()*1.3; p.y=R()*h*.85; break;
+    case 'ember': if(!init) p.y=h+10; p.vy=-(25+R()*60); p.vx=(R()-.5)*14; p.r=4+R()*6; break;
+    case 'steam': if(!init) p.y=h+60; p.vy=-(6+R()*12); p.vx=(R()-.5)*5; p.r=40+R()*70; break;
+    case 'wisp': p.vx=(R()-.5)*10; p.vy=-(3+R()*7); p.r=10+R()*14; if(!init) p.y=h+20; break;
+    default: p.vx=(R()-.5)*7; p.vy=-(2+R()*6); p.r=3+R()*4; if(!init) p.y=h+10;
+  } return p; }
+function drawAmb(t,dt){
+  const w=innerWidth,h=innerHeight; ax.setTransform(DPR,0,0,DPR,0,0); ax.clearRect(0,0,w,h);
+  const spr=glowSprite(AMB.color); ax.globalCompositeOperation='lighter';
+  for(let i=0;i<AMB.parts.length;i++){ const p=AMB.parts[i];
+    switch(AMB.kind){
+      case 'star':{ const a=.25+.75*Math.pow(Math.max(0,Math.sin(t*(.6+p.s*1.8)+p.ph)),3); ax.globalAlpha=a*.85; ax.fillStyle=AMB.color;
+        ax.beginPath(); ax.arc(p.x,p.y,p.r,0,6.28); ax.fill(); if(p.r>1.4){ax.globalAlpha=a*.35; ax.drawImage(spr,p.x-6,p.y-6,12,12);} break; }
+      case 'firefly':{ p.vx+=(Math.random()-.5)*20*dt; p.vy+=(Math.random()-.5)*20*dt; p.vx*=.99; p.vy*=.99; p.x+=p.vx*dt; p.y+=p.vy*dt;
+        if(p.x<-20)p.x=w+20; if(p.x>w+20)p.x=-20; if(p.y<-20)p.y=h+20; if(p.y>h+20)p.y=-20;
+        const a=Math.pow(Math.max(0,Math.sin(t*(.8+p.s)+p.ph)),2); ax.globalAlpha=a*.9; ax.drawImage(spr,p.x-p.r,p.y-p.r,p.r*2,p.r*2); break; }
+      case 'ember':{ p.x+=(p.vx+Math.sin(t*2+p.ph)*10)*dt; p.y+=p.vy*dt; if(p.y<-20) AMB.parts[i]=spawn(false);
+        const a=(.5+.5*Math.sin(t*9+p.ph))*Math.min(1,p.y/h+.2); ax.globalAlpha=a; ax.drawImage(spr,p.x-p.r,p.y-p.r,p.r*2,p.r*2); break; }
+      case 'steam':{ p.x+=(p.vx+Math.sin(t*.5+p.ph)*6)*dt; p.y+=p.vy*dt; if(p.y<-p.r) AMB.parts[i]=spawn(false);
+        ax.globalAlpha=.07; ax.drawImage(spr,p.x-p.r,p.y-p.r,p.r*2,p.r*2);
+        if(p.s>.7){ ax.globalAlpha=.6*Math.pow(Math.max(0,Math.sin(t*1.5+p.ph)),6); ax.fillStyle='#fff'; star(ax,p.x,p.y,2.4); } break; }
+      case 'wisp':{ p.x+=(p.vx+Math.sin(t*.7+p.ph)*14)*dt; p.y+=p.vy*dt; if(p.y<-30) AMB.parts[i]=spawn(false);
+        ax.globalAlpha=.35+.25*Math.sin(t*1.3+p.ph); ax.drawImage(spr,p.x-p.r,p.y-p.r,p.r*2,p.r*2); break; }
+      default:{ p.x+=(p.vx+Math.sin(t*.6+p.ph)*4)*dt; p.y+=p.vy*dt; if(p.y<-10) AMB.parts[i]=spawn(false);
+        ax.globalAlpha=.45+.35*Math.sin(t*1.7+p.ph); ax.drawImage(spr,p.x-p.r,p.y-p.r,p.r*2,p.r*2); }
+    }
+  }
+  if(AMB.kind==='star'){
+    if(!AMB.shoot && Math.random()<dt*.15) AMB.shoot={x:Math.random()*w*.8+w*.1,y:Math.random()*h*.35,t:0};
+    if(AMB.shoot){ const s=AMB.shoot; s.t+=dt; const k=s.t/.9; if(k>=1) AMB.shoot=null; else {
+      const x=s.x+k*160, y=s.y+k*70; const g=ax.createLinearGradient(x-60,y-26,x,y); g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(1,'rgba(255,255,255,.9)');
+      ax.globalAlpha=1-k; ax.strokeStyle=g; ax.lineWidth=1.4; ax.beginPath(); ax.moveTo(x-60,y-26); ax.lineTo(x,y); ax.stroke(); } }
+  }
+  ax.globalAlpha=1; ax.globalCompositeOperation='source-over';
+}
+
+/* ======================= LOOP ======================= */
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let last=performance.now();
+function frame(now){ const dt=Math.min(.05,(now-last)/1000); last=now; const t=now/1000;
+  if(!reduce||(Math.floor(t*10)%3===0)) drawAmb(t,reduce?dt*.2:dt);
+  drawGame(t,dt); requestAnimationFrame(frame); }
+
+layout(); showMap(); requestAnimationFrame(frame);
+/* ---- Ownership: if this game is re-hosted anywhere but the official site, say so on screen ---- */
+(function guard(){
+  const OFFICIAL='https://briarlunestudios.github.io/gloamwick/';
+  try{ console.log('%cGloamwick™ © 2026 Briarlune Studios. All rights reserved.%c\nFree to play at '+OFFICIAL+'\nCopying, modifying, re-hosting or selling this game is not permitted.','font:600 14px serif;color:#c9a227','color:inherit'); }catch(e){}
+  const h=(location.hostname||'').toLowerCase();
+  const ok= h==='' || h==='localhost' || h==='127.0.0.1' || h==='briarlunestudios.github.io'
+    || /(^|\.)claude\.ai$/.test(h) || /(^|\.)claudeusercontent\.com$/.test(h) || /(^|\.)anthropic\.com$/.test(h);
+  if(ok) return;
+  const b=document.createElement('a'); b.href=OFFICIAL; b.target='_blank'; b.rel='noopener';
+  b.textContent='⚠ Unofficial copy. Gloamwick™ belongs to Briarlune Studios. Play the real game at briarlunestudios.github.io/gloamwick';
+  b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top,0px));background:#7a1f2b;color:#fff;font:600 14px Georgia,serif;text-align:center;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.5)';
+  document.body.appendChild(b);
+})();
+window.__gw={get G(){return G}, get POS(){return POS}, get GEO(){return GEO}, startLevel, solve, genLevel};
+})();
+</script>
+
+</body></html>
