@@ -444,7 +444,7 @@ const ACH=[
  {k:'spell1',  i:'📖', n:'Spellwright',           d:'Craft your first spell.',                         t:1, ok:()=>Object.keys(save.spells).length>=1},
  {k:'spellall',i:'🔮', n:'Grand Grimoire',        d:'Craft every spell.',                              t:5, ok:()=>SPELLS.every(S=>has(S.key)), p:()=>[Object.keys(save.spells).length,SPELLS.length]},
  {k:'pts10k',  i:'💫', n:'Ten Thousand Sparks',   d:'Earn 10,000 points in all.',                      t:2, ok:()=>totalPoints()>=10000, p:()=>[Math.min(totalPoints(),10000),10000]},
- {k:'stir25',  i:'🥄', n:'Stirred, Not Skipped',  d:'Stir the cauldron by hand 25 times.',             t:1, ok:()=>save.stats.stirs>=25, p:()=>[save.stats.stirs,25]},
+ {k:'stir25',  i:'🥄', n:'Stirred, Not Skipped',  d:'Stir the full cauldron by hand 10 times.',        t:1, ok:()=>save.stats.stirs>=10, p:()=>[save.stats.stirs,10]},
  {k:'owl',     i:'🦉', n:'Night Owl',             d:'Finish a brew between midnight and 4 a.m.',       t:1, ok:c=>!!(c&&c.owl)},
  {k:'lore',    i:'📜', n:'Keeper of Tales',       d:'Unlock every lore page.',                         t:3, ok:()=>LORE.every((_,i)=>save.lore[i]), p:()=>[Object.keys(save.lore).length,LORE.length]},
 ];
@@ -904,14 +904,27 @@ function win(){
     if(!G||G.won!==true) return;
     const R=room(); const brewed=G.vials.filter(v=>v.length).map(v=>R.colors[v[0].c]);
     const canBefore=craftable().length;
-    showCauldron(brewed, stirred=>showResults(key,stars,brewed,stirred,canBefore));
-  },900);
+    // The cauldron fills over a few brews; you stir it once it is full.
+    const C=save.caul=Object.assign({n:0,cols:[],keys:[]},save.caul);
+    C.n++; C.cols=C.cols.concat(brewed.map(b=>b[1])).slice(-18);
+    if(C.n<CAUL_EVERY){ persist(); return showResults(key,stars,brewed,false,canBefore,{pending:C.n}); }
+    showCauldron(C.cols.map(h=>[null,h]), stirred=>showResults(key,stars,brewed,stirred,canBefore,{full:C.n}),
+      {kicker:`The cauldron is full · ${C.n} brews`, title:'Stir the cauldron', hint:`Swirl your finger around the cauldron to seal all ${C.n} brews.`});
+  },700);
 }
-function showResults(key,stars,brewed,stirred,canBefore){
+function showResults(key,stars,brewed,stirred,canBefore,cz){
     if(!G||G.won!==true) return;
     G.stirred=stirred; SFX.win(); const R=room();
     const sc=tallyScore(); const prevBest=save.best[key]||0; const newBest=sc.total>prevBest;
     save.best[key]=Math.max(prevBest,sc.total);
+    // cauldron: remember brews waiting to be stirred; once stirred, they get their stir bonus too
+    const C=save.caul; let caulNote='';
+    if(cz&&cz.pending){ C.keys.push([key,sc.total]); const left=CAUL_EVERY-cz.pending;
+      caulNote=`🫕 Your potions are in the cauldron (${cz.pending} of ${CAUL_EVERY}). Stir it after ${left===1?'your next brew':`${left} more brews`}.`; }
+    if(cz&&cz.full){ const others=stirred?C.keys.length:0;
+      if(stirred) C.keys.forEach(([k,t])=>{ save.best[k]=Math.max(save.best[k]||0,t+PTS.stir); });
+      if(others) caulNote=`🫕 +${PTS.stir} stir bonus added to your ${others} earlier brew${others>1?'s':''} in the cauldron too.`;
+      save.caul={n:0,cols:[],keys:[]}; }
     if(stirred&&!has('spoon')) save.stats.stirs=(save.stats.stirs||0)+1;
     if(G.par&&G.moves<=G.par) save.stats.swift=(save.stats.swift||0)+1;
     persist();
@@ -941,6 +954,7 @@ function showResults(key,stars,brewed,stirred,canBefore){
       </ul>
       <div class="best">${newBest&&prevBest?'New best for this brew! ':''}Best ${save.best[key]} · Total ${totalPoints()}</div>${extra}
       <p class="note dim">${has('hearth')?brewed.length*2:brewed.length} potions added to your shelf.</p>
+      ${caulNote?`<p class="note dim">${caulNote}</p>`:''}
       ${cando>canBefore?`<button class="btn ghost" id="mCraft">✦ A spell is ready to craft</button>`:''}
       <p class="quote small">“${line}” — ${R.short}</p>
       ${stars<3?'<p class="note dim">Brew without spells or undos for all three stars.</p>':''}
@@ -952,9 +966,9 @@ function showResults(key,stars,brewed,stirred,canBefore){
 }
 
 /* ======================= CAULDRON: interactive brewing ======================= */
-// After the last vial is corked, every potion pours into the professor's cauldron and you stir it
-// (drag in circles, or tap the cauldron) to seal the brew. Stirring earns a small bonus; skipping is fine.
-const STIR_TURNS=2;
+// Every brew's potions pour into the cauldron. Every CAUL_EVERY brews it is full and you stir it
+// (drag in circles, or tap the cauldron) to seal them all. Stirring earns each of those brews a small bonus; skipping is fine.
+const STIR_TURNS=1.5, CAUL_EVERY=3;
 let CAUL=null;
 // o (optional): {kicker, title, hint, acc, auto, skip} so the grimoire can reuse the cauldron for spellcrafting.
 function showCauldron(brewed,done,o){
@@ -968,9 +982,9 @@ function showCauldron(brewed,done,o){
   cv.width=Math.round(w*DPR); cv.height=Math.round(h*DPR); const c=cv.getContext('2d');
   const cols=brewed.map(b=>b[1]);
   const C={cx:w/2, cy:h*.58, rx:w*.33, ry:w*.1};
-  CAUL={c,w,h,C,cols,acc,prog:0,ang:0,last:null,spoon:-Math.PI/2,swirl:0,bubbles:[],drops:[],smoke:[],pops:[],popSnd:0,pourT:0,done:false,doneT:0,fin:false,raf:0,lastT:performance.now(),cb:done,auto,sealed:o.sealed||'The brew is sealed. ✦'};
+  CAUL={c,w,h,C,cols,acc,prog:0,ang:0,last:null,spoon:-Math.PI/2,swirl:0,bubbles:[],drops:[],smoke:[],pops:[],popSnd:0,pourT:0,di:Math.min(.16,1.4/Math.max(1,cols.length)),done:false,doneT:0,fin:false,raf:0,lastT:performance.now(),cb:done,auto,sealed:o.sealed||'The brew is sealed. ✦'};
   // potions pour in one after another before stirring begins
-  cols.forEach((col,i)=>CAUL.drops.push({col,t:-i*.16,x:C.cx+(i-(cols.length-1)/2)*Math.min(26,C.rx*1.6/cols.length)}));
+  cols.forEach((col,i)=>CAUL.drops.push({col,t:-i*CAUL.di,x:C.cx+(i-(cols.length-1)/2)*Math.min(26,C.rx*1.6/cols.length)}));
   const toLocal=e=>{ const r=cv.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; };
   let down=false;
   cv.addEventListener('pointerdown',e=>{ SFX.init(); down=true; try{cv.setPointerCapture(e.pointerId)}catch(_){}; const [x,y]=toLocal(e); CAUL.last=Math.atan2((y-C.cy)/C.ry*C.rx/1.6,x-C.cx);
@@ -985,14 +999,14 @@ function showCauldron(brewed,done,o){
   CAUL.raf=requestAnimationFrame(drawCauldron);
 }
 function addStir(d){
-  const K=CAUL; if(!K||K.done) return; if(K.pourT<.9+K.cols.length*.16) return;
+  const K=CAUL; if(!K||K.done) return; if(K.pourT<.9+K.cols.length*K.di) return;
   K.ang+=d; K.swirl+=d; K.prog=Math.min(1,K.ang/(STIR_TURNS*Math.PI*2));
   if(Math.random()<d*1.4) SFX.tone(260+K.prog*500+Math.random()*80,0,.12,.025,'sine');
   if(K.prog>=1){ K.done=true; SFX.magic(); SFX.chime(); try{navigator.vibrate&&navigator.vibrate([20,40,30])}catch(e){}
     for(let k=0;k<40;k++){ const a=-Math.PI*Math.random(),s=60+Math.random()*140; K.pops.push({x:K.C.cx+(Math.random()-.5)*K.C.rx,y:K.C.cy,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,life:0,max:.9+Math.random()*.6,col:Math.random()<.5?K.acc:'#fff4d0'}); }
     for(let k=0;k<26;k++) K.smoke.push({x:K.C.cx+(Math.random()-.5)*K.C.rx*1.4,y:K.C.cy,vx:(Math.random()-.5)*50,vy:-50-Math.random()*70,r:14+Math.random()*14,gr:26,life:0,max:1.4+Math.random()*.8,off:Math.random()*9,fin:true});
     const hnt=$('#cHint'); if(hnt) hnt.textContent=K.sealed;
-    setTimeout(()=>finishCauldron(true),1300); }
+    setTimeout(()=>finishCauldron(true),900); }
 }
 function finishCauldron(stirred){ const K=CAUL; if(!K||K.fin) return; K.fin=true; cancelAnimationFrame(K.raf); CAUL=null; K.cb(stirred); }
 function drawCauldron(now){
@@ -1004,7 +1018,7 @@ function drawCauldron(now){
   // colors drift through every potion you brewed, warming toward the professor's color as you stir
   const cyc=off=>{ const f=(((t*.45+off)%n)+n)%n, i=Math.floor(f); return mix(mix(cols[i],cols[(i+1)%n],f-i),acc,K.done?.85:P*.45); };
   const top=C.cy, bot=h*.9;
-  const filled=Math.min(1,K.pourT/(.6+n*.16));
+  const filled=Math.min(1,K.pourT/(.6+n*K.di));
   // ---- emitters ----
   if(filled>.3){
     if(Math.random()<dt*(5+P*26)) K.smoke.push({x:C.cx+(Math.random()-.5)*C.rx*1.3,y:top-2,vx:(Math.random()-.5)*14,vy:-(18+Math.random()*22+P*25),r:8+Math.random()*8,gr:14+Math.random()*10,life:0,max:2+Math.random()*1.4,off:Math.random()*n});
@@ -1167,7 +1181,7 @@ const GUIDE=[
     ['✋','<b>The one rule</b><br>A layer only pours onto the <i>same color</i>, or into an <i>empty</i> vial.']]},
   {k:'How to brew · 2 of 5', h:'Bottle the potions', items:[
     ['🍾','<b>Potion</b><br>Fill a vial with four layers of one color and it corks into a named potion. The first time you bottle one, its sand turns into the <i>real ingredient</i>: petals, roots, stars, crystals. Collect them all.'],
-    ['🫕','<b>Stir the cauldron</b><br>Bottle every color, then swirl your finger to stir them all into the cauldron and seal the brew.'],
+    ['🫕','<b>Stir the cauldron</b><br>Every brew\'s potions pour into the cauldron. Every third brew it is full: swirl your finger to stir and seal them all.'],
     ['❓','<b>Veiled layers</b><br>In later classrooms, lower layers hide until you uncover them.']]},
   {k:'How to brew · 3 of 5', h:'Your satchel', items:[
     ['↶','<b>Undo</b><br>Takes back your last pour. You get a few per brew.'],
