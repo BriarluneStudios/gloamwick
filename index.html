@@ -345,8 +345,20 @@ const SPELLS=[
  {key:'hearth', year:2, icon:'🔥', name:'Hearthstone',
   effect:'Every potion you bottle puts two on your shelf.', lore:'A warm stone for the bottom of the satchel. Potions seem to multiply near it.',
   ing:['0-0','4-1'], pot:{'0-0':2,'2-1':2,'4-1':2}},
+ {key:'flask', year:3, exam:true, icon:'🏺', name:'Flask Charm',
+  effect:'Your spare empty vials are great flasks that hold 5 layers.', lore:'Glassblowers swear it is the same glass. The glass has opinions.',
+  ing:['2-6','3-8'], pot:{'2-6':3,'1-8':2,'3-0':2}},
+ {key:'lens', year:3, exam:true, icon:'🔍', name:'Moonglass Lens',
+  effect:'Veiled layers glimmer faintly with their true color.', lore:'Ground from a sliver of moonsilver. It never quite lets the dark finish a secret.',
+  ing:['1-8','4-2'], pot:{'1-0':3,'4-2':2,'0-6':2}},
+ {key:'pebble', year:3, icon:'💎', name:'Philosopher\'s Pebble',
+  effect:'Bonus brews are worth triple points instead of double.', lore:'Small, warm and humming. Professor Cinderhall would very much like it back.',
+  ing:['2-5','3-3'], pot:{'2-5':3,'3-3':2,'4-0':2}},
 ];
-const YEAR_NAMES=['','First Year','Second Year','Third Year'];
+const YEAR_NAMES=['','First Year','Second Year','Third Year','Fourth Year'];
+const YEAR_INTRO={2:'All five classrooms have new, harder brews this year. Every layer starts veiled, and you get one fewer undo.',
+  3:'This year the vials come in three sizes: tiny 3-layer vials, standard vials and great 5-layer flasks. Each color fills the vial of its own size.'};
+const spareCap=()=>has('flask')?5:CAP;
 const has=k=>!!(save.spells&&save.spells[k]);
 const potName=ref=>{ const [r,c]=ref.split('-').map(Number); return ROOMS[r].colors[c][2]; };
 const ingName=ref=>{ const [r,c]=ref.split('-').map(Number); return ROOMS[r].colors[c][0]; };
@@ -387,11 +399,14 @@ const SFX={ctx:null,noise:null,
 function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function shuffle(a,R){for(let i=a.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function runLen(v){ if(!v.length) return 0; const c=v[v.length-1]; let n=0; for(let i=v.length-1;i>=0&&v[i]===c;i--) n++; return n; }
-const full=v=>v.length===CAP && v.every(x=>x===v[0]);
 
-function solve(start,limit){
+// caps: each vial's capacity (default: all CAP). A vial is finished once it holds every grain of one color.
+function solve(start,limit,caps){
   // best-first search: few colour breaks + few vials per colour = close to solved
-  const key=s=>s.map(v=>v.join(',')).sort().join('|');
+  caps=caps||start.map(()=>CAP);
+  const tot={}; start.forEach(v=>v.forEach(x=>tot[x]=(tot[x]||0)+1));
+  const full=v=>v.length>0 && v.length===tot[v[0]] && v.every(x=>x===v[0]);
+  const key=s=>s.map((v,i)=>caps[i]+':'+v.join(',')).sort().join('|');
   const hScore=s=>{ let t=0; const where={}; s.forEach((v,vi)=>{ for(let i=0;i<v.length;i++){ if(i&&v[i]!==v[i-1]) t++; (where[v[i]]||(where[v[i]]=new Set)).add(vi); } });
     for(const k in where) t+=where[k].size-1; return t; };
   const heap=[]; const push=n=>{heap.push(n);let i=heap.length-1;while(i>0){const p=(i-1)>>1;if(heap[p].f<=heap[i].f)break;[heap[p],heap[i]]=[heap[i],heap[p]];i=p;}};
@@ -403,10 +418,10 @@ function solve(start,limit){
     if(nd.h===0){ const path=[]; for(let q=nd;q.par;q=q.par) path.push(q.mv); return path.reverse(); }
     if(++nodes>limit) return null;
     const s=nd.s;
-    for(let a=0;a<s.length;a++){ const A=s[a]; if(!A.length||full(A)) continue; const c=A[A.length-1]; const n=runLen(A); let emptyUsed=false;
-      for(let b=0;b<s.length;b++){ if(a===b) continue; const B=s[b]; if(B.length>=CAP) continue;
-        if(!B.length){ if(emptyUsed||n===A.length) continue; emptyUsed=true; } else if(B[B.length-1]!==c) continue;
-        const ns=s.map(v=>v.slice()); const amt=Math.min(n,CAP-B.length); for(let i=0;i<amt;i++) ns[b].push(ns[a].pop());
+    for(let a=0;a<s.length;a++){ const A=s[a]; if(!A.length||full(A)) continue; const c=A[A.length-1]; const n=runLen(A); const emptyUsed={};
+      for(let b=0;b<s.length;b++){ if(a===b) continue; const B=s[b]; if(B.length>=caps[b]) continue;
+        if(!B.length){ if(emptyUsed[caps[b]]||(n===A.length&&caps[a]===caps[b])) continue; emptyUsed[caps[b]]=true; } else if(B[B.length-1]!==c) continue;
+        const ns=s.map(v=>v.slice()); const amt=Math.min(n,caps[b]-B.length); for(let i=0;i<amt;i++) ns[b].push(ns[a].pop());
         const k=key(ns); if(seen.has(k)) continue; seen.add(k);
         const h=hScore(ns); push({s:ns,g:nd.g+1,h,f:nd.g+1+h*3,par:nd,mv:[a,b]}); } }
   }
@@ -420,37 +435,46 @@ const LEVEL_CACHE={}, LEVEL_PAR={};
 const BONUS=6;
 // Academy years: each year replays the five classrooms with its own, harder set of brews.
 // Year 2 adds more colors, veils every classroom and allows no starting pairs at all.
-const YEARS=2;
+// Year 3 brings different vial sizes: tiny 3-layer vials, standard 4s and great 5-layer flasks.
+const YEARS=3;
 const NCOL={1:[[4,5,5,6,6,7,7],[6,6,7,7,8,8,9],[7,7,8,8,9,9,9],[8,8,9,9,9,9,9],[8,9,9,9,9,9,9]],
-            2:[[6,6,7,7,8,8,9],[7,7,8,8,9,9,9],[8,8,9,9,9,9,9],[9,9,9,9,9,9,9],[9,9,9,9,9,9,9]]};
+            2:[[6,6,7,7,8,8,9],[7,7,8,8,9,9,9],[8,8,9,9,9,9,9],[9,9,9,9,9,9,9],[9,9,9,9,9,9,9]],
+            3:[[5,5,6,6,7,7,8],[6,6,7,7,8,8,8],[6,7,7,8,8,8,9],[7,7,8,8,9,9,9],[7,8,8,9,9,9,9]]};
 const SEEDS={1:[[15,14,5,1,12,12,83],[38,27,81,73,46,100,30],[15,7,49,112,0,35,49],[29,17,23,24,78,46,3],[30,6,81,87,50,48,8]],
-             2:[[32,69,68,63,76,49,15],[29,77,18,6,78,78,39],[5,34,59,64,33,83,89],[37,19,24,13,46,24,24],[83,29,32,52,49,17,26]]};
+             2:[[32,69,68,63,76,49,15],[29,77,18,6,78,78,39],[5,34,59,64,33,83,89],[37,19,24,13,46,24,24],[83,29,32,52,49,17,26]],
+             3:[[35,21,65,2,31,103,0],[74,72,102,6,72,50,82],[92,30,67,43,44,49,49],[38,6,48,1,34,13,60],[23,44,108,42,51,35,35]]};
 function spec(y,r,l){ return {n:NCOL[y][r][l], empties:2, maxRun:(y>=2||l>=2)?2:3}; }
-function undosFor(y,r,l){ const base=l===BONUS?2 : l>=4?(r>=2?2:3) : l>=2?4:5; return Math.max(1,base-(y-1)); }
+function undosFor(y,r,l){ const base=l===BONUS?2 : l>=4?(r>=2?2:3) : l>=2?4:5; return Math.max(1,base-Math.min(1,y-1)); }
+// Returns {v: vials (arrays of color indexes), caps: each vial's capacity}, or null if the shuffle breaks a rule.
 function buildLevel(y,r,l,att){
   const {n,empties,maxRun}=spec(y,r,l);
   const R=rng(9173+r*1009+l*131+att*7919+(y-1)*104729);
   const cols=shuffle([0,1,2,3,4,5,6,7,8],R).slice(0,n);
-  const units=[]; cols.forEach(c=>{for(let i=0;i<CAP;i++) units.push(c)}); shuffle(units,R);
-  const vials=[]; for(let i=0;i<n;i++) vials.push(units.slice(i*CAP,i*CAP+CAP));
+  // From Year 3 each color comes in 3, 4 or 5 grains, and there is one vial of each matching size.
+  const size=y>=3?shuffle(cols.map((_,i)=>[3,4,5][i%3]),R):cols.map(()=>CAP);
+  const units=[]; cols.forEach((c,i)=>{for(let k=0;k<size[i];k++) units.push(c)}); shuffle(units,R);
+  const caps=y>=3?shuffle(size.slice(),R):size.slice();
+  const vials=[]; let o=0; for(let i=0;i<n;i++){ vials.push(units.slice(o,o+caps[i])); o+=caps[i]; }
   if(vials.some(v=>v.every(x=>x===v[0]))) return null;
   if(vials.some(v=>runLen(v)>=maxRun)) return null;
-  for(let e=0;e<empties;e++) vials.push([]);
-  return vials;
+  for(let e=0;e<empties;e++){ vials.push([]); caps.push(CAP); }
+  return {v:vials,caps};
 }
 // Save keys: Year 1 keeps the original "room-brew" keys so existing progress carries over.
 const LK=(y,r,l)=>y===1?r+'-'+l:'y'+y+':'+r+'-'+l;
+// Returns {v, caps} with fresh copies of the vials.
 function genLevel(y,r,l){
-  const k=LK(y,r,l); if(LEVEL_CACHE[k]) return LEVEL_CACHE[k].map(v=>v.slice());
+  const k=LK(y,r,l), cp=L=>({v:L.v.map(x=>x.slice()),caps:L.caps.slice()});
+  if(LEVEL_CACHE[k]) return cp(LEVEL_CACHE[k]);
   const seeded=buildLevel(y,r,l,SEEDS[y][r][l]); let sol;
-  if(seeded && (sol=solve(seeded,30000))){ LEVEL_CACHE[k]=seeded.map(v=>v.slice()); LEVEL_PAR[k]=sol.length; return seeded; }
+  if(seeded && (sol=solve(seeded.v,30000,seeded.caps))){ LEVEL_CACHE[k]=cp(seeded); LEVEL_PAR[k]=sol.length; return seeded; }
   let last=null;
-  for(let att=0;att<200;att++){ const v=buildLevel(y,r,l,att); if(!v) continue; last=v;
-    if((sol=solve(v,30000))){ LEVEL_CACHE[k]=v.map(x=>x.slice()); LEVEL_PAR[k]=sol.length; return v; } }
+  for(let att=0;att<200;att++){ const L=buildLevel(y,r,l,att); if(!L) continue; last=L;
+    if((sol=solve(L.v,30000,L.caps))){ LEVEL_CACHE[k]=cp(L); LEVEL_PAR[k]=sol.length; return L; } }
   return last;
 }
 // The colors a brew uses, without solving it (for crediting potions to older saves).
-function levelColors(y,r,l){ const v=buildLevel(y,r,l,SEEDS[y][r][l]); return v?[...new Set(v.flat())]:[]; }
+function levelColors(y,r,l){ const L=buildLevel(y,r,l,SEEDS[y][r][l]); return L?[...new Set(L.v.flat())]:[]; }
 
 /* ======================= COLOR HELPERS ======================= */
 function hexRgb(h){const n=parseInt(h.slice(1),16);return[n>>16&255,n>>8&255,n&255]}
@@ -572,7 +596,9 @@ const ease=k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
 const lerp=(a,b,k)=>a+(b-a)*k;
 const room=()=>ROOMS[G.r];
 const colOf=c=>room().colors[c][1];
-const isDone=v=>v.length===CAP && v.every(u=>u.c===v[0].c);
+// A vial is finished once it holds every grain of one color (with even vials that is simply "full").
+const isDone=v=>v.length>0 && v.length===G.tot[v[0].c] && v.every(u=>u.c===v[0].c);
+const capOf=i=>G.caps[i];
 
 function setTheme(T){
   const s=document.documentElement.style;
@@ -589,15 +615,18 @@ function layout(){
   if(!G) return;
   const n=G.vials.length, rows=n<=5?1:2, per=Math.ceil(n/rows);
   // Slimmer vials: capped smaller and given more breathing room between them.
-  let W=Math.min(40,(w-12)/per*.45), U=W*.8, H=12+CAP*U+W*.22, pad=56;
+  const CM=Math.max(...G.caps);
+  let W=Math.min(40,(w-12)/per*.45), U=W*.8*(CM>CAP?CAP/CM*1.1:1), H=12+CM*U+W*.22, pad=56;
   let rowH=H+pad; const avail=h-28;
-  if(rows*rowH>avail){ const s=avail/(rows*rowH); W*=s; U*=s; H=12+CAP*U+W*.22; pad*=s; rowH=H+pad; }
+  if(rows*rowH>avail){ const s=avail/(rows*rowH); W*=s; U*=s; H=12+CM*U+W*.22; pad*=s; rowH=H+pad; }
   GEO={W,U,H};
+  // every vial stands on the shelf; smaller vials are shorter
+  const vh=i=>12+G.caps[i]*U+W*.22;
   const top=(h-rows*rowH)/2+pad*.62;
   POS=[]; SHELVES=[];
   for(let ri=0;ri<rows;ri++){
     const cnt=ri<rows-1?per:n-per*(rows-1); const spread=Math.min(w-12,cnt*W*1.72); const y=top+ri*rowH;
-    for(let j=0;j<cnt;j++) POS.push({x:w/2-spread/2+(j+.5)*spread/cnt, y});
+    for(let j=0;j<cnt;j++){ const i=POS.length, hh=vh(i); POS.push({x:w/2-spread/2+(j+.5)*spread/cnt, y:y+H-hh, h:hh}); }
     SHELVES.push({x0:w/2-spread/2-6, x1:w/2+spread/2+6, y:y+H+4});
   }
   while(lift.length<n){lift.push(0);shake.push(0);}
@@ -608,17 +637,30 @@ function layout(){
 function startLevel(r,l,y){
   y=y||1; closeModal(); document.body.classList.remove('mapmode'); save.view=y;
   const R=ROOMS[r]; setTheme(R);
-  const raw=genLevel(y,r,l);
+  const L=genLevel(y,r,l), raw=L.v, caps=L.caps;
   const veil=R.hidden||l===BONUS||y>=2, open=has('gloam')?2:1;
-  if(has('wellspring')) raw.push([]);
-  G={y,r,l,vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-open}))),undo:[],undos:undosFor(y,r,l)+(has('lantern')?1:0),charges:R.spell.charges+(has('echo')?1:0),unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[LK(y,r,l)]||null,nudged:false};
+  if(has('wellspring')){ raw.push([]); caps.push(CAP); }
+  raw.forEach((v,i)=>{ if(!v.length) caps[i]=spareCap(); });
+  const tot={}; raw.forEach(v=>v.forEach(c=>tot[c]=(tot[c]||0)+1));
+  G={y,r,l,caps,tot,mixed:caps.some(c=>c!==CAP),vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-open}))),undo:[],undos:undosFor(y,r,l)+(has('lantern')?1:0),charges:R.spell.charges+(has('echo')?1:0),unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[LK(y,r,l)]||null,nudged:false};
   sel=null; anim=null; hint=null; grains=[]; bursts=[]; floats=[]; lift=[]; shake=[]; sparks=[];
   layout(); updateHUD();
-  if(!save.tut) showGuide(0,()=>{ if(l===0 && !save.seen[r]) showIntro(r); else firstTip(); });
+  if(save.tut && y>=3 && !save.seen.sizes) showSizes();
+  else if(!save.tut) showGuide(0,()=>{ if(l===0 && !save.seen[r]) showIntro(r); else firstTip(); });
   else if(l===0 && !save.seen[r]) showIntro(r);
   else if(y>=2&&l===0) toast(`${YEAR_NAMES[y]} · ${R.place}. Every layer starts veiled.`,3200);
   else if(r===0&&l===0) firstTip();
-  else if(l===BONUS) toast('Bonus brew! Every lower layer is veiled, and points are doubled.',3600);
+  else if(l===BONUS) toast(`Bonus brew! Every lower layer is veiled, and points are ${has('pebble')?'tripled':'doubled'}.`,3600);
+}
+function showSizes(){
+  modal(`<div class="kicker">${YEAR_NAMES[3]}</div><div class="sigbig">⚗️</div><h2>Vials of every size</h2>
+    <div class="guide">
+      <div class="gi"><div class="g-ic">🧪</div><div><b>Three sizes</b><br>Tiny vials hold <i>3</i> layers, standard vials <i>4</i>, and great flasks <i>5</i>. The notches on the glass show how much each one holds.</div></div>
+      <div class="gi"><div class="g-ic">🎨</div><div><b>Colors come in sizes too</b><br>Some colors have 3 grains, some 4, some 5. A potion corks once a vial holds <i>every</i> grain of its color, so 5-grain colors need a great flask.</div></div>
+      <div class="gi"><div class="g-ic">💧</div><div><b>Partial pours</b><br>Pouring into a smaller vial only moves what fits. The rest stays behind.</div></div>
+    </div>
+    <button class="btn" id="mBegin">Begin brewing</button>`);
+  $('#mBegin').onclick=()=>{ save.seen.sizes=1; persist(); closeModal(); };
 }
 function firstTip(){ toast('Tap a vial, then tap where to pour.',3200); }
 // Points: 100 per potion bottled, a swift-brewing bonus for finishing near the cauldron's own pour count,
@@ -632,7 +674,7 @@ function tallyScore(){
   const pure=G.helps===0?PTS.pure:0;
   const help=G.helps*PTS.help;
   const stir=G.stirred?PTS.stir:0;
-  const sub=Math.max(0,base+swift+pure+stir-help), bonusX=G.l===BONUS?sub:0;
+  const sub=Math.max(0,base+swift+pure+stir-help), bonusX=G.l===BONUS?sub*(has('pebble')?2:1):0;
   const ladle=has('ladle')?Math.round((sub+bonusX)*.1):0;
   return {potions,base,swift,pure,stir,help,bonusX,ladle,total:sub+bonusX+ladle};
 }
@@ -655,14 +697,14 @@ function snapshot(){ return G.vials.map(v=>v.map(u=>({c:u.c,h:u.h}))); }
 function pushUndo(){ G.undo.push(snapshot()); if(G.undo.length>60) G.undo.shift(); }
 function canPour(a,b){
   if(a===b) return false; const A=G.vials[a], B=G.vials[b];
-  if(!A.length||isDone(A)||B.length>=CAP) return false;
+  if(!A.length||isDone(A)||B.length>=capOf(b)) return false;
   if(!B.length||G.unbind) return true;
   return B[B.length-1].c===A[A.length-1].c;
 }
 function topRunModel(A){ const c=A[A.length-1].c; let n=0; for(let i=A.length-1;i>=0&&A[i].c===c;i--) n++; return n; }
 function startPour(a,b){
   const A=G.vials[a], B=G.vials[b];
-  let n=G.unbind?topRunModel(A):topRunModel(A); n=Math.min(n,CAP-B.length);
+  const n=Math.min(topRunModel(A),capOf(b)-B.length);
   pushUndo();
   for(let k=0;k<n;k++) A[A.length-1-k].h=false;
   const dur={up:.1,move:.24,pour:.16+.09*n,back:.22};
@@ -702,8 +744,8 @@ function brew(i){
   persist();
   if(!save.ing[ik]){ save.ing[ik]=1; persist();
     setTimeout(()=>{ toast(`✦ New ingredient discovered: ${ing}! ✦`,2800); SFX.magic(); },700);
-    for(let k=0;k<30;k++){ const a=Math.random()*6.28, sp=30+Math.random()*90; bursts.push({x:p.x+(Math.random()-.5)*GEO.W,y:p.y+Math.random()*GEO.H,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-40,life:0,max:.9+Math.random()*.5,c:'#ffffff',s:1.6+Math.random()*2}); } }
-  floats.push({txt:'+'+PTS.potion,x:p.x,y:p.y+GEO.H*.45,t:0,c:room().accent,small:true});
+    for(let k=0;k<30;k++){ const a=Math.random()*6.28, sp=30+Math.random()*90; bursts.push({x:p.x+(Math.random()-.5)*GEO.W,y:p.y+Math.random()*p.h,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-40,life:0,max:.9+Math.random()*.5,c:'#ffffff',s:1.6+Math.random()*2}); } }
+  floats.push({txt:'+'+PTS.potion,x:p.x,y:p.y+p.h*.45,t:0,c:room().accent,small:true});
   SFX.chime(); try{navigator.vibrate&&navigator.vibrate(18)}catch(e){}
 }
 function win(){
@@ -740,7 +782,7 @@ function showResults(key,stars,brewed,stirred,canBefore){
         ${sc.pure?`<li><span>Pure brew, no help</span><span>+${sc.pure}</span></li>`:''}
         ${sc.stir?`<li><span>${has('spoon')?'🥄 Stirred by the spoon':'Stirred by hand'}</span><span>+${sc.stir}</span></li>`:''}
         ${sc.help?`<li class="neg"><span>Help used</span><span>−${sc.help}</span></li>`:''}
-        ${sc.bonusX?`<li><span>Bonus brew ×2</span><span>+${sc.bonusX}</span></li>`:''}
+        ${sc.bonusX?`<li><span>Bonus brew ×${has('pebble')?3:2}</span><span>+${sc.bonusX}</span></li>`:''}
         ${sc.ladle?`<li><span>🪙 Gilded Ladle</span><span>+${sc.ladle}</span></li>`:''}
         <li class="tot"><span>Points</span><span>${sc.total}</span></li>
       </ul>
@@ -901,17 +943,17 @@ function doUndo(){
   const s=G.undo.pop(); while(s.length<G.vials.length) s.push([]);
   G.vials=s; G.undos--; G.helps++; sel=null; hint=null; SFX.tick(); updateHUD();
 }
-function findHint(){ const s=G.vials.map(v=>v.map(u=>u.c)); const p=solve(s,60000); return p&&p[0]; }
+function findHint(){ const s=G.vials.map(v=>v.map(u=>u.c)); const p=solve(s,60000,G.caps); return p&&p[0]; }
 function castSpell(){
   if(!G||anim||G.won) return; const R=room(), sp=R.spell;
   if(G.charges<=0) return toast(`${sp.name} is spent for this brew.`);
   switch(sp.key){
-    case 'sprout':{ if(G.vials.length>=12) return toast('The shelf is full.'); G.vials.push([]); layout();
-      const p=POS[POS.length-1]; for(let k=0;k<20;k++){const a=Math.random()*6.28;bursts.push({x:p.x,y:p.y+GEO.H*.6,vx:Math.cos(a)*60,vy:-Math.random()*120,life:0,max:.8,c:'#c9f58a',s:2})}
+    case 'sprout':{ if(G.vials.length>=12) return toast('The shelf is full.'); G.vials.push([]); G.caps.push(spareCap()); layout();
+      const p=POS[POS.length-1]; for(let k=0;k<20;k++){const a=Math.random()*6.28;bursts.push({x:p.x,y:p.y+p.h*.6,vx:Math.cos(a)*60,vy:-Math.random()*120,life:0,max:.8,c:'#c9f58a',s:2})}
       toast('A fresh vial sprouts from the soil.'); break; }
     case 'starsight':{ let any=false; G.vials.forEach(v=>v.forEach(u=>{ if(u.h){u.h=false;any=true;} }));
       if(!any) return toast('Nothing left hidden. The stars agree.');
-      POS.forEach(p=>{for(let k=0;k<8;k++){const a=Math.random()*6.28;bursts.push({x:p.x+(Math.random()-.5)*GEO.W,y:p.y+Math.random()*GEO.H,vx:Math.cos(a)*30,vy:Math.sin(a)*30,life:0,max:.9,c:'#eef2ff',s:2})}});
+      POS.forEach(p=>{for(let k=0;k<8;k++){const a=Math.random()*6.28;bursts.push({x:p.x+(Math.random()-.5)*GEO.W,y:p.y+Math.random()*p.h,vx:Math.cos(a)*30,vy:Math.sin(a)*30,life:0,max:.9,c:'#eef2ff',s:2})}});
       toast('Starsight! Every layer revealed.'); break; }
     case 'distill':{ const m=findHint(); if(!m) return toast('Even the cauldron is stumped. Try Undo.'); G.charges--; G.helps++; SFX.magic(); updateHUD(); startPour(m[0],m[1]); return; }
     case 'foretell':{ const m=findHint(); if(!m) return toast('The leaves are murky. Try Undo.'); hint={a:m[0],b:m[1],t:0}; toast('The leaves point the way.'); break; }
@@ -921,7 +963,7 @@ function castSpell(){
 }
 
 /* ======================= INPUT ======================= */
-function hitVial(x,y){ const {W,H}=GEO; for(let i=0;i<POS.length;i++){ const p=POS[i]; if(Math.abs(x-p.x)<W*.82 && y>p.y-36 && y<p.y+H+18) return i; } return -1; }
+function hitVial(x,y){ const {W}=GEO; for(let i=0;i<POS.length;i++){ const p=POS[i]; if(Math.abs(x-p.x)<W*.82 && y>p.y-36 && y<p.y+p.h+18) return i; } return -1; }
 game.addEventListener('pointerdown',e=>{
   SFX.init(); if(!G||anim||G.won) return;
   const r=game.getBoundingClientRect(); const i=hitVial(e.clientX-r.left,e.clientY-r.top);
@@ -999,7 +1041,7 @@ function showMap(tab){
   if(tab) mapTab=tab;
   const yMax=Math.min(save.year,YEARS); save.view=Math.max(1,Math.min(save.view||yMax,yMax));
   const tp=totalPoints(), ni=Object.keys(save.ing||{}).length;
-  $('#mapTotal').textContent=`${YEAR_NAMES[Math.min(save.year,3)]} · `+(tp?`✦ ${tp.toLocaleString()} points · `:'')+`${ni} of ${TOTAL_ING} ingredients`;
+  $('#mapTotal').textContent=`${YEAR_NAMES[Math.min(save.year,YEARS+1)]} · `+(tp?`✦ ${tp.toLocaleString()} points · `:'')+`${ni} of ${TOTAL_ING} ingredients`;
   const rooms=mapTab==='rooms';
   $('#tabRooms').setAttribute('aria-selected',rooms); $('#tabCraft').setAttribute('aria-selected',!rooms);
   $('#craftBadge').hidden=!craftable().length;
@@ -1007,7 +1049,7 @@ function showMap(tab){
   // Year switcher appears once you have reached a second year.
   const yb=$('#yearBar'); yb.hidden=!rooms||save.year<2;
   if(!yb.hidden){ let h=''; for(let y=1;y<=YEARS;y++) h+=`<button class="yr" data-y="${y}" aria-pressed="${y===save.view}" ${y<=save.year?'':'disabled'}>${y<=save.year?'':'🔒 '}${YEAR_NAMES[y]}</button>`;
-    if(save.year>YEARS) h+=`<button class="yr" disabled>${YEAR_NAMES[3]} · soon</button>`;
+    if(save.year>YEARS) h+=`<button class="yr" disabled>${YEAR_NAMES[YEARS+1]} · soon</button>`;
     yb.innerHTML=h; yb.querySelectorAll('.yr:not([disabled])').forEach(b=>b.onclick=()=>{ SFX.init(); SFX.tick(); save.view=+b.dataset.y; persist(); showMap(); }); }
   if(rooms) renderRooms(save.view); else renderCraft();
 }
@@ -1038,8 +1080,8 @@ function renderRooms(y){
 }
 function renderCraft(){
   const el=$('#craftList'); const yc=Math.min(save.year,YEARS); let h='';
-  if(save.year>YEARS) h+=`<div class="exam"><div class="k">${YEAR_NAMES[3]}</div><h3>Every exam passed</h3>
-      <p class="note">The professors are preparing your next year: odd little vials and great round flasks. Keep brewing and crafting until then.</p></div>`;
+  if(save.year>YEARS) h+=`<div class="exam"><div class="k">${YEAR_NAMES[YEARS+1]}</div><h3>Every exam passed</h3>
+      <p class="note">The professors are still preparing your next year. Keep brewing and crafting until then.</p></div>`;
   else { const ex=examsFor(yc), got=ex.filter(S=>has(S.key)).length;
     h+=`<div class="exam"><div class="k">${YEAR_NAMES[yc]} exams · ${got} of ${ex.length}</div><h3>Craft ${ex.length} exam spells to become a ${YEAR_NAMES[yc+1]}</h3>
       <div class="slots">${ex.map(S=>`<span class="${has(S.key)?'on':''}" title="${S.name}">${S.icon}</span>`).join('')}</div>
@@ -1089,8 +1131,8 @@ function showGraduation(y){
   const open=y<=YEARS;
   modal(`<div class="kicker">Gloamwick Academy</div><div class="sigbig">🎓</div><h2>You are a ${YEAR_NAMES[y]}!</h2>
     <p class="quote">“Every exam spell, crafted by your own hand. Welcome to your ${YEAR_NAMES[y]}.”</p>
-    ${open?`<p class="note">All five classrooms have new, harder brews this year. Every layer starts veiled, and you get one fewer undo.</p>`
-          :`<p class="note">The professors are still preparing your ${YEAR_NAMES[y]}: odd little vials and great round flasks. It opens soon.</p>`}
+    ${open?`<p class="note">${YEAR_INTRO[y]||''}</p>`
+          :`<p class="note">The professors are still preparing your ${YEAR_NAMES[y]}. It opens soon.</p>`}
     <div class="row"><button class="btn ghost" id="mG">Grimoire</button>${open?`<button class="btn" id="mY">Begin ${YEAR_NAMES[y]}</button>`:''}</div>`);
   $('#mG').onclick=()=>showMap(open?'rooms':'craft');
   if(open) $('#mY').onclick=()=>startLevel(0,0,y);
@@ -1119,7 +1161,7 @@ function segments(units){
 }
 
 function drawVial(c,i,ox,oy,ang,t,opt){
-  const {W,H,U}=GEO, r=W/2, g=Math.max(2,W*.055); const v=G.vials[i]; const done=isDone(v);
+  const {W,U}=GEO, H=POS[i].h, r=W/2, g=Math.max(2,W*.055); const v=G.vials[i]; const done=isDone(v);
   c.save(); c.translate(ox,oy); if(ang) c.rotate(ang);
   // aura
   const auraCol = done?colOf(v[0].c) : opt.glow;
@@ -1132,7 +1174,7 @@ function drawVial(c,i,ox,oy,ang,t,opt){
   let y=H-g; const segY=[];
   segs.forEach((sg,s)=>{
     const hh=sg.amt*U; if(hh<.05) return; const y0=y-hh; const isTop=s===segs.length-1;
-    c.fillStyle=sandPattern(c, sg.h?HIDDEN_HEX:colOf(sg.c), sg.h, (sg.h||!known(sg.c))?null:motifOf(sg.c));
+    c.fillStyle=sandPattern(c, sg.h?(has('lens')?mix(HIDDEN_HEX,colOf(sg.c),.32):HIDDEN_HEX):colOf(sg.c), sg.h, (sg.h||!known(sg.c))?null:motifOf(sg.c));
     c.beginPath();
     const bump=isTop?Math.min(3.2,hh*.45):0;
     const topY = isTop? y0 : y0-2.5;
@@ -1173,6 +1215,8 @@ function drawVial(c,i,ox,oy,ang,t,opt){
   const hl=c.createLinearGradient(0,14,0,H-r); hl.addColorStop(0,'rgba(255,255,255,.38)'); hl.addColorStop(1,'rgba(255,255,255,.04)');
   c.fillStyle=hl; rr(c,-r+g+2.2,14,Math.max(2,W*.06),Math.max(4,H-r-18),2); c.fill();
   c.fillStyle='rgba(255,255,255,.12)'; rr(c,r-g-3.4,18,1.6,Math.max(4,H-r-30),1); c.fill();
+  // capacity notches, so tiny vials and great flasks can be told apart at a glance
+  if(G.mixed){ c.strokeStyle='rgba(255,255,255,.3)'; c.lineWidth=1; for(let k=1;k<G.caps[i];k++){ const yy=H-g-k*U; c.beginPath(); c.moveTo(r-1,yy); c.lineTo(r-5,yy); c.stroke(); } }
   outerPath(c,r,H); c.lineWidth=1.6; c.strokeStyle= opt.ring? rgba(opt.ring,.95) : 'rgba(255,255,255,.34)'; c.stroke();
   // lip
   rr(c,-r-2.5,0,W+5,6.5,3.2); c.fillStyle='rgba(255,255,255,.16)'; c.fill(); c.strokeStyle='rgba(255,255,255,.4)'; c.lineWidth=1; c.stroke();
@@ -1202,7 +1246,7 @@ function animPose(dt){
     else for(let k=0;k<cnt;k++) grains.push({x:M.x+(Math.random()-.5)*2.4,y:M.y+2,vx:(Math.random()-.5)*10,vy:40+Math.random()*60,c:Math.random()<.18?mix(hex,'#ffffff',.5):Math.random()<.3?mix(hex,'#000000',.25):hex,to:a.to});
   }
 }
-function surfaceY(i){ const T=POS[i]; let n=G.vials[i].length; if(anim&&anim.to===i) n+=anim.p*anim.n; return T.y+GEO.H-3-n*GEO.U; }
+function surfaceY(i){ const T=POS[i]; let n=G.vials[i].length; if(anim&&anim.to===i) n+=anim.p*anim.n; return T.y+T.h-3-n*GEO.U; }
 
 function drawGame(t,dt){
   const c=gx; c.setTransform(DPR,0,0,DPR,0,0); c.clearRect(0,0,game.width/DPR,game.height/DPR);

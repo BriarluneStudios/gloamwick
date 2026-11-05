@@ -22,7 +22,7 @@ A cozy, witchy sand-sorting puzzle game. Pour glittering enchanted sands across 
 
 Every potion you bottle goes onto your shelf. In the grimoire's **Spellcraft** page, combine discovered ingredients and bottled potions in the cauldron to craft spells that help in every brew for good: an extra undo, a self-stirring spoon, a charm that lifts the veil, and more.
 
-Craft all of your year's **exam spells** to move up a year. Your Second Year brings new, harder brews to all five classrooms.
+Craft all of your year's **exam spells** to move up a year. Your Second Year brings new, harder brews to all five classrooms. In your Third Year the vials come in three sizes: tiny 3-layer vials, standard vials and great 5-layer flasks, with colors that come in matching amounts.
 
 Score points for every potion bottled, with bonuses for swift brewing and for brewing without help. A short how-to-play guide greets new witches (tap **?** to see it again). Progress saves in your browser.
 
