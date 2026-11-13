@@ -24,9 +24,15 @@ Every potion you bottle goes onto your shelf. In the grimoire's **Spellcraft** p
 
 Craft all of your year's **exam spells** to move up a year. Your Second Year brings new, harder brews to all five classrooms. In your Third Year the vials come in three sizes: tiny 3-layer vials, standard vials and great 5-layer flasks, with colors that come in matching amounts.
 
-## Familiars
+## Your Sprout and familiars
 
-From your Third Year, cash in points to adopt a familiar. Choose a kind (cat, dragon, owl, rat, frog, snake, spider or a little tree), then one of three companions of that kind, and give them a name. Feed it treats to grow your bond: as you grow closer it starts pointing out pours. Brew together and it grows up, from hatchling to elder dragon or seed to tree, and wakes a talent of its own: extra hints, warm breath for bonus points, night eyes that lift veils, scavenged potions, lucky tokens, free undos, a sharper swift bonus or deep roots that keep it fed longer.
+Every witch starts with a little Sprout. It grows with you: a seedling in your First Year, a leafy sprout in your Second. In your Third Year it blooms into the familiar you choose: a kind (cat, dragon, owl, rat, frog, snake, spider or a little tree), one of three companions of that kind, and a name. Feed it treats with your points to grow your bond and it starts pointing out pours. As you finish Third Year classrooms it grows up and wakes a talent of its own: extra hints, warm breath for bonus points, night eyes that lift veils, scavenged potions, lucky tokens, free undos, a sharper swift bonus or deep roots that keep it fed longer.
+
+Giving up on a brew after pouring is a failed attempt: it costs 100 points and one of your companion's three hearts. With no hearts left it is too worn out to help, until you win a brew or feed it.
+
+## Scrolls
+
+Later brews hide some vials inside sealed scrolls. A sealed vial can't be poured into or out of until you bottle the potion matching its wax seal; then the scroll unravels.
 
 ## Achievements and lore
 
