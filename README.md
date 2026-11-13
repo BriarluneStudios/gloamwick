@@ -30,6 +30,18 @@ Every witch starts with a little Sprout. It grows with you: a seedling in your F
 
 Giving up on a brew after pouring is a failed attempt: it costs 100 points and one of your companion's three hearts. With no hearts left it is too worn out to help, until you win a brew or feed it.
 
+## The Healer's Hut
+
+Mother Thimbleweed trades points for help: heal one of your companion's hearts, restore them all, or bottle a Second Wind to carry on when a brew goes wrong (+45 seconds when a timed brew runs out, or +2 undos when you're out of pours).
+
+## Timed brews
+
+Brew 4 of each classroom (and brew 6 from your Second Year) has a clock that starts with your first pour. Time left over earns bonus points; if it runs out, use a Second Wind or try again.
+
+## Companion attributes
+
+Every bonus brew you win earns that classroom's Essence. Combine an Essence with two of the classroom's potions to give your companion a lasting attribute: a Leafy Crown (a fourth heart), Starlit Eyes (hints lift veils), an Ember Heart (wins restore two hearts), a Tea-Leaf Charm (an extra hint) or an Hourglass Shade (more time on timed brews).
+
 ## Scrolls
 
 Later brews hide some vials inside sealed scrolls. A sealed vial can't be poured into or out of until you bottle the potion matching its wax seal; then the scroll unravels.

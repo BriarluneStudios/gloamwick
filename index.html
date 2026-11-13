@@ -205,7 +205,7 @@ body.mapmode #map{display:block}
 .craft{appearance:none;border:0;border-radius:14px;padding:11px;font:600 12px var(--f-display);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;
   background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 95%, #fff), color-mix(in srgb, var(--accent) 75%, #000));color:var(--night)}
 .craft:disabled{background:transparent;border:1px solid var(--line);color:var(--ink3);cursor:default}
-.tabs.four .tab{padding:9px 1px 8px;font-size:9.5px;letter-spacing:.06em;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tabs.four .tab{padding:9px 0 8px;font-size:9px;letter-spacing:.04em;display:flex;flex-direction:column;align-items:center;gap:3px}
 .tabs.four .tab .ti{font-size:17px;letter-spacing:0;line-height:1}
 .tabs.four .tab .badge{top:5px;right:calc(50% - 20px)}
 .tokbar{display:flex;align-items:center;gap:14px;padding:16px;border-radius:22px;border:1px solid color-mix(in srgb, var(--accent) 40%, transparent);background:rgba(0,0,0,.25)}
@@ -283,7 +283,16 @@ body.mapmode #map{display:block}
 .perk b{font-family:var(--f-display);font-size:11px;letter-spacing:.1em;min-width:44px;color:var(--ink3)}
 .perk.on{color:var(--ink)}
 .perk.on b{color:var(--accent)}
-@media (prefers-reduced-motion: reduce){ #btnPet.ready,.pethome .big,.pethome .big.munch{animation:none} }
+@media (prefers-reduced-motion: reduce){ #timer.low,#btnPet.ready,.pethome .big,.pethome .big.munch{animation:none} }
+#timer{position:absolute;right:max(16px, env(safe-area-inset-right,0px));top:6px;z-index:3;padding:6px 12px;border-radius:14px;background:var(--panel);border:1px solid var(--line);
+  font:600 15px var(--f-display);font-variant-numeric:tabular-nums;color:var(--accent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#timer.low{color:#ff8a7a;border-color:#ff8a7a;animation:armed .8s ease-in-out infinite}
+.hut{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 16px;border-radius:24px;border:1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  background:radial-gradient(120% 90% at 50% 10%, #3b2a1e, #120c1c);text-align:center}
+.hut .big{font-size:56px;line-height:1}
+.hut h3{margin:0;font-family:var(--f-display);font-weight:600;font-size:19px;color:var(--accent)}
+.attrs{display:flex;justify-content:center;gap:6px;font-size:20px;min-height:0}
+.attrs span{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.35);border:1px solid color-mix(in srgb, var(--accent) 45%, transparent)}
 .crest .total{font-family:var(--f-display);font-size:13px;letter-spacing:.14em;color:var(--accent);margin-top:6px}
 @media (prefers-reduced-motion: reduce){ #achBanner{transition:none} .recipe.ready,.card,.stars span.on,.orb.next,.spell.armed,.spell.nudge,#levelName .pts.bump{animation:none} }
 </style>
@@ -300,6 +309,7 @@ body.mapmode #map{display:block}
   <main id="stage">
     <canvas id="game" aria-label="Potion vials. Tap a vial, then tap another to pour."></canvas>
     <div id="toast" role="status" aria-live="polite"></div>
+    <div id="timer" role="timer" aria-live="off" hidden></div>
   </main>
   <footer id="spells">
     <button class="spell" id="btnUndo"><span class="ic">↶</span><span class="nm">Undo</span><span class="ct" id="ctUndo">5</span></button>
@@ -320,6 +330,7 @@ body.mapmode #map{display:block}
         <button class="tab" role="tab" data-tab="craft" aria-selected="false"><span class="ti">✦</span>Spells<span class="badge" id="craftBadge" hidden></span></button>
         <button class="tab" role="tab" data-tab="awards" aria-selected="false"><span class="ti">🏆</span>Awards<span class="badge" id="awardBadge" hidden></span></button>
         <button class="tab" role="tab" data-tab="pet" aria-selected="false"><span class="ti">🐾</span>Familiar<span class="badge" id="petBadge" hidden></span></button>
+        <button class="tab" role="tab" data-tab="hut" aria-selected="false"><span class="ti">🛖</span>Healer</button>
         <button class="tab" role="tab" data-tab="lore" aria-selected="false"><span class="ti">📜</span>Lore<span class="badge" id="loreBadge" hidden></span></button>
       </div>
       <div class="years" id="yearBar" hidden></div>
@@ -328,6 +339,7 @@ body.mapmode #map{display:block}
       <div id="awardList" style="display:flex;flex-direction:column;gap:14px" hidden></div>
       <div id="loreList" style="display:flex;flex-direction:column;gap:10px" hidden></div>
       <div id="petList" style="display:flex;flex-direction:column;gap:14px" hidden></div>
+      <div id="hutList" style="display:flex;flex-direction:column;gap:14px" hidden></div>
       <div class="map-foot">Five classrooms · thirty brews a year · spells to craft · ✦ stars for brewing without help · <a href="#" id="mapHelp" style="color:inherit">how to play</a><br>Gloamwick™ © 2026 Briarlune Studios · All rights reserved · <a href="https://briarlunestudios.github.io/gloamwick/" style="color:inherit">official site</a></div>
     </div>
   </section>
@@ -487,7 +499,9 @@ const ACH=[
  {k:'pts10k',  i:'💫', n:'Ten Thousand Sparks',   d:'Earn 10,000 points in all.',                      t:2, ok:()=>totalPoints()>=10000, p:()=>[Math.min(totalPoints(),10000),10000]},
  {k:'stir25',  i:'🥄', n:'Stirred, Not Skipped',  d:'Stir the full cauldron by hand 10 times.',        t:1, ok:()=>save.stats.stirs>=10, p:()=>[save.stats.stirs,10]},
  {k:'owl',     i:'🦉', n:'Night Owl',             d:'Finish a brew between midnight and 4 a.m.',       t:1, ok:c=>!!(c&&c.owl)},
-  {k:'pet',     i:'🌸', n:'In Full Bloom',         d:'Your Sprout blooms into a familiar.',             t:2, ok:()=>!!save.pet&&!isSprout()},
+   {k:'clock',   i:'⏳', n:'Beat the Clock',        d:'Win a timed brew.',                               t:2, ok:()=>(save.stats.timed||0)>=1},
+ {k:'attr',    i:'🎀', n:'Gifted Companion',      d:'Give your companion an attribute.',               t:2, ok:()=>!!(save.pet&&save.pet.attr&&Object.keys(save.pet.attr).length)},
+ {k:'pet',     i:'🌸', n:'In Full Bloom',         d:'Your Sprout blooms into a familiar.',             t:2, ok:()=>!!save.pet&&!isSprout()},
  {k:'pet5',    i:'💞', n:'Best of Friends',       d:'Reach the highest bond with your familiar.',      t:4, ok:()=>petLv()>=5, p:()=>[save.pet?save.pet.bond:0,PET_LV[4].need]},
  {k:'lore',    i:'📜', n:'Keeper of Tales',       d:'Unlock every lore page.',                         t:3, ok:()=>LORE.every((_,i)=>save.lore[i]), p:()=>[Object.keys(save.lore).length,LORE.length]},
 ];
@@ -605,6 +619,27 @@ const SPROUT_PET={k:'sprout', n:'Sprout', treat:'💧', blurb:'Your very own lit
   stages:['Seedling','Sprout','Sprout'], forms:['🌱','🌿'], talent:null,
   hint:['*leans its leaves toward a vial*','*a leaf points the way*','*rustles softly at one vial*'], hungry:'*droops, a little thirsty*', fed:'*leaves perk up and shimmer*', idle:'*turns toward the candlelight*',
   vars:[{n:'Sprout',i:'🌿',d:'A little green sprout'}]};
+// Companion attributes: each classroom's bonus brew yields an Essence. An Essence plus two of that classroom's
+// potions gives your companion a permanent attribute (it keeps them when it blooms).
+const ATTRS=[
+ {k:'crown', r:0, i:'🌿', n:'Leafy Crown',     d:'+1 heart, for four in all.',                                pot:{'0-0':2,'0-8':2}},
+ {k:'eyes',  r:1, i:'✨', n:'Starlit Eyes',     d:'Its hints also uncover the veiled layers in the vials they point at.', pot:{'1-0':2,'1-8':2}},
+ {k:'ember', r:2, i:'🔥', n:'Ember Heart',      d:'Winning a brew restores two hearts instead of one.',        pot:{'2-0':2,'2-8':2}},
+ {k:'tea',   r:3, i:'🫖', n:'Tea-Leaf Charm',   d:'One more hint every brew (from bond level 2).',             pot:{'3-0':2,'3-8':2}},
+ {k:'shade', r:4, i:'🌑', n:'Hourglass Shade',  d:'+30 seconds on every timed brew.',                          pot:{'4-0':2,'4-8':2}},
+];
+const hasAttr=k=>!!(save.pet&&save.pet.attr&&save.pet.attr[k]);
+const essCount=r=>(save.ess&&save.ess[r])||0;
+const canAttr=A=>!hasAttr(A.k)&&essCount(A.r)>=1&&Object.entries(A.pot).every(([p,n])=>potCount(p)>=n);
+function giveAttr(k){ const A=ATTRS.find(x=>x.k===k); if(!A||!canAttr(A)) return false;
+  save.ess[A.r]--; Object.entries(A.pot).forEach(([p,n])=>save.pot[p]-=n); save.pet.attr=Object.assign({},save.pet.attr,{[k]:1});
+  if(k==='crown') save.pet.hp=petHP()+1; persist(); checkAch(); return true; }
+// Healer's Hut: Mother Thimbleweed trades points for hearts and Second Winds (continuations).
+const HUT={heart:300, full:700, wind:400, windNow:500};
+const WIND_TIME=45, WIND_UNDOS=2;
+// Timed brews: brew 4 of each classroom (not the Year 1 Glasshouse), and brew 6 from Year 2 on.
+const timedFor=(y,r,l)=>(l===3&&!(y===1&&r===0))||(y>=2&&l===5);
+const fmtTime=sec=>{ sec=Math.max(0,Math.ceil(sec)); return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0'); };
 // Bond levels: treats needed, title, and what it unlocks.
 const PET_LV=[
  {need:0,  t:'Shy',           d:'Keeps you company on the shelf.'},
@@ -632,19 +667,20 @@ const GROW_ROOMS=[0,2,5];
 const y3Rooms=()=>[0,1,2,3,4].filter(r=>roomDone(PET_YEAR,r)).length;
 const petStage=()=>{ if(!save.pet) return 0; if(isSprout()) return save.year>=2?1:0; const n=y3Rooms(); return n>=GROW_ROOMS[2]?2:n>=GROW_ROOMS[1]?1:0; };
 const petStageName=()=>petKind().stages[petStage()];
-const petHP=()=>save.pet?(save.pet.hp===undefined?PET_HP:save.pet.hp):0;
+const petMax=()=>PET_HP+(hasAttr('crown')?1:0);
+const petHP=()=>save.pet?Math.min(petMax(),save.pet.hp===undefined?PET_HP:save.pet.hp):0;
 const talent=k=>save.pet&&save.pet.k===k&&petHP()>0&&petStage()>0?petStage():0;   // 0 off, 1 young, 2 grown
-const petCharges=()=>{ if(petHP()===0) return 0; const lv=petLv(); return (lv>=4?2:lv>=2?1:0)+(lv>=2?talent('cat'):0); };
+const petCharges=()=>{ if(petHP()===0) return 0; const lv=petLv(); return (lv>=4?2:lv>=2?1:0)+(lv>=2?talent('cat'):0)+(lv>=2&&hasAttr('tea')?1:0); };
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 const an=w=>(/^[aeiou]/i.test(w)?'an ':'a ')+w;
-const hearts=()=>Array.from({length:PET_HP},(_,i)=>i<petHP()?'❤️':'🤍').join('');
+const hearts=()=>Array.from({length:petMax()},(_,i)=>i<petHP()?'❤️':'🤍').join('');
 function newSprout(){ return {k:'sprout',v:0,name:'Sprout',bond:0,full:PET_FULL,brews:0,hp:PET_HP,seen:0}; }
 // The Sprout blooms into the familiar you choose. Bond, bowls and hearts carry over.
 function bloomPet(k,v,name){ if(!isSprout()||save.year<PET_YEAR) return false; const P=PETS.find(x=>x.k===k); if(!P||!P.vars[v]) return false;
   Object.assign(save.pet,{k,v,name:(name||'').trim().slice(0,14)||P.vars[v].n,seen:0}); persist(); checkAch(); return true; }
 function feedPet(){ const pt=save.pet; if(!pt) return 'none'; if(pt.full>=PET_FULL) return 'full'; if(save.purse<TREAT_COST) return 'poor';
-  const before=petLv(); save.purse-=TREAT_COST; pt.full++; pt.bond++; pt.hp=Math.min(PET_HP,petHP()+1); persist(); checkAch(); return petLv()>before?'level':'ok'; }
+  const before=petLv(); save.purse-=TREAT_COST; pt.full++; pt.bond++; pt.hp=Math.min(petMax(),petHP()+1); persist(); checkAch(); return petLv()>before?'level':'ok'; }
 // A failed attempt: you gave up on a brew after pouring. The Year 1 Glasshouse is free while you learn.
 const failCounts=()=>!!G&&G.moves>0&&!G.won&&!(G.y===1&&G.r===0);
 function failAttempt(){ if(!failCounts()) return ''; G.moves=0;
@@ -956,13 +992,16 @@ function startLevel(r,l,y){
   if(has('wellspring')){ raw.push([]); caps.push(CAP); seal.push(-1); }
   raw.forEach((v,i)=>{ if(!v.length) caps[i]=spareCap(); });
   const tot={}; raw.forEach(v=>v.forEach(c=>tot[c]=(tot[c]||0)+1));
-  G={y,r,l,caps,tot,seal,unroll:{},mixed:caps.some(c=>c!==CAP),vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-open}))),undo:[],undos:undosFor(y,r,l)+(has('lantern')?1:0),charges:R.spell.charges+(has('echo')?1:0),unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[LK(y,r,l)]||null,nudged:false,pet:petCharges(),freeUndo:[0,1,2][talent('snake')]};
+  G={y,r,l,caps,tot,seal,unroll:{},mixed:caps.some(c=>c!==CAP),vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-open}))),undo:[],undos:undosFor(y,r,l)+(has('lantern')?1:0),charges:R.spell.charges+(has('echo')?1:0),unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[LK(y,r,l)]||null,nudged:false,pet:petCharges(),timed:timedFor(y,r,l),elapsed:0,started:false,timeout:false,limit:0,freeUndo:[0,1,2][talent('snake')]};
+  if(G.timed){ G.limit=Math.round(30+(G.par||20)*3.5)+(hasAttr('shade')?30:0); }
   if(talent('owl')){ const hid=[]; G.vials.forEach(v=>v.forEach(u=>{ if(u.h) hid.push(u); })); shuffle(hid,Math.random).slice(0,[0,2,5][talent('owl')]).forEach(u=>u.h=false); }
   sel=null; anim=null; hint=null; grains=[]; bursts=[]; floats=[]; lift=[]; shake=[]; sparks=[];
   layout(); updateHUD();
   if(save.tut && y>=3 && !save.seen.sizes) showSizes();
   else if(!save.tut) showGuide(0,()=>{ if(l===0 && !save.seen[r]) showIntro(r); else firstTip(); });
   else if(l===0 && !save.seen[r]) showIntro(r);
+  else if(G.timed&&!save.seen.timed){ save.seen.timed=1; persist(); setTimeout(()=>toast(`⏳ A timed brew! You have ${fmtTime(G.limit)} from your first pour. Time left over earns bonus points.`,4200),300); }
+  else if(G.timed) setTimeout(()=>toast(`⏳ Timed brew · ${fmtTime(G.limit)} from your first pour.`,2800),300);
   else if(seal.some(k=>k>=0)&&!save.seen.scroll){ save.seen.scroll=1; persist(); setTimeout(()=>toast('📜 A scroll seals a vial! Bottle the potion matching its wax seal to unravel it.',4200),300); }
   else if(y>=2&&l===0) toast(`${YEAR_NAMES[y]} · ${R.place}. Every layer starts veiled.`,3200);
   else if(r===0&&l===0) firstTip();
@@ -991,10 +1030,11 @@ function tallyScore(){
   const pure=G.helps===0?PTS.pure:0;
   const help=G.helps*PTS.help;
   const stir=G.stirred?PTS.stir:0;
-  const sub=Math.max(0,base+swift+pure+stir-help), bonusX=G.l===BONUS?sub*(has('pebble')?2:1):0;
+  const clock=G.timed?Math.min(300,Math.round(Math.max(0,G.limit-G.elapsed))*5):0;
+  const sub=Math.max(0,base+swift+pure+stir+clock-help), bonusX=G.l===BONUS?sub*(has('pebble')?2:1):0;
   const ladle=has('ladle')?Math.round((sub+bonusX)*.1):0;
   const breath=Math.round((sub+bonusX)*[0,.1,.2][talent('dragon')]);
-  return {potions,base,swift,pure,stir,help,bonusX,ladle,breath,total:sub+bonusX+ladle+breath};
+  return {potions,base,swift,pure,stir,clock,help,bonusX,ladle,breath,total:sub+bonusX+ladle+breath};
 }
 function totalPoints(){ return Object.values(save.best||{}).reduce((a,b)=>a+b,0); }
 function updateHUD(){
@@ -1026,6 +1066,7 @@ function canPour(a,b){
 }
 function topRunModel(A){ const c=A[A.length-1].c; let n=0; for(let i=A.length-1;i>=0&&A[i].c===c;i--) n++; return n; }
 function startPour(a,b){
+  if(G.timed) G.started=true;
   const A=G.vials[a], B=G.vials[b];
   const n=Math.min(topRunModel(A),capOf(b)-B.length);
   pushUndo();
@@ -1054,8 +1095,26 @@ function stuckTip(hard){
   if(G.charges>0){
     toast(hard?`Stuck? Tap ${sp.icon} ${sp.name}: ${sp.desc.charAt(0).toLowerCase()+sp.desc.slice(1)}`:`Running low on room? ${sp.icon} ${sp.name} can help.`,3600);
     const b=$('#btnSpell'); b.classList.remove('nudge'); void b.offsetWidth; b.classList.add('nudge');
-  } else if(hard) toast(G.undos>0?'No pours left. Try Undo.':'No pours left. Restart to try again.',3200);
+  } else if(hard){ if(G.undos>0) toast('No pours left. Try Undo.',3200); else if(save.sprouts>0&&G.vials.length<12) toast('No pours left. A 🌱 Pocket Sprout could help.',3200); else setTimeout(()=>offerWind('stuck'),600); }
 }
+// Second Winds: continue a brew that is going wrong instead of failing it.
+function offerWind(kind){
+  const nm=save.pet?esc(save.pet.name):'', have=save.winds||0, canBuy=(save.purse||0)>=HUT.windNow;
+  const what=kind==='time'?`+${WIND_TIME} seconds`:`+${WIND_UNDOS} undos`;
+  modal(`<div class="kicker">${kind==='time'?'⌛ Time is up':'Out of pours'}</div><div class="sigbig">${kind==='time'?'⌛':'🫗'}</div>
+    <h2>${kind==='time'?"Time's up!":'No pours left'}</h2>
+    <p class="note">A Second Wind from the Healer's Hut lets you carry on: <b>${what}</b>.</p>
+    ${have?`<button class="btn" id="wUse">🌬️ Use a Second Wind (${have} left)</button>`:canBuy?`<button class="btn" id="wBuy">🌬️ Second Wind now · ✦ ${HUT.windNow}</button>`:`<p class="note dim">You have no Second Winds and need ✦ ${HUT.windNow} to buy one here.</p>`}
+    <div class="row"><button class="btn ghost" id="wRe">Start over</button><button class="btn ghost" id="wLeave">Leave</button></div>
+    ${failCounts()?`<p class="note dim">Starting over or leaving is a failed attempt: −${FAIL_COST} points${save.pet?` and one of ${nm}'s hearts`:''}.</p>`:''}`);
+  const go=()=>{ if(kind==='time'){ G.limit+=WIND_TIME; G.timeout=false; } else { G.undos+=WIND_UNDOS; } persist(); closeModal(); updateHUD(); SFX.magic(); toast(`🌬️ A Second Wind! ${what}.`,2400); };
+  if($('#wUse')) $('#wUse').onclick=()=>{ save.winds--; go(); };
+  if($('#wBuy')) $('#wBuy').onclick=()=>{ save.purse-=HUT.windNow; go(); };
+  const fail=after=>{ const m=failAttempt(); after(); if(m) setTimeout(()=>{ G&&!document.body.classList.contains('mapmode')?toast(m,3600):toastMap(m); },350); };
+  $('#wRe').onclick=()=>fail(()=>startLevel(G.r,G.l,G.y));
+  $('#wLeave').onclick=()=>fail(()=>showMap());
+}
+function timeOut(){ if(G.timeout) return; G.timeout=true; sel=null; hint=null; SFX.nope(); $('#timer').textContent='⏳ 0:00'; offerWind('time'); }
 function anyMove(){ for(let a=0;a<G.vials.length;a++) for(let b=0;b<G.vials.length;b++) if(canPour(a,b)) return true; return false; }
 function brew(i){
   const R=room(), [ing,hex,pot]=R.colors[G.vials[i][0].c];
@@ -1072,7 +1131,7 @@ function brew(i){
   SFX.chime(); try{navigator.vibrate&&navigator.vibrate(18)}catch(e){}
 }
 function win(){
-  if(save.pet){ const pt=save.pet; pt.brews=(pt.brews||0)+1; pt.drain=(pt.drain||0)+1; pt.hp=Math.min(PET_HP,petHP()+1);
+  if(save.pet){ const pt=save.pet; pt.brews=(pt.brews||0)+1; pt.drain=(pt.drain||0)+1; pt.hp=Math.min(petMax(),petHP()+(hasAttr('ember')?2:1));
     if(pt.full>0 && pt.drain%[1,2,3][talent('tree')]===0) pt.full--; }
   G.won=true; const key=LK(G.y,G.r,G.l); const stars=G.helps===0?3:G.helps<=2?2:1;
   save.done[key]=1; save.stars[key]=Math.max(save.stars[key]||0,stars); persist();
@@ -1095,6 +1154,9 @@ function showResults(key,stars,brewed,stirred,canBefore,cz){
     save.best[key]=Math.max(prevBest,sc.total);
     save.purse=(save.purse||0)+sc.total;
     let petNote='';
+    if(G.timed){ save.stats.timed=(save.stats.timed||0)+1; }
+    if(G.l===BONUS){ save.ess=save.ess||{}; save.ess[G.r]=(save.ess[G.r]||0)+1;
+      petNote+=`<p class="note">✦ +1 ${ROOMS[G.r].place.replace(/^The /,'')} Essence. Use it on the Familiar page to give ${save.pet?esc(save.pet.name):'your companion'} ${an(ATTRS[G.r].n)}.</p>`; }
     if(save.pet){ const nm=esc(save.pet.name);
       const rat=talent('rat'); if(rat){ for(let k=0;k<rat;k++){ const b=brewed[Math.floor(Math.random()*brewed.length)], ref=G.r+'-'+R.colors.indexOf(b); save.pot[ref]=(save.pot[ref]||0)+1; }
         petNote+=`<p class="note dim">${petGlyph()} ${nm} scavenged ${rat} extra potion${rat>1?'s':''} for your shelf.</p>`; }
@@ -1133,6 +1195,7 @@ function showResults(key,stars,brewed,stirred,canBefore,cz){
         ${sc.help?`<li class="neg"><span>Help used</span><span>−${sc.help}</span></li>`:''}
         ${sc.bonusX?`<li><span>Bonus brew ×${has('pebble')?3:2}</span><span>+${sc.bonusX}</span></li>`:''}
         ${sc.ladle?`<li><span>🪙 Gilded Ladle</span><span>+${sc.ladle}</span></li>`:''}
+        ${sc.clock?`<li><span>⏳ Beat the clock</span><span>+${sc.clock}</span></li>`:''}
         ${sc.breath?`<li><span>🐉 ${esc(save.pet.name)}'s Warm Breath</span><span>+${sc.breath}</span></li>`:''}
         <li class="tot"><span>Points</span><span>${sc.total}</span></li>
       </ul>
@@ -1290,7 +1353,7 @@ function drawCauldron(now){
 }
 
 function doUndo(){
-  if(!G||anim||G.won) return;
+  if(!G||anim||G.won||G.timeout) return;
   if(!G.undo.length) return toast('Nothing to undo yet.');
   if(G.undos<=0) return toast('Out of undos for this brew.');
   const s=G.undo.pop(); while(s.length<G.vials.length) s.push([]);
@@ -1298,7 +1361,7 @@ function doUndo(){
 }
 function findHint(){ const s=G.vials.map(v=>v.map(u=>u.c)); const p=solve(s,60000,G.caps,G.vials.map((_,i)=>sealKey(i))); return p&&p[0]; }
 function castSpell(){
-  if(!G||anim||G.won) return; const R=room(), sp=R.spell;
+  if(!G||anim||G.won||G.timeout) return; const R=room(), sp=R.spell;
   if(G.charges<=0) return toast(`${sp.name} is spent for this brew.`);
   switch(sp.key){
     case 'sprout':{ if(G.vials.length>=12) return toast('The shelf is full.'); G.vials.push([]); G.caps.push(spareCap()); layout();
@@ -1318,7 +1381,7 @@ function castSpell(){
 /* ======================= INPUT ======================= */
 function hitVial(x,y){ const {W}=GEO; for(let i=0;i<POS.length;i++){ const p=POS[i]; if(Math.abs(x-p.x)<W*.82 && y>p.y-36 && y<p.y+p.h+18) return i; } return -1; }
 game.addEventListener('pointerdown',e=>{
-  SFX.init(); if(!G||anim||G.won) return;
+  SFX.init(); if(!G||anim||G.won||G.timeout) return;
   const r=game.getBoundingClientRect(); const i=hitVial(e.clientX-r.left,e.clientY-r.top);
   if(i<0){ sel=null; return; }
   const v=G.vials[i];
@@ -1341,8 +1404,9 @@ $('#btnPet').onclick=()=>{ SFX.init(); if(!G||anim||G.won||!save.pet) return; co
   const m=findHint(); if(!m) return toast(`${nm} looks puzzled. Try Undo.`,2400);
   G.pet--; if(lv<5) G.helps++;
   hint=lv>=3?{a:m[0],b:m[1],t:0}:{a:m[0],b:-1,t:0};
+  if(hasAttr('eyes')) [m[0],lv>=3?m[1]:-1].forEach(i=>{ if(i>=0&&!sealedAt(i)) G.vials[i].forEach(u=>u.h=false); });
   SFX.magic(); updateHUD(); toast(`${nm}: ${pick(P.hint)}`,2600); };
-$('#btnPocket').onclick=()=>{ SFX.init(); if(!G||anim||G.won) return;
+$('#btnPocket').onclick=()=>{ SFX.init(); if(!G||anim||G.won||G.timeout) return;
   if(!(save.sprouts>0)) return toast('No Pocket Sprouts left. Buy more with tokens in the grimoire.');
   if(G.vials.length>=12) return toast('The shelf is full.');
   save.sprouts--; persist(); G.vials.push([]); G.caps.push(spareCap()); G.helps++; layout(); SFX.magic(); updateHUD();
@@ -1379,7 +1443,8 @@ const GUIDE=[
     ['🍾','<b>Potion</b><br>Fill a vial with four layers of one color and it corks into a named potion. The first time you bottle one, its sand turns into the <i>real ingredient</i>: petals, roots, stars, crystals. Collect them all.'],
     ['🫕','<b>Stir the cauldron</b><br>Every brew\'s potions pour into the cauldron. Every third brew it is full: swirl your finger to stir and seal them all.'],
     ['❓','<b>Veiled layers</b><br>In later classrooms, lower layers hide until you uncover them.'],
-    ['📜','<b>Scrolls</b><br>Some vials are sealed in a scroll. Bottle the potion matching its wax seal to unravel it.']]},
+    ['📜','<b>Scrolls</b><br>Some vials are sealed in a scroll. Bottle the potion matching its wax seal to unravel it.'],
+    ['⏳','<b>Timed brews</b><br>Some brews have a clock, starting from your first pour. Time left over earns bonus points.']]},
   {k:'How to brew · 3 of 5', h:'Your satchel', items:[
     ['↶','<b>Undo</b><br>Takes back your last pour. You get a few per brew.'],
     ['🌱','<b>The professor\'s spell</b><br>The glowing middle button. In the Glasshouse it\'s <b>Sprout</b>, which grows you an <i>extra empty vial</i> when you\'re stuck. Each classroom teaches a new spell.'],
@@ -1394,7 +1459,7 @@ const GUIDE=[
     ['📖','<b>Spellcraft</b><br>In the grimoire, combine discovered ingredients and bottled potions in the cauldron to craft spells. Crafted spells help in every brew, for good.'],
     ['🎓','<b>Academy years</b><br>Craft all of your year\'s <b>exam spells</b> to move up a year, with new and harder brews in every classroom.'],
     ['🏆','<b>Achievements</b><br>Earn tokens to spend on Pocket Sprouts and sealed lore pages in the grimoire.'],
-    ['🐾','<b>Your Sprout</b><br>A little companion that grows with you and blooms into a familiar of your choice in your Third Year. Feed it, and it helps with hints. Giving up a brew costs points and one of its hearts.']]},
+    ['🐾','<b>Your Sprout</b><br>A little companion that grows with you and blooms into a familiar of your choice in your Third Year. Feed it, and it helps with hints. Giving up a brew costs points and one of its hearts; the Healer\'s Hut can mend them. Bonus brews earn Essences that give it new attributes.']]},
 ];
 function showGuide(p,done){
   const P=GUIDE[p], last=p===GUIDE.length-1;
@@ -1421,13 +1486,13 @@ function showMap(tab){
   $('#awardBadge').hidden=!save.newAch;
   $('#petBadge').hidden=!save.pet||!((isSprout()&&save.year>=PET_YEAR)||(save.pet.full<PET_FULL&&save.purse>=TREAT_COST));
   $('#loreBadge').hidden=!LORE.some((L,i)=>!save.lore[i]&&save.tok>=L.c);
-  $('#mapList').hidden=!rooms; $('#craftList').hidden=mapTab!=='craft'; $('#awardList').hidden=mapTab!=='awards'; $('#loreList').hidden=mapTab!=='lore'; $('#petList').hidden=mapTab!=='pet';
+  $('#mapList').hidden=!rooms; $('#craftList').hidden=mapTab!=='craft'; $('#awardList').hidden=mapTab!=='awards'; $('#loreList').hidden=mapTab!=='lore'; $('#petList').hidden=mapTab!=='pet'; $('#hutList').hidden=mapTab!=='hut';
   // Year switcher appears once you have reached a second year.
   const yb=$('#yearBar'); yb.hidden=!rooms||save.year<2;
   if(!yb.hidden){ let h=''; for(let y=1;y<=YEARS;y++) h+=`<button class="yr" data-y="${y}" aria-pressed="${y===save.view}" ${y<=save.year?'':'disabled'}>${y<=save.year?'':'🔒 '}${YEAR_NAMES[y]}</button>`;
     if(save.year>YEARS) h+=`<button class="yr" disabled>${YEAR_NAMES[YEARS+1]} · soon</button>`;
     yb.innerHTML=h; yb.querySelectorAll('.yr:not([disabled])').forEach(b=>b.onclick=()=>{ SFX.init(); SFX.tick(); save.view=+b.dataset.y; persist(); showMap(); }); }
-  if(rooms) renderRooms(save.view); else if(mapTab==='craft') renderCraft(); else if(mapTab==='awards') renderAwards(); else if(mapTab==='pet') renderPet(); else renderLore();
+  if(rooms) renderRooms(save.view); else if(mapTab==='craft') renderCraft(); else if(mapTab==='awards') renderAwards(); else if(mapTab==='pet') renderPet(); else if(mapTab==='hut') renderHut(); else renderLore();
 }
 function renderRooms(y){
   const el=$('#mapList'); el.innerHTML='';
@@ -1563,7 +1628,8 @@ function renderPet(){
   const feed=pt.full>=PET_FULL?'Too full for treats':save.purse<TREAT_COST?`Needs ✦ ${TREAT_COST} points`:`${P.treat} Feed a treat · ✦ ${TREAT_COST}`;
   const home=`<div class="pethome"><div class="big" id="petBig">${petGlyph()}</div><h3>${esc(pt.name)}</h3><div class="lv">${petStageName()}${sp?'':' · '+petVar().d}</div><div class="lv">Bond level ${lv} · ${PET_LV[lv-1].t}</div>
       <div class="say">${say}</div>
-      <div class="meter" aria-label="${hp} of ${PET_HP} hearts">${hearts()}</div>
+      ${pt.attr&&Object.keys(pt.attr).length?`<div class="attrs">${ATTRS.filter(A=>hasAttr(A.k)).map(A=>`<span title="${A.n}">${A.i}</span>`).join('')}</div>`:''}
+      <div class="meter" aria-label="${hp} of ${petMax()} hearts">${hearts()}</div>
       <div class="meter" aria-label="${pt.full} of ${PET_FULL} bowls full">${Array.from({length:PET_FULL},(_,i)=>`<span class="${i<pt.full?'':'off'}">🥣</span>`).join('')}</div>
       <div class="bond" aria-label="Bond ${pct}% to the next level"><i style="width:${pct}%"></i></div>
       <div class="note dim">${nx?`${nx.need-pt.bond} more treat${nx.need-pt.bond>1?'s':''} to bond level ${lv+1}`:'Best friends forever ✦'} · ${['each brew empties one bowl','bowls empty every other brew','bowls empty every third brew'][talent('tree')]}</div>
@@ -1584,10 +1650,19 @@ function renderPet(){
     grow=`<div class="ygroup">Growing up</div><div class="perks">${P.stages.map((nm,i)=>`<div class="perk${i<=st?' on':''}"><b style="min-width:34px;font-size:26px;text-align:center;line-height:1">${petGlyph(P,petVar(),i)}</b><div><b style="font-size:12px">${nm}</b><br>${i===0?'Bloomed from your Sprout.':`Finish ${GROW_ROOMS[i]===5?'all 5':GROW_ROOMS[i]} Third Year classrooms${i<=st?'':` · ${Math.min(n,GROW_ROOMS[i])}/${GROW_ROOMS[i]}`}.`} ${i>0?`<span class="dim">${T.n}: ${T.d[i-1].charAt(0).toLowerCase()+T.d[i-1].slice(1)}.</span>`:''}</div></div>`).join('')}</div>
       <div class="spellbox"><div class="sb-ic">✦</div><div><b>Talent · ${T.n}</b><br>${hp===0?'Resting until a heart is restored.':st?T.d[st-1]+'.':`Wakes up when ${esc(pt.name)} grows into ${an(P.stages[1])}.`}</div></div>`;
   }
-  el.innerHTML=purseBar('Points to spend on treats. Every brew adds to it.')+home+grow
+  const attrs=`<div class="ygroup">Attributes</div>
+    <p class="note dim" style="text-align:center">Win a classroom's bonus brew for its Essence, then add two of that classroom's potions.</p>
+    <div class="perks">${ATTRS.map(A=>{ const got=hasAttr(A.k), ok=canAttr(A), e=essCount(A.r);
+      return `<div class="perk${got?' on':''}"><b style="min-width:30px;font-size:22px;text-align:center">${A.i}</b><div style="flex:1"><b style="font-size:12px">${A.n}</b><br>${A.d}
+        ${got?'':`<br><span class="dim">${ROOMS[A.r].place.replace(/^The /,'')} Essence ${Math.min(e,1)}/1 · ${Object.entries(A.pot).map(([p,n])=>`${potName(p)} ${Math.min(potCount(p),n)}/${n}`).join(' · ')}</span>`}</div>
+        ${got?'<b style="min-width:0">✓</b>':`<button class="craft" data-attr="${A.k}" ${ok?'':'disabled'} style="padding:8px 10px">${ok?'Give':'—'}</button>`}</div>`; }).join('')}</div>`;
+  el.innerHTML=purseBar('Points to spend on treats. Every brew adds to it.')+home+grow+attrs
     +`<div class="ygroup">Bond</div><div class="perks">${PET_LV.map((L,i)=>`<div class="perk${i<lv?' on':''}"><b>Lv ${i+1}</b>${L.d}</div>`).join('')}</div>`;
   $('#feed').onclick=()=>{ SFX.init(); const r=feedPet(); if(r==='ok'||r==='level'){ SFX.chime(); renderPetAfterFeed(r); } };
   if(sp&&save.year>=PET_YEAR) wirePicker();
+  el.querySelectorAll('[data-attr]').forEach(b=>b.onclick=()=>{ SFX.init(); const A=ATTRS.find(x=>x.k===b.dataset.attr);
+    if(giveAttr(A.k)){ SFX.magic(); modal(`<div class="kicker">A new attribute</div><div class="sigbig">${petGlyph()}</div><h2>${esc(save.pet.name)} gains ${A.n} ${A.i}</h2>
+      <div class="spellbox"><div class="sb-ic">${A.i}</div><div>${A.d}</div></div><div class="row"><button class="btn" id="mOk">Lovely</button></div>`); $('#mOk').onclick=()=>showMap('pet'); } });
 }
 function renderPetAfterFeed(r){
   showMap('pet'); const b=$('#petBig'); if(b) b.classList.add('munch');
@@ -1597,6 +1672,22 @@ function renderPetAfterFeed(r){
     setTimeout(()=>{ if(!document.body.classList.contains('mapmode')) return; modal(`<div class="kicker">Bond grows</div><div class="sigbig">${petGlyph()}</div><h2>${esc(save.pet.name)} is ${PET_LV[lv-1].t}</h2>
       <div class="spellbox"><div class="sb-ic">✦</div><div>${PET_LV[lv-1].d}</div></div>
       <div class="row"><button class="btn" id="mOk">Lovely</button></div>`); $('#mOk').onclick=()=>showMap('pet'); },700); }
+}
+function renderHut(){
+  const el=$('#hutList'), pt=save.pet, hp=petHP(), mx=petMax(), nm=pt?esc(pt.name):'your companion';
+  const item=(id,ic,title,txt,cost,ok)=>`<div class="shop"><div class="si">${ic}</div><div class="st"><b>${title}</b>${txt}</div><button class="craft" id="${id}" ${ok&&(save.purse||0)>=cost?'':'disabled'}>✦ ${cost}</button></div>`;
+  el.innerHTML=`<div class="hut"><div class="big">🛖</div><h3>Mother Thimbleweed's Healer Hut</h3>
+      <p class="quote small">“Sit, sit. Nothing here a little moss tea and a few of your points can't mend.”</p></div>`
+    +purseBar('Points to spend. Every brew adds to it.')
+    +(pt?`<div class="pethome" style="padding:14px"><div class="big" style="font-size:52px">${petGlyph()}</div><div class="meter">${hearts()}</div><div class="note dim">${hp>=mx?`${nm} is in fine health.`:hp===0?`${nm} is worn out and can't help until healed.`:`${nm} has ${hp} of ${mx} hearts.`}</div></div>`:'')
+    +item('hHeart','❤️','Heal a heart',`Restores one of ${nm}'s hearts.`,HUT.heart,pt&&hp<mx)
+    +item('hFull','💖','Full restore',`Restores every heart at once.`,HUT.full,pt&&hp<mx-1)
+    +item('hWind','🌬️',`Second Wind · you have ${save.winds||0}`,`Carry on when a brew goes wrong: +${WIND_TIME} seconds when a timed brew runs out, or +${WIND_UNDOS} undos when you're out of pours. (✦ ${HUT.windNow} if bought on the spot.)`,HUT.wind,true)
+    +`<p class="note dim" style="text-align:center">Hearts also come back when you win a brew or feed a treat.</p>`;
+  const buy=(cost,fn,msg)=>{ if((save.purse||0)<cost) return; save.purse-=cost; fn(); persist(); SFX.magic(); toastMap(msg); showMap('hut'); };
+  $('#hHeart').onclick=()=>buy(HUT.heart,()=>{ pt.hp=Math.min(mx,hp+1); },`❤️ ${nm} feels better.`);
+  $('#hFull').onclick=()=>buy(HUT.full,()=>{ pt.hp=mx; },`💖 ${nm} is fully restored.`);
+  $('#hWind').onclick=()=>buy(HUT.wind,()=>{ save.winds=(save.winds||0)+1; },'🌬️ A Second Wind, bottled for later.');
 }
 function renderLore(){
   let h=tokBar('Spend tokens to unlock pages of the grimoire.');
@@ -1859,7 +1950,16 @@ function drawAmb(t,dt){
 /* ======================= LOOP ======================= */
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let last=performance.now();
+let timerShown='';
+function tickTimer(dt){
+  const el=$('#timer'); const on=!!(G&&G.timed&&!document.body.classList.contains('mapmode'));
+  if(el.hidden===on) el.hidden=!on; if(!on) return;
+  if(G.started&&!G.won&&!G.timeout&&$('#modal').hidden&&!anim){ G.elapsed+=dt; if(G.elapsed>=G.limit) return timeOut(); }
+  const left=G.limit-G.elapsed, txt='⏳ '+fmtTime(left);
+  if(txt!==timerShown){ timerShown=txt; el.textContent=txt; el.classList.toggle('low',left<=15&&G.started&&!G.won); }
+}
 function frame(now){ const dt=Math.min(.05,(now-last)/1000); last=now; const t=now/1000;
+  tickTimer(dt);
   if(!reduce||(Math.floor(t*10)%3===0)) drawAmb(t,reduce?dt*.2:dt);
   drawGame(t,dt); requestAnimationFrame(frame); }
 
