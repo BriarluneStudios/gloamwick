@@ -520,6 +520,10 @@ const ACH=[
  {k:'owl',     i:'🦉', n:'Night Owl',             d:'Finish a brew between midnight and 4 a.m.',       t:1, ok:c=>!!(c&&c.owl)},
    {k:'gold',    i:'🏆', n:'Lucky Find',            d:'Open a golden vial.',                             t:2, ok:()=>(save.stats.gold||0)>=1},
  {k:'adv',     i:'🗝️', n:'Adventurer',            d:'Conquer an Adventure.',                           t:3, ok:()=>advWins()>=1},
+ {k:'gift',    i:'📖', n:'Gifted Witch',          d:"Earn a Witch's Gift in the Grimoire Workshop.",   t:2, ok:()=>!!(save.gifts&&Object.keys(save.gifts).length)},
+ {k:'gift9',   i:'🌈', n:'Every Color',           d:"Earn all nine Witch's Gifts.",                    t:5, ok:()=>GIFTS.every((_,i)=>hasGift(i))},
+ {k:'hidden',  i:'🫥', n:'Seer',                  d:'Find a hidden golden vial.',                      t:3, ok:()=>(save.stats.hidden||0)>=1},
+ {k:'pathdone',i:'🌟', n:'Wayfinder',             d:'Walk a Hidden Path to its end.',                  t:5, ok:()=>!!(save.pathDone&&Object.keys(save.pathDone).length)},
  {k:'care',    i:'🧉', n:'Brewing Buddies',       d:'Brew a remedy with your companion.',              t:2, ok:()=>(save.stats.remedies||0)>=1},
  {k:'clock',   i:'⏳', n:'Beat the Clock',        d:'Win a timed brew.',                               t:2, ok:()=>(save.stats.timed||0)>=1},
  {k:'attr',    i:'🎀', n:'Gifted Companion',      d:'Give your companion an attribute.',               t:2, ok:()=>!!(save.pet&&save.pet.attr&&Object.keys(save.pet.attr).length)},
@@ -592,6 +596,14 @@ const LORE=[
   'That is the last lesson of the grimoire, and the first one too. Take your time. The lamps will stay lit. Gloamwick is always here at dusk, and so, now, are you.']},
 ];
 const loreCost=i=>LORE[i].c;
+// The storyline: a prologue, a chapter for every classroom you finish, one per graduation, and the Hidden Paths.
+const STORY=[["prologue", "The Lamps of Gloamwick", "The lamps of Gloamwick have burned at dusk for three hundred years. This term, for the first time, one went out. Then another. The professors smile and say it is nothing. But the great cauldron in the Hall has started bubbling a single word when it thinks no one is looking: <i>Hollow</i>."], ["y1r0", "Grey Petals", "Professor Hollowmere shows you a seed tray gone grey overnight. “Something is drinking the color out of things,” she says, tucking a sprig behind your ear. “Keep brewing, petal. Color is the one thing it can't take from a witch who makes it.”"], ["y1r1", "A Dark Lantern", "From the top of the Spire, Professor Vesper hands you his telescope. As always, it points at the Hushed Crypt. Tonight there is a lantern burning down there. It burns <i>dark</i>, swallowing the starlight around it."], ["y1r2", "Blue Flames", "Every time you cross the east lawn, the forge fires dip blue. Professor Cinderhall frowns at his bellows. “Whatever that lantern is, it's hungry,” he says, “and it likes the taste of brewing.”"], ["y1r3", "The Cup Set Down", "Madame Lune reads your tea leaves and sets the cup down a little too quickly. “A hollow lantern,” she murmurs, “and a witch who will fill it.” She won't say which witch, and she doesn't meet your eyes."], ["y1r4", "The Second Door", "Professor Ashgrave leads you to the far end of the Crypt, to a second door you've only heard whispers about. The wood is warm, as if something were breathing behind it. “Not yet,” he says. “But you are closer than anyone has been in a very long time.”"], ["y1grad", "A Lantern of Your Own", "Every Second Year is given a small brass lantern. Yours flickers whenever you brew well and goes dim whenever you give up, as if something on the other side were listening."], ["y2r0", "A Scratched Name", "The Glasshouse's oldest fern unfurls a leaf you've never seen. Written on it in silver are the names of Gloamwick's founders. There were five. One name has been scratched out."], ["y2r1", "A Path of Lamps", "Professor Vesper charts every lamp that has gone dark this year. Joined up on his star chart, they make a path: from every classroom, down to the Crypt."], ["y2r2", "A Key from the Ashes", "Raking the forge, Professor Cinderhall finds a key melted into the ashes, as old as the Academy. It fits nothing he owns. He gives it to you anyway. “You'll know the lock,” he says."], ["y2r3", "Three Hundred Years Ago", "At midnight every teacup in the Parlor cracks at once. In the pieces, Madame Lune sees a girl your age holding a lantern, three hundred years ago."], ["y2r4", "Morrow Gloam", "Ashgrave finally tells you the scratched-out name: Morrow Gloam, the founder the Academy is named for. She made the Hollow Lantern to keep dusk from ever ending, so Gloamwick would never lose its gentle in-between light. It worked, until the lantern got hungry."], ["y2grad", "A Bloom at Dusk", "On the night you become a Third Year, the great lamp in the Hall gutters out. In the dark, your little sprout begins to glow."], ["y3r0", "Morrow's Journal", "Behind a curtain of ivy, you and your familiar find Morrow's greenhouse journal. The last page reads: “The lantern keeps the gloam, but it must be fed. Not with light. I was wrong about that. With care.”"], ["y3r1", "Stars Going Out", "Above the Spire the stars are winking out one by one, in the shape of a lantern. Professor Vesper doesn't joke anymore. He just hands you his notes."], ["y3r2", "Morrow's Workshop", "The melted key glows near your familiar and opens a hatch beneath the forge: Morrow's workshop, untouched for three centuries. On the bench lies a recipe listing every potion you have ever bottled."], ["y3r3", "The True Reading", "Madame Lune reads your cup properly at last. “You will fill the lantern, dear. Not with light. With everything you've brewed by your own hand.” This time she smiles."], ["y3r4", "The Hollow Lantern", "Behind Ashgrave's second door the Hollow Lantern waits. You pour in a drop of every potion you have ever bottled while your familiar keeps you steady. It glows gold. Then, all at once, every lamp in Gloamwick lights, and the gloam is gentle and golden again, the way Morrow always meant it to be."], ["y3grad", "To Be Continued", "The professors raise their cups to you. Somewhere below the Crypt, a third door you've never noticed creaks, just slightly, open."]];
+const storyGet=id=>{ const m=/^p(\d)-(\d|end)$/.exec(id); if(m){ const P=PATH_INFO[m[1]]; return m[2]==='end'?['✦ '+P.name,P.end]:P.ch[+m[2]]; } const S=STORY.find(x=>x[0]===id); return S&&[S[1],S[2]]; };
+function unlockChapter(id){ save.story=save.story||{}; if(save.story[id]) return false; save.story[id]=Date.now(); persist(); return true; }
+function showChapter(id,after,btn){ const C=storyGet(id); if(!C) return after&&after(); unlockChapter(id);
+  modal(`<div class="kicker">📖 ${/^p\d/.test(id)?'The Hidden Path':'The Story of Gloamwick'}</div><h2>${C[0]}</h2><div class="page"><p>${C[1]}</p></div>
+    <div class="row"><button class="btn" id="chOk">${btn||'Continue'}</button></div>`);
+  $('#chOk').onclick=()=>{ after?after():closeModal(); }; }
 function buyLore(i){ if(save.lore[i]||save.tok<loreCost(i)) return false; save.tok-=loreCost(i); save.lore[i]=1; persist(); checkAch(); return true; }
 /* ======================= FAMILIARS ======================= */
 // Cash in points to adopt a familiar. Feed it treats (also points) to grow your bond; at higher bond levels it
@@ -600,7 +612,7 @@ function buyLore(i){ if(save.lore[i]||save.tok<loreCost(i)) return false; save.t
 // save.pet: {k: kind, name, bond: treats eaten, full: bowls 0..PET_FULL}
 // Every witch starts with a little Sprout. It grows with you (a seedling in Year 1, a sprout in Year 2) and in the
 // Third Year it blooms into the familiar you choose, keeping its bond. Failed attempts cost it a heart.
-const TREAT_COST=250, PET_FULL=3, PET_YEAR=3, PET_HP=3, FAIL_COST=100;
+const HIDDEN_PTS=500, TREAT_COST=250, PET_FULL=3, PET_YEAR=3, PET_HP=3, FAIL_COST=100;
 // Eight kinds of familiar, each with three companions to choose from. A companion's look is its emoji plus an
 // optional CSS filter (f) that recolors it, e.g. a red or blue dragon.
 const PETS=[
@@ -663,6 +675,23 @@ const CHARMS=[
  {k:'thaw',    i:'☀️', n:'Sunny Paws',     d:'Frost thaws 2 pours sooner.'},
  {k:'star',    i:'💫', n:'Stardust Trail', d:'+1 Undo in every brew.'},
 ];
+// Witch's Gifts: won in the Grimoire Workshop, the breakout after brew 15 of every classroom. You pick any potion
+// you've discovered and brew it; its color decides the gift. Gifts are yours (not your companion's), so they help
+// long before your Sprout blooms.
+const GIFTS=[
+ {i:'❤️‍🔥', n:'Courage',  d:'+1 Undo in every brew.'},
+ {i:'🔥',  n:'Warmth',   d:'+10 seconds on timed brews, and frost thaws a pour sooner.'},
+ {i:'🌟',  n:'Fortune',  d:'A 10% chance to find a token after every brew.'},
+ {i:'🌿',  n:'Mending',  d:"Failed attempts don't cost your companion a heart."},
+ {i:'💧',  n:'Clarity',  d:'Uncovers 3 veiled layers as every brew begins.'},
+ {i:'🌊',  n:'Calm',     d:"+1 charge of every professor's spell."},
+ {i:'🔮',  n:'Insight',  d:'Golden Sense +1: reveals one more golden rune.'},
+ {i:'🌸',  n:'Kindness', d:'+5% points on every brew.'},
+ {i:'🤍',  n:'Ward',     d:'Fragile vials survive one extra wrong pour.'},
+];
+const HUE_NAMES=['red','orange','yellow','green','teal','blue','purple','pink','white'];
+const hasGift=h=>!!(save.gifts&&save.gifts[h]);
+const WS_SLOT=14;   // the workshop opens after brew 15 of every classroom
 const hasCharm=k=>!!(save.pet&&!save.pet.injured&&save.pet.charms&&save.pet.charms[k]);
 const injured=()=>!!(save.pet&&save.pet.injured);
 const essCount=r=>(save.ess&&save.ess[r])||0;
@@ -722,7 +751,8 @@ const failCounts=()=>!!G&&G.moves>0&&!G.won&&!(G.y===1&&G.r===0);
 function failAttempt(){ if(!failCounts()) return ''; G.moves=0;
   const lost=Math.min(hasCharm('ward')?50:FAIL_COST,save.purse||0); save.purse=(save.purse||0)-lost; save.stats.fails=(save.stats.fails||0)+1;
   let m=`Failed attempt: −${lost} points`;
-  if(save.pet){ save.pet.hp=Math.max(0,petHP()-1); m+=` · ${save.pet.name} lost a heart${save.pet.hp===0?' and is too worn out to help':''} ${hearts()}`; }
+  if(save.pet&&hasGift(3)) m+=` · 🌿 Mending kept ${save.pet.name}'s hearts safe`;
+  else if(save.pet){ save.pet.hp=Math.max(0,petHP()-1); m+=` · ${save.pet.name} lost a heart${save.pet.hp===0?' and is too worn out to help':''} ${hearts()}`; }
   persist(); return m; }
 function confirmFail(verb,go){
   if(!failCounts()) return go();
@@ -772,14 +802,21 @@ function runLen(v){ if(!v.length) return 0; const c=v[v.length-1]; let n=0; for(
 // must be bottled), 100+n (n potions of any color must be bottled) or GOLD_SEAL (never opens; the golden vial).
 // frost: for each vial, how many pours it stays frozen. A sealed or frozen vial can't be poured into or out of.
 const SEAL_COUNT=100, GOLD_SEAL=999;
-function solve(start,limit,caps,seals,frost){
+// Shelf rows are fixed by how many vials a brew starts with (vials added later join the last shelf), so
+// "next to" never changes during a brew. Two vials are neighbors if they sit side by side on the same shelf.
+function shelfPer(baseN){ const rows=baseN<=5?1:2; return Math.ceil(baseN/rows); }
+function shelfNbrs(i,baseN,n){ const per=shelfPer(baseN), rows=baseN<=5?1:2, rowOf=j=>Math.min(rows-1,Math.floor(j/per));
+  return [i-1,i+1].filter(j=>j>=0&&j<n&&rowOf(j)===rowOf(i)); }
+// webs: for each vial, 1 if a spider web traps it. A web tears once a neighboring vial is bottled.
+function solve(start,limit,caps,seals,frost,webs,baseN){
   // best-first search: few colour breaks + few vials per colour = close to solved
-  caps=caps||start.map(()=>CAP); seals=seals||[]; frost=frost||[];
+  caps=caps||start.map(()=>CAP); seals=seals||[]; frost=frost||[]; webs=webs||[]; baseN=baseN||start.length;
+  const nb=start.map((_,i)=>webs[i]?shelfNbrs(i,baseN,start.length):null);
   const tot={}; start.forEach(v=>v.forEach(x=>tot[x]=(tot[x]||0)+1));
   const full=v=>v.length>0 && v.length===tot[v[0]] && v.every(x=>x===v[0]);
-  const anySeal=seals.some(k=>k>=0)||frost.some(f=>f>0);
+  const anySeal=seals.some(k=>k>=0)||frost.some(f=>f>0)||webs.some(Boolean);
   const sealedIn=(s,g)=>{ if(!anySeal) return null; const dn={}; let nd=0; s.forEach(v=>{ if(full(v)){ dn[v[0]]=1; nd++; } });
-    return s.map((_,i)=>{ const k=seals[i]; if((frost[i]||0)>g) return true; if(k===undefined||k<0) return false;
+    return s.map((_,i)=>{ const k=seals[i]; if((frost[i]||0)>g) return true; if(nb[i]&&!nb[i].some(j=>full(s[j]))) return true; if(k===undefined||k<0) return false;
       if(k===GOLD_SEAL) return true; if(k>=SEAL_COUNT) return nd<k-SEAL_COUNT; return !dn[k]; }); };
   const key=s=>s.map((v,i)=>caps[i]+(seals[i]>=0?'s'+seals[i]:'')+':'+v.join(',')).sort().join('|');
   const hScore=s=>{ let t=0; const where={}; s.forEach((v,vi)=>{ for(let i=0;i<v.length;i++){ if(i&&v[i]!==v[i-1]) t++; (where[v[i]]||(where[v[i]]=new Set)).add(vi); } });
@@ -812,19 +849,25 @@ const PER=30, BONUS=PER, ADV=PER+1;   // brews per classroom, then the bonus bre
 const YEARS=3;
 // Adventures: one very hard brew per year, unlocked with a Lucky Elixir from a golden vial.
 const ADV_INFO={1:{r:4,name:'The Gilded Catacombs',icon:'🗝️'},2:{r:2,name:'The Molten Vault',icon:'🌋'},3:{r:1,name:'The Star-Drowned Library',icon:'📚'}};
+// Hidden Paths: five secret story brews per year, opened by finding a hidden golden vial after every visible one.
+const PATH0=ADV+1, PATH_N=5;
+const PATH_INFO={"1": {"r": 3, "name": "The Lamplighter's Path", "icon": "🏮", "end": "Lamplighter's Friend: Wick will be waiting when you reach the Hollow Lantern.", "ch": [["A Ghost with a Taper", "Following the hidden golden glow, you find a narrow stair behind the Parlor's fireplace. At the bottom a pale boy with a lamplighter's taper bows. “Wick,” he says. “Morrow's apprentice. Or I was.”"], ["Wick's Rounds", "Wick lit every lamp in Gloamwick, every dusk, for twenty years. “Then one night the lantern took my light too,” he says, and holds up a taper that won't catch."], ["The Lamplighter's Map", "He unrolls a map of every lamp in the Academy. One is circled in red: a lamp inside the Hollow Lantern itself."], ["A Spark Shared", "You brew while Wick watches. When you finish, his taper catches, just for a moment. He laughs for the first time in three hundred years."], ["Wick's Promise", "“When you reach the lantern,” Wick says, “call for me. I'll light the last lamp.” Then he's gone, and the stair is only a fireplace again."]]}, "2": {"r": 0, "name": "The Path of Stolen Dusk", "icon": "🌘", "end": "Keeper of Dusk: the stolen evenings are safe, and Morrow's sister knows your name.", "ch": [["A Door in the Roots", "The hidden glow leads under the Glasshouse, through a door woven from roots. Down here the dusk is thick and sweet and very still."], ["Bottled Evenings", "Jars line the roots, each holding an evening the lantern stole: someone's first spell, a long-ago picnic, a goodbye."], ["The Gardener", "A woman made of ivy tends the jars. “Morrow's sister,” she says. “I keep what the lantern takes, so it isn't lost forever.”"], ["Unstopped", "Together you unstop one jar. A warm evening spills out over the Glasshouse, and every flower opens at once."], ["The Sister's Gift", "“Take this,” she says, and gives you a seed of pure dusk. “Plant it in the lantern. It remembers what the lantern forgot.”"]]}, "3": {"r": 4, "name": "The Founder's Path", "icon": "🌟", "end": "The Founder's Heir: Morrow names you heir to Gloamwick.", "ch": [["The Third Door", "Beyond Ashgrave's second door there is a third, made of starlight and golden glass. Only a witch who finds what no one else can see may open it."], ["Morrow's Voice", "Inside, a voice like candlelight: “You found the hidden vials. Then you see as I did. Come closer.”"], ["The Founder's Regret", "Morrow tells you everything. She only meant to keep the dusk gentle. “I made it hungry because I was afraid of the dark. You aren't, are you?”"], ["Lighting the Way Back", "You and your familiar brew Morrow a lamp of her own, and for the first time in three hundred years she can see the way out."], ["The Founder Returns", "Morrow Gloam steps into the Hall at dusk. The professors rise. She looks at you and says only, “Thank you, Headwitch.”"]]}};
+const PATH_SEEDS={1:[89,22,6,156,76],
+             2:[106,126,10,36,63],
+             3:[81,52,85,33,7]};
 // Pre-picked layouts (tools/seeds.js): SEEDS[year][room][brew], breathers are random so they hold 0.
-const ADV_SEEDS={1:287,
-             2:334,
-             3:7};
-const SEEDS={1:[[0,0,3,14,17,0,16,3,1,1,0,0,3,7,10,1,13,13,7,36,0,0,18,1,20,17,1,17,9,18,26],[0,0,16,2,11,7,3,14,5,21,0,0,7,16,35,1,11,13,24,14,0,0,39,3,38,4,34,27,8,27,48],[0,0,5,11,43,22,18,37,5,10,0,0,26,6,18,9,16,39,10,33,0,0,6,18,1,24,32,29,8,36,28],[0,0,16,35,26,17,16,25,19,30,0,0,20,2,21,15,27,14,12,18,0,0,2,8,26,35,0,25,31,19,41],[0,0,35,37,3,31,38,38,16,3,0,0,26,44,7,16,45,29,33,45,0,0,4,23,36,33,37,44,0,27,31]],
-             2:[[0,0,18,13,0,9,4,14,13,13,0,0,16,20,1,27,40,13,21,45,0,0,15,19,15,1,51,6,41,48,52],[0,0,9,5,15,20,13,16,22,9,0,0,0,19,26,27,7,25,33,20,0,0,37,29,37,30,1,19,8,21,76],[0,0,17,38,26,8,36,32,42,6,0,0,42,6,9,23,2,25,16,37,0,0,30,16,11,13,17,6,28,19,59],[0,0,40,11,30,1,46,26,22,8,0,0,35,5,32,45,14,43,51,25,0,0,33,19,16,6,35,28,35,46,116],[0,0,45,30,5,33,8,32,23,76,0,0,40,27,62,64,53,44,43,5,0,0,44,29,67,5,71,44,58,76,68]],
-             3:[[0,0,0,42,42,34,42,43,9,29,0,0,51,24,23,1,22,18,18,29,0,0,11,26,24,16,33,39,6,48,73],[0,0,38,18,17,47,51,2,1,42,0,0,34,34,12,26,56,10,49,19,0,0,17,22,8,27,40,9,38,34,19],[0,0,49,10,43,11,20,28,47,18,0,0,19,25,35,23,32,40,15,2,0,0,2,21,9,31,52,38,44,12,10],[0,0,65,53,22,40,12,40,51,1,0,0,29,29,38,37,38,14,40,11,0,0,10,47,48,35,25,47,9,53,27],[0,0,4,55,12,19,1,19,56,58,0,0,7,46,56,31,1,12,58,42,0,0,53,19,38,0,13,67,24,37,30]]};
-const slotKind=l=>l===BONUS?'bonus':l===ADV?'adv':l%10===9?'peak':(l%10<=1)?'ease':'ramp';
+const ADV_SEEDS={1:205,
+             2:50,
+             3:534};
+const SEEDS={1:[[0,0,3,14,17,0,16,3,1,1,0,0,3,7,10,1,13,13,7,36,0,0,18,1,20,17,1,17,9,18,119],[0,0,16,2,11,7,3,14,5,21,0,0,7,16,35,1,11,13,24,14,0,0,39,3,38,4,34,27,8,27,76],[0,0,5,11,43,22,18,37,5,10,0,0,26,6,18,9,16,39,10,33,0,0,9,37,53,24,37,44,32,13,45],[0,0,16,35,26,23,31,20,33,18,0,0,3,10,37,11,28,29,14,26,0,0,6,33,6,18,3,23,4,149,74],[0,0,17,9,29,32,44,3,23,111,0,0,26,48,7,15,9,29,8,68,0,0,20,31,108,111,133,116,13,27,80]],
+             2:[[0,0,18,13,0,9,4,14,13,26,0,0,16,20,1,27,40,13,21,1,0,0,35,19,15,49,61,6,7,50,76],[0,0,19,36,15,29,25,23,27,9,0,0,0,24,26,27,7,50,3,21,0,0,18,42,37,4,17,22,4,65,61],[0,0,17,38,41,8,35,26,42,11,0,0,42,38,9,33,6,45,16,37,0,0,30,16,9,13,60,41,25,51,46],[0,0,40,40,63,21,52,30,22,73,0,0,54,7,0,9,37,39,80,26,0,0,44,42,49,39,52,33,51,46,136],[0,0,49,50,51,33,65,58,53,59,0,0,101,86,172,78,68,107,43,46,0,0,117,20,67,70,98,44,94,151,55]],
+             3:[[0,0,16,8,27,37,42,43,9,33,0,0,40,24,23,1,22,20,7,34,0,0,11,25,29,16,33,17,6,47,82],[0,0,38,31,17,43,2,3,54,35,0,0,28,56,3,0,3,52,68,48,0,0,14,27,55,27,33,28,39,45,101],[0,0,48,61,37,29,24,28,47,18,0,0,19,30,38,6,4,54,17,97,0,0,86,28,11,37,77,60,80,86,19],[0,0,48,1,39,44,12,69,62,46,0,0,15,21,49,46,59,49,22,125,0,0,56,81,48,39,65,47,33,79,158],[0,0,69,10,4,94,61,89,46,49,0,0,5,68,56,19,61,66,100,10,0,0,45,42,75,80,36,99,0,100,52]]};
+const slotKind=l=>l>=PATH0?'path':l===BONUS?'bonus':l===ADV?'adv':l%10===9?'peak':(l%10<=1)?'ease':'ramp';
 const isEase=(y,r,l)=>slotKind(l)==='ease';
 const YEAR_D={1:[.05,.8],2:[.3,.92],3:[.45,1]};   // difficulty at the start and end of each year
 // Difficulty 0..1 for a brew. R (optional) randomizes breathers.
 function diffFor(y,r,l,R){ const k=slotKind(l), [a,b]=YEAR_D[y];
-  if(k==='adv') return 1; if(k==='bonus') return Math.min(1,b+.1);
+  if(k==='adv') return 1; if(k==='bonus') return Math.min(1,b+.1); if(k==='path') return Math.min(1,.8+.04*(l-PATH0));
   if(k==='ease') return .05+.15*(R?R():.5);
   const p=(r*PER+l)/(5*PER-1); return Math.min(1,a+(b-a)*p+(k==='peak'?.15:0)); }
 // Blocker kinds each year adds (new ones are picked more often), and how far into the year they first appear.
@@ -834,10 +877,10 @@ function undosFor(y,r,l){ return Math.max(1,Math.round(5-diffFor(y,r,l,null)*4))
 // How many blockers of each kind; R picks the kinds, so every brew mixes them differently.
 function blockersFor(y,r,l,R){
   const B={color:0,count:0,web:0,frost:0,fragile:0};
-  if(l===ADV) return {color:2,count:1,web:2,frost:1,fragile:2};
+  if(l===ADV) return {color:2,count:1,web:1,frost:1,fragile:2};
   const k=slotKind(l); if(k==='ease') return B;
-  const D=diffFor(y,r,l,null), p=k==='bonus'?1:(r*PER+l)/(5*PER-1);
-  let nb=Math.round(D*D*(y+1.5)); if(k==='bonus') nb=Math.max(nb,y);
+  const D=diffFor(y,r,l,null), p=(k==='bonus'||k==='path')?1:(r*PER+l)/(5*PER-1);
+  let nb=Math.round(D*D*(y+1.5)); if(k==='bonus') nb=Math.max(nb,y); if(k==='path') nb=y+1;
   const pool=Object.keys(BLOCKER_YEARS).filter(t=>{ const [yr,from]=BLOCKER_YEARS[t]; return yr<y||(yr===y&&p>=from); });
   for(let i=0;i<nb&&pool.length;i++){ const w=pool.map(t=>BLOCKER_YEARS[t][0]===y?2:1), tot=w.reduce((x,z)=>x+z,0); let q=R()*tot, t=pool[0];
     for(let j=0;j<pool.length;j++){ q-=w[j]; if(q<0){ t=pool[j]; break; } }
@@ -866,8 +909,8 @@ function buildLevel(y,r,l,att){
   const take=()=>{ const f=freeV(); return f.length?f[Math.floor(R()*f.length)]:-1; };
   for(let k=0;k<B.count;k++){ const i=take(); if(i<0) return null; seals[i]=SEAL_COUNT+3; }
   for(let k=0;k<B.frost;k++){ const i=take(); if(i<0) return null; frost[i]=4+Math.floor(R()*5); }
-  for(let k=0;k<B.web;k++){ const i=take(); if(i<0) return null; web[i]=1; }
   for(let e=0;e<empties;e++){ vials.push([]); caps.push(CAP); seals.push(-1); frost.push(0); web.push(0); fragile.push(0); }
+  for(let k=0;k<B.web;k++){ const f=vials.map((_,i)=>i).filter(i=>vials[i].length&&seals[i]<0&&!frost[i]&&!web[i]); if(!f.length) return null; web[f[Math.floor(R()*f.length)]]=1; }
   for(let k=0;k<B.fragile;k++){ const f=vials.map((_,i)=>i).filter(i=>!fragile[i]&&seals[i]<0&&!frost[i]); if(!f.length) break;
     // prefer the empty vials: they get poured into most
     const em=f.filter(i=>!vials[i].length); const pool=em.length?em:f; fragile[pool[Math.floor(R()*pool.length)]]=1; }
@@ -876,18 +919,18 @@ function buildLevel(y,r,l,att){
 // Save keys: Year 1 keeps the original "room-brew" keys so existing progress carries over.
 const LK=(y,r,l)=>y===1?r+'-'+l:'y'+y+':'+r+'-'+l;
 // Returns {v, caps, seals, frost, web, fragile} with fresh copies.
-const seedFor=(y,r,l)=>l===ADV?ADV_SEEDS[y]:((SEEDS[y]&&SEEDS[y][r]&&SEEDS[y][r][l])||0);
+const seedFor=(y,r,l)=>l>=PATH0?((PATH_SEEDS[y]||[])[l-PATH0]||0):l===ADV?ADV_SEEDS[y]:((SEEDS[y]&&SEEDS[y][r]&&SEEDS[y][r][l])||0);
 const LEVEL_SOL={};
 function genLevel(y,r,l){
   const k=LK(y,r,l), cp=L=>({v:L.v.map(x=>x.slice()),caps:L.caps.slice(),seals:L.seals.slice(),frost:L.frost.slice(),web:L.web.slice(),fragile:L.fragile.slice()});
   const ok=(L,sol)=>{ LEVEL_CACHE[k]=cp(L); LEVEL_PAR[k]=sol.length; LEVEL_SOL[k]=sol; return cp(L); };
-  if(isEase(y,r,l)){ const s0=Math.floor(Math.random()*1e6); for(let att=s0;att<s0+60;att++){ const L=buildLevel(y,r,l,att); let sol; if(L&&(sol=solve(L.v,20000,L.caps,L.seals,L.frost))) return ok(L,sol); } }
+  if(isEase(y,r,l)){ const s0=Math.floor(Math.random()*1e6); for(let att=s0;att<s0+60;att++){ const L=buildLevel(y,r,l,att); let sol; if(L&&(sol=solve(L.v,20000,L.caps,L.seals,L.frost,L.web))) return ok(L,sol); } }
   if(LEVEL_CACHE[k]) return cp(LEVEL_CACHE[k]);
   const seeded=buildLevel(y,r,l,seedFor(y,r,l)); let sol;
-  if(seeded && (sol=solve(seeded.v,30000,seeded.caps,seeded.seals,seeded.frost))) return ok(seeded,sol);
+  if(seeded && (sol=solve(seeded.v,30000,seeded.caps,seeded.seals,seeded.frost,seeded.web))) return ok(seeded,sol);
   let last=null;
   for(let att=0;att<200;att++){ const L=buildLevel(y,r,l,att); if(!L) continue; last=L;
-    if((sol=solve(L.v,30000,L.caps,L.seals,L.frost))) return ok(L,sol); }
+    if((sol=solve(L.v,30000,L.caps,L.seals,L.frost,L.web))) return ok(L,sol); }
   return last;
 }
 // The colors a brew uses, without solving it (for crediting potions to older saves).
@@ -1053,6 +1096,11 @@ const sealedAt=i=>{ const k=sealKey(i); if(k<0) return false; if(k===GOLD_SEAL) 
   if(k>=SEAL_COUNT) return bottled()<k-SEAL_COUNT; return !G.vials.some(v=>isDone(v)&&v[0].c===k); };
 const frozenAt=i=>((G.frost&&G.frost[i])||0)>G.moves;
 const webAt=i=>!!(G.web&&G.web[i]);
+const webNbrs=i=>shelfNbrs(i,G.baseN,G.vials.length);
+// Tear any web whose neighbor has just been bottled.
+function tearWebs(){ let torn=false; (G.web||[]).forEach((w,i)=>{ if(w&&webNbrs(i).some(j=>isDone(G.vials[j]))){ G.web[i]=0; torn=true; G.tear=G.tear||{}; G.tear[i]=performance.now()/1000;
+    const p=POS[i]; for(let k=0;k<30;k++){ const a=Math.random()*6.28,sp=40+Math.random()*110; bursts.push({x:p.x+(Math.random()-.5)*GEO.W,y:p.y+Math.random()*p.h,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-50,life:0,max:1,c:k%2?'#ffffff':'#d9d4ff',s:1.8}); } } });
+  if(torn) setTimeout(()=>{ toast('🕸️ The web tears free!',2000); SFX.magic(); },350); return torn; }
 const blockedAt=i=>sealedAt(i)||frozenAt(i)||webAt(i)||G.broken===i;
 // Golden vials: brew 18 of every classroom. The secret order comes from a real solution, so it can always be done.
 const goldFor=(y,r,l)=>l===17;
@@ -1067,7 +1115,7 @@ function goldSequence(y,r,l,L){
 // Golden Sense: how many of the golden vial's runes your companion reveals. A bloomed companion reveals one,
 // and every Adventure you conquer reveals one more.
 const advWins=()=>[1,2,3].filter(y=>save.done[LK(y,ADV_INFO[y].r,ADV)]).length;
-const goldSense=()=>Math.min(3,(save.pet&&!isSprout()?1:0)+advWins()+(hasCharm('compass')?1:0));
+const goldSense=()=>Math.min(3,(save.pet&&!isSprout()?1:0)+advWins()+(hasCharm('compass')?1:0)+(hasGift(6)?1:0));
 function goldStep(c){ const q=G.gold; if(!q||q.open) return;
   // Only the three rune potions matter: bottling one out of order resets the runes; other potions don't.
   if(!q.seq.includes(c)) return;
@@ -1076,12 +1124,12 @@ function goldStep(c){ const q=G.gold; if(!q||q.open) return;
     const p=POS[q.i]; for(let k=0;k<50;k++){ const a=Math.random()*6.28,sp=40+Math.random()*140; bursts.push({x:p.x,y:p.y+p.h*.5,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-60,life:0,max:1.1,c:k%3?'#ffd75e':'#fff6c8',s:2.4}); }
     setTimeout(()=>{ toast('🏆 The golden vial opens! You found a Lucky Elixir. Use it to unlock an Adventure.',4200); SFX.magic(); SFX.chime(); },400); }
   else if(q.prog>0) setTimeout(()=>toast(`🏆 A golden rune glows (${q.prog} of 3)…`,1800),300); }
-function burnWebs(){ if(!G.web||!G.web.some(Boolean)) return false;
-  G.web.forEach((w,i)=>{ if(!w) return; G.web[i]=0; const p=POS[i]; for(let k=0;k<26;k++){ const a=Math.random()*6.28,sp=30+Math.random()*90; bursts.push({x:p.x+(Math.random()-.5)*GEO.W,y:p.y+Math.random()*p.h,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-70,life:0,max:.9,c:k%2?'#ffb347':'#fff1d0',s:2}); } });
+function burnWebs(){ if(!G.web||!G.web.some(Boolean)) return false; G.tear=G.tear||{};
+  G.web.forEach((w,i)=>{ if(!w) return; G.web[i]=0; G.tear[i]=performance.now()/1000; const p=POS[i]; for(let k=0;k<26;k++){ const a=Math.random()*6.28,sp=30+Math.random()*90; bursts.push({x:p.x+(Math.random()-.5)*GEO.W,y:p.y+Math.random()*p.h,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-70,life:0,max:.9,c:k%2?'#ffb347':'#fff1d0',s:2}); } });
   G.burnT=performance.now()/1000; return true; }
 function crackVial(i){ if(hasCharm('feather')&&!G.feather){ G.feather=true; return toast('🪶 Featherlight! Your companion steadies the glass. No crack.',2600); }
   G.fragile[i]++; SFX.nope(); try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}
-  if(G.fragile[i]>=3) return shatter(i);
+  if(G.fragile[i]>=(hasGift(8)?4:3)) return shatter(i);
   toast('💔 Crack! That vial is fragile. One more wrong pour onto it and it shatters.',3200); }
 function shatter(i){ G.preBreak={vials:snapshot(),i}; const p=POS[i], col=G.vials[i].length?colOf(G.vials[i][0].c):'#cfe6ff';
   for(let k=0;k<40;k++){ const a=-Math.PI*Math.random(),sp=60+Math.random()*160; bursts.push({x:p.x+(Math.random()-.5)*GEO.W,y:p.y+p.h*(.3+Math.random()*.6),vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:0,max:1,c:k%2?'#e6f2ff':col,s:2.2}); }
@@ -1092,7 +1140,7 @@ function blockerIntro(){
   const seen=save.seen, has1=f=>G.vials.some((_,i)=>f(i));
   const list=[
     ['gold',  ()=>!!G.gold, '🏆 A golden vial! Bottle three potions in a secret order to open it. Each right potion lights a rune; a wrong one resets them.'],
-    ['web',   ()=>has1(webAt), `🕸️ A spider web! Cast ${room().spell.icon} ${room().spell.name} to burn it away. That cast won't cost you a star.`],
+    ['web',   ()=>has1(webAt), '🕸️ A spider web traps a vial! Bottle a potion in a vial right next to it on the shelf to tear it free.'],
     ['frost', ()=>has1(frozenAt), '❄️ A frozen vial! It thaws after a few pours. The number shows how many.'],
     ['count', ()=>has1(i=>sealKey(i)>=SEAL_COUNT&&sealKey(i)<GOLD_SEAL), '📜 A numbered scroll! It unravels after you bottle 3 potions of any color.'],
     ['fragile',()=>G.fragile.some(Boolean), '💔 A fragile vial! A wrong pour onto it cracks the glass; a second one shatters it.'],
@@ -1120,7 +1168,7 @@ function layout(){
   const w=stage.clientWidth, h=stage.clientHeight; sizeCanvas(game,w,h);
   sizeCanvas(amb,innerWidth,innerHeight);
   if(!G) return;
-  const n=G.vials.length, rows=n<=5?1:2, per=Math.ceil(n/rows);
+  const n=G.vials.length, bn=G.baseN||n, rows=bn<=5?1:2, per=shelfPer(bn);
   // Slimmer vials: capped smaller and given more breathing room between them.
   const CM=Math.max(...G.caps);
   let W=Math.min(40,(w-12)/per*.45), U=W*.8*(CM>CAP?CAP/CM*1.1:1), H=12+CM*U+W*.22, pad=56;
@@ -1153,10 +1201,14 @@ function startLevel(r,l,y){
   if(goldFor(y,r,l)&&!(save.gold&&save.gold[LK(y,r,l)])&&LEVEL_SOL[LK(y,r,l)]){ const seq=goldSequence(y,r,l,L); if(seq){ addVial(CAP,GOLD_SEAL); gold={i:raw.length-1,seq,prog:0,open:false,flash:0}; } }
   raw.forEach((v,i)=>{ if(!v.length) caps[i]=spareCap(); });
   const tot={}; raw.forEach(v=>v.forEach(c=>tot[c]=(tot[c]||0)+1));
-  G={y,r,l,cols:colorsFor(y,r),motifs:motifsFor(y,r),caps,tot,seal,frost,web,fragile,gold,broken:-1,thaw:{},burnT:0,unroll:{},mixed:caps.some(c=>c!==CAP),vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-open}))),undo:[],undos:undosFor(y,r,l)+(has('lantern')?1:0),charges:R.spell.charges+(has('echo')?1:0),unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[LK(y,r,l)]||null,nudged:false,pet:petCharges(),timed:timedFor(y,r,l),elapsed:0,started:false,timeout:false,limit:0,freeUndo:[0,1,2][talent('snake')]};
+  G={y,r,l,baseN:L.v.length,cols:colorsFor(y,r),motifs:motifsFor(y,r),caps,tot,seal,frost,web,fragile,gold,broken:-1,thaw:{},burnT:0,unroll:{},mixed:caps.some(c=>c!==CAP),vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-open}))),undo:[],undos:undosFor(y,r,l)+(has('lantern')?1:0),charges:R.spell.charges+(has('echo')?1:0),unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[LK(y,r,l)]||null,nudged:false,pet:petCharges(),timed:timedFor(y,r,l),elapsed:0,started:false,timeout:false,limit:0,freeUndo:[0,1,2][talent('snake')]};
   if(G.timed){ G.limit=Math.round(30+(G.par||20)*3.5)+(hasAttr('shade')?30:0)+(hasCharm('quick')?15:0); }
   if(hasCharm('thaw')) G.frost=G.frost.map(f=>f?Math.max(1,f-2):0);
   if(hasCharm('star')) G.undos++;
+  if(hasGift(0)) G.undos++;
+  if(hasGift(5)) G.charges++;
+  if(hasGift(1)){ if(G.timed) G.limit+=10; G.frost=G.frost.map(f=>f?Math.max(1,f-1):0); }
+  if(hasGift(4)){ const hid=[]; G.vials.forEach(v=>v.forEach(u=>{ if(u.h) hid.push(u); })); shuffle(hid,Math.random).slice(0,3).forEach(u=>u.h=false); }
   if(talent('owl')){ const hid=[]; G.vials.forEach(v=>v.forEach(u=>{ if(u.h) hid.push(u); })); shuffle(hid,Math.random).slice(0,[0,2,5][talent('owl')]).forEach(u=>u.h=false); }
   sel=null; anim=null; hint=null; grains=[]; bursts=[]; floats=[]; lift=[]; shake=[]; sparks=[];
   layout(); updateHUD();
@@ -1196,17 +1248,17 @@ function tallyScore(){
   const stir=G.stirred?PTS.stir:0;
   const clock=G.timed?Math.min(300,Math.round(Math.max(0,G.limit-G.elapsed))*5):0;
   const sub=Math.max(0,base+swift+pure+stir+clock-help), bonusX=G.l===BONUS?sub*(has('pebble')?2:1):0;
-  const ladle=Math.round((sub+bonusX)*((has('ladle')?.1:0)+(hasCharm('rainbow')?.05:0)));
+  const ladle=Math.round((sub+bonusX)*((has('ladle')?.1:0)+(hasCharm('rainbow')?.05:0)+(hasGift(7)?.05:0)));
   const breath=Math.round((sub+bonusX)*[0,.1,.2][talent('dragon')]);
   return {potions,base,swift,pure,stir,clock,help,bonusX,ladle,breath,total:sub+bonusX+ladle+breath};
 }
 function totalPoints(){ return Object.values(save.best||{}).reduce((a,b)=>a+b,0); }
 function updateHUD(){
   const R=room();
-  $('#roomName').textContent=G.l===ADV?ADV_INFO[G.y].name:R.place;
+  $('#roomName').textContent=G.l>=PATH0?PATH_INFO[G.y].name:G.l===ADV?ADV_INFO[G.y].name:R.place;
   const live=Math.max(0,G.vials.filter(isDone).length*PTS.potion-G.helps*PTS.help);
   const bumped=live>G.pts; G.pts=live;
-  $('#levelName').innerHTML=`${G.y>1?'Year '+G.y+' · ':''}${G.l===ADV?'✦ Adventure':G.l===BONUS?'✦ Bonus brew':`Brew ${G.l+1} of ${PER}${slotKind(G.l)==='peak'?' 🔥':slotKind(G.l)==='ease'?' 🍃':''}`} · <span class="pts${bumped?' bump':''}">✦ ${G.pts} pts</span>`;
+  $('#levelName').innerHTML=`${G.y>1?'Year '+G.y+' · ':''}${G.l>=PATH0?`🫥 Hidden Path · ${G.l-PATH0+1} of ${PATH_N}`:G.l===ADV?'✦ Adventure':G.l===BONUS?'✦ Bonus brew':`Brew ${G.l+1} of ${PER}${slotKind(G.l)==='peak'?' 🔥':slotKind(G.l)==='ease'?' 🍃':''}`} · <span class="pts${bumped?' bump':''}">✦ ${G.pts} pts</span>`;
   $('#ctUndo').textContent=G.undos;
   $('#spIc').textContent=R.spell.icon; $('#spNm').textContent=R.spell.name; $('#ctSpell').textContent=G.charges;
   $('#btnSpell').classList.toggle('spent',G.charges<=0);
@@ -1248,7 +1300,7 @@ function finishPour(){
   if(A.length) A[A.length-1].h=false;
   G.moves++; anim=null;
   if(hasCharm('burn')&&G.moves>=6&&burnWebs()) setTimeout(()=>toast('🔥 Your companion burns the webs away!',2200),200);
-  if(isDone(B)){ B.forEach(u=>u.h=false); brew(to); goldStep(B[0].c); }
+  if(isDone(B)){ B.forEach(u=>u.h=false); brew(to); goldStep(B[0].c); tearWebs(); }
   checkScrolls();
   updateHUD();
   if(G.vials.every(v=>!v.length||isDone(v))) return win();
@@ -1318,10 +1370,22 @@ function win(){
 function showResults(key,stars,brewed,stirred,canBefore,cz){
     if(!G||G.won!==true) return;
     G.stirred=stirred; SFX.win(); const R=room();
-    const sc=tallyScore(); const prevBest=save.best[key]||0; const newBest=sc.total>prevBest;
+    const sc=tallyScore();
+    // A hidden golden vial: brew perfectly (no help, no more pours than the cauldron's own) to find it.
+    let hidNote=''; const hidOk=slotKind(G.l)!=='ease'&&G.helps===0&&G.par&&G.moves<=G.par;
+    if(hidOk){ save.hidden=save.hidden||{}; const allGold=[0,1,2,3,4].every(r=>save.gold&&save.gold[LK(G.y,r,17)]);
+      if(!save.hidden[key]){ save.hidden[key]=1; sc.hidden=HIDDEN_PTS*G.y; sc.total+=sc.hidden; }
+      if(allGold&&!(save.pathOpen&&save.pathOpen[G.y])&&PATH_INFO[G.y]){ save.pathOpen=Object.assign({},save.pathOpen,{[G.y]:1}); hidNote=`<p class="note">🫥✨ The hidden vial was the last key. <b>${PATH_INFO[G.y].name}</b> opens in your ${YEAR_NAMES[G.y]}! Find it on the Rooms page.</p>`; }
+      else if(!allGold&&!(save.pathOpen&&save.pathOpen[G.y])) hidNote=`<p class="note dim">🫥 A whisper from the hidden vial: “Open every golden vial of this year, then find me again…”</p>`;
+      save.stats.hidden=(save.stats.hidden||0)+1; }
+    let chap=''; if(G.l===PER-1&&!save.story?.['y'+G.y+'r'+G.r]&&storyGet('y'+G.y+'r'+G.r)) chap='y'+G.y+'r'+G.r;
+    const prevBest=save.best[key]||0; const newBest=sc.total>prevBest;
     save.best[key]=Math.max(prevBest,sc.total);
     save.purse=(save.purse||0)+sc.total;
     let petNote='';
+    if(hasGift(2)&&Math.random()<.1){ save.tok++; petNote+=`<p class="note dim">🌟 Fortune: you found a token! ◈</p>`; }
+    // Breakout: finishing brew 15 of a classroom opens its Grimoire Workshop (once).
+    if(G.l===WS_SLOT){ const wk=G.y+'-'+G.r; save.wsDone=save.wsDone||{}; if(!save.wsDone[wk]){ save.wsDue=save.wsDue||{}; save.wsDue[wk]=1; } }
     if(hasCharm('clover')&&Math.random()<.1){ save.tok++; petNote+=`<p class="note dim">🍀 Clover Charm: you found a token! ◈</p>`; }
     // Companion care: from your 10th brew, every 6th win your companion asks to brew a remedy with you.
     if(save.pet&&!save.pet.injured&&nDone()>=10){ save.pet.since=(save.pet.since||0)+1; if(save.pet.since>=6){ save.pet.since=0; save.pet.careDue=1; } }
@@ -1346,7 +1410,10 @@ function showResults(key,stars,brewed,stirred,canBefore,cz){
     persist();
     setTimeout(()=>checkAch({owl:new Date().getHours()<4}),600);
     const chips=brewed.map(([ing,hex,pot])=>`<li><span class="dot" style="background:${hex};box-shadow:0 0 10px ${hex}"></span>${pot}</li>`).join('');
-    const last=G.l===PER-1, bonus=G.l===BONUS, adv=G.l===ADV; let next='Next brew', extra='';
+    const last=G.l===PER-1, bonus=G.l===BONUS, adv=G.l===ADV, path=G.l>=PATH0; let next='Next brew', extra='';
+    if(path){ const i=G.l-PATH0; if(i<PATH_N-1) next='Further along the path';
+      else { next='Grimoire'; if(!(save.pathDone&&save.pathDone[G.y])){ save.pathDone=Object.assign({},save.pathDone,{[G.y]:1}); save.tok+=5; save.purse+=2000; persist();
+        extra=`<p class="note">✦ ${PATH_INFO[G.y].name} complete! Reward: ◈ 5 tokens and ✦ 2,000 points.</p><p class="note"><b>${PATH_INFO[G.y].end}</b></p>`; unlockChapter('p'+G.y+'-end'); } } }
     if(adv){ next='Grimoire'; extra=`<p class="note">✦ ${ADV_INFO[G.y].name} conquered! The whole Academy is talking about it.</p>`;
       if(!save.advPaid||!save.advPaid[G.y]){ save.advPaid=Object.assign({},save.advPaid,{[G.y]:1}); save.tok+=5; save.purse+=1000;
         extra+=`<p class="note">Reward: ◈ 5 tokens and ✦ 1,000 points. Your companion's <b>Golden Sense</b> grows: they now reveal ${goldSense()} of a golden vial's 3 runes.</p>`; }
@@ -1370,6 +1437,7 @@ function showResults(key,stars,brewed,stirred,canBefore,cz){
         ${sc.help?`<li class="neg"><span>Help used</span><span>−${sc.help}</span></li>`:''}
         ${sc.bonusX?`<li><span>Bonus brew ×${has('pebble')?3:2}</span><span>+${sc.bonusX}</span></li>`:''}
         ${sc.ladle?`<li><span>🪙 Gilded Ladle</span><span>+${sc.ladle}</span></li>`:''}
+        ${sc.hidden?`<li><span>🫥 Hidden golden vial!</span><span>+${sc.hidden}</span></li>`:''}
         ${sc.clock?`<li><span>⏳ Beat the clock</span><span>+${sc.clock}</span></li>`:''}
         ${sc.breath?`<li><span>🐉 ${esc(save.pet.name)}'s Warm Breath</span><span>+${sc.breath}</span></li>`:''}
         <li class="tot"><span>Points</span><span>${sc.total}</span></li>
@@ -1382,11 +1450,16 @@ function showResults(key,stars,brewed,stirred,canBefore,cz){
       ${cando>canBefore?`<button class="btn ghost" id="mCraft">✦ A spell is ready to craft</button>`:''}
       <p class="quote small">“${line}” — ${R.short}</p>
       ${stars<3?'<p class="note dim">Brew without spells or undos for all three stars.</p>':''}
+      ${hidNote}
+      ${chap?`<button class="btn" id="mChap" style="background:linear-gradient(180deg,#fff0c8,#d9b25a)">📖 New chapter: ${storyGet(chap)[0]}</button>`:''}
+      ${save.wsDue&&Object.keys(save.wsDue).length?`<button class="btn" id="mWs" style="background:linear-gradient(180deg,#e6d4ff,#a57ee0)">📖 Breakout! The Grimoire Workshop is open</button>`:''}
       ${save.pet&&(save.pet.careDue||save.pet.injured)?`<button class="btn" id="mCare" style="background:linear-gradient(180deg,#ffe6a8,#e0a84a)">${petGlyph()} ${save.pet.injured?`${esc(save.pet.name)} is injured. Brew a remedy!`:`${esc(save.pet.name)} wants to brew with you!`}</button>`:''}
       <div class="row"><button class="btn ghost" id="mMap">Grimoire</button><button class="btn" id="mNext">${next}</button></div>`);
     $('#mMap').onclick=()=>{closeModal();showMap()};
+    if($('#mChap')) $('#mChap').onclick=()=>showChapter(chap,()=>showMap('lore'));
+    if($('#mWs')) $('#mWs').onclick=()=>openWorkshop(()=>showMap('craft'));
     if($('#mCare')) $('#mCare').onclick=()=>playRemedy(()=>showMap('pet'));
-    $('#mNext').onclick=()=>{ if(G.l===ADV) return showMap('rooms'); if(G.l<BONUS) startLevel(G.r,G.l+1,G.y); else if(G.r<4) startLevel(G.r+1,0,G.y); else startLevel(G.r,G.l,G.y); };
+    $('#mNext').onclick=()=>{ if(G.l>=PATH0){ const i=G.l-PATH0; return i<PATH_N-1?openPathBrew(G.y,i+1):showMap('rooms'); } if(G.l===ADV) return showMap('rooms'); if(G.l<BONUS) startLevel(G.r,G.l+1,G.y); else if(G.r<4) startLevel(G.r+1,0,G.y); else startLevel(G.r,G.l,G.y); };
     if($('#mSkip')) $('#mSkip').onclick=e=>{ e.preventDefault(); startLevel(G.r+1,0,G.y); };
     if($('#mCraft')) $('#mCraft').onclick=()=>{ closeModal(); showMap('craft'); };
 }
@@ -1536,12 +1609,12 @@ function doUndo(){
   const s=G.undo.pop(); while(s.length<G.vials.length) s.push([]);
   G.vials=s; G.undos--; if(G.freeUndo>0) G.freeUndo--; else G.helps++; sel=null; hint=null; checkScrolls(); SFX.tick(); updateHUD();
 }
-function findHint(){ const s=G.vials.map(v=>v.map(u=>u.c)); const p=solve(s,60000,G.caps,G.vials.map((_,i)=>G.broken===i?GOLD_SEAL:sealKey(i)),G.vials.map((_,i)=>Math.max(0,((G.frost&&G.frost[i])||0)-G.moves))); return p&&p[0]; }
+function findHint(){ const s=G.vials.map(v=>v.map(u=>u.c)); const p=solve(s,60000,G.caps,G.vials.map((_,i)=>G.broken===i?GOLD_SEAL:sealKey(i)),G.vials.map((_,i)=>Math.max(0,((G.frost&&G.frost[i])||0)-G.moves)),G.vials.map((_,i)=>G.web&&G.web[i]?1:0),G.baseN); return p&&p[0]; }
 function castSpell(){
   if(!G||anim||G.won||G.timeout) return; const R=room(), sp=R.spell;
   if(G.charges<=0) return toast(`${sp.name} is spent for this brew.`);
   // Casting the classroom's spell burns away every spider web; a cast that burns webs costs no star.
-  const freeCast=burnWebs(); if(freeCast) setTimeout(()=>toast('🕸️🔥 The webs burn away!',2200),1400);
+  const freeCast=false;
   switch(sp.key){
     case 'sprout':{ if(G.vials.length>=12) return toast('The shelf is full.'); G.vials.push([]); G.caps.push(spareCap()); layout();
       const p=POS[POS.length-1]; for(let k=0;k<20;k++){const a=Math.random()*6.28;bursts.push({x:p.x,y:p.y+p.h*.6,vx:Math.cos(a)*60,vy:-Math.random()*120,life:0,max:.8,c:'#c9f58a',s:2})}
@@ -1568,7 +1641,7 @@ game.addEventListener('pointerdown',e=>{
     if(G.gold&&i===G.gold.i){ const q=G.gold, sn=goldSense();
       return toast(q.open?'🏆 Lucky Elixir found! It is yours to keep.':`🏆 Bottle three potions in a secret order to open it. ${sn?`${save.pet?esc(save.pet.name):'Your companion'} senses: ${q.seq.slice(0,sn).map(c=>G.cols[c][0]).join(', then ')}${sn<3?'…':''}`:'Each right potion lights a rune.'}`,3800); }
     if(G.broken===i) return toast('💔 Shattered.',1600);
-    if(webAt(i)) return toast(`🕸️ Webbed! Cast ${R.spell.icon} ${R.spell.name} to burn the webs away.`,3000);
+    if(webAt(i)) return toast('🕸️ Trapped! Bottle a potion in a vial right next to it to tear the web.',3000);
     if(frozenAt(i)){ const n=G.frost[i]-G.moves; return toast(`❄️ Frozen! It thaws in ${n} more pour${n>1?'s':''}.`,2600); }
     if(k>=SEAL_COUNT){ const n=k-SEAL_COUNT-bottled(); return toast(`📜 This scroll unravels after ${n} more potion${n>1?'s':''} of any color.`,3000); }
     return toast(`📜 Sealed. Bottle the ${G.cols[k][2]} to unravel this scroll.`,3000); }
@@ -1646,13 +1719,15 @@ const GUIDE=[
     ['🧺','<b>Your shelf</b><br>Every potion you bottle goes onto your shelf.'],
     ['📖','<b>Spellcraft</b><br>In the grimoire, combine discovered ingredients and bottled potions in the cauldron to craft spells. Crafted spells help in every brew, for good.'],
     ['🎓','<b>Academy years</b><br>Craft all of your year\'s <b>exam spells</b> to move up a year, with new and harder brews in every classroom.'],
+    ['📖','<b>Grimoire Workshop</b><br>After brew 15 of every classroom, pick any potion you have discovered and brew it for a Witch\'s Gift.'],
     ['🏆','<b>Achievements</b><br>Earn tokens to spend on Pocket Sprouts and sealed lore pages in the grimoire.'],
     ['🐾','<b>Your Sprout</b><br>A little companion that grows with you and blooms into a familiar of your choice in your Third Year. Feed it, and it helps with hints. Giving up a brew costs points and one of its hearts; the Healer\'s Hut can mend them. Bonus brews earn Essences that give it new attributes, and every so often it asks to brew a remedy with you: win for a new charm, lose and it is injured until you win one.']]},
   {k:'How to brew · 6 of 6', h:'Whimsical blockers', items:[
     ['📜','<b>Scrolls</b><br>A wax seal opens when you bottle that potion; a numbered scroll after that many potions.'],
-    ['🕸️','<b>Spider webs</b><br>Cast the classroom\'s spell to burn them away. That cast costs no star.'],
+    ['🕸️','<b>Spider webs</b><br>A webbed vial is trapped until you bottle a potion in a vial right next to it on the shelf.'],
     ['❄️','<b>Frost</b><br>Thaws after the number of pours shown.'],
     ['💔','<b>Fragile vials</b><br>A wrong pour onto one cracks it; a second shatters it. A Second Wind mends it, otherwise start over.'],
+    ['🫥','<b>Rumors</b><br>Some say a perfect brew, with no help and not one wasted pour, reveals something no one can see…'],
     ['🏆','<b>Golden vials</b><br>Bottle three potions in a secret order for a Lucky Elixir, the key to each year\'s Adventure. Your companion can sense the order.']]},
 ];
 function showGuide(p,done){
@@ -1669,6 +1744,7 @@ function showGuide(p,done){
 let mapTab='rooms';
 function showMap(tab){
   closeModal(); document.body.classList.add('mapmode'); setTheme(MAPTHEME);
+  if(!(save.story&&save.story.prologue)) setTimeout(()=>{ if(document.body.classList.contains('mapmode')&&$('#modal').hidden) showChapter('prologue',()=>showMap(),'Begin'); },400);
   if(tab) mapTab=tab;
   const yMax=Math.min(save.year,YEARS); save.view=Math.max(1,Math.min(save.view||yMax,yMax));
   const tp=totalPoints(), ni=Object.keys(save.ing||{}).length;
@@ -1676,7 +1752,7 @@ function showMap(tab){
   const rooms=mapTab==='rooms';
   if(mapTab==='awards') save.newAch=0;
   document.querySelectorAll('.tab[data-tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===mapTab));
-  $('#craftBadge').hidden=!craftable().length;
+  $('#craftBadge').hidden=!craftable().length&&!(save.wsDue&&Object.keys(save.wsDue).length);
   $('#awardBadge').hidden=!save.newAch;
   $('#petBadge').hidden=!save.pet||!(save.pet.injured||save.pet.careDue||(isSprout()&&save.year>=PET_YEAR)||(save.pet.full<PET_FULL&&save.purse>=TREAT_COST));
   $('#loreBadge').hidden=!LORE.some((L,i)=>!save.lore[i]&&save.tok>=L.c);
@@ -1699,6 +1775,14 @@ function renderRooms(y){
         :`<button class="orb bonus" id="advUnlock" ${ex?'':'disabled'}>${ex?`🧪 Unlock with a Lucky Elixir (you have ${ex})`:'🔒 Needs a Lucky Elixir'}</button>`}
       <div class="rspell">${dn||open?'Scrolls, webs, frost and fragile vials, all at once. Good luck, witch.':'Lucky Elixirs hide in golden vials (brew 18 of every classroom, marked in gold). Bottle three potions in their secret order to open one.'}</div>`;
     el.appendChild(el2);
+    // Hidden Path card: only appears once the path is open, or as a faint mystery once you've found a hidden vial.
+    const P=PATH_INFO[y], po=save.pathOpen&&save.pathOpen[y], seen=save.stats&&save.stats.hidden;
+    if(P&&(po||seen)){ const el3=document.createElement('div'); el3.className='room'+(po?'':' locked'); el3.style.setProperty('--ra','#cdb8ff'); el3.style.setProperty('--rb0','#241a40'); el3.style.setProperty('--rb1','#0b0716');
+      let orbs=''; for(let i=0;i<PATH_N;i++){ const k=LK(y,P.r,PATH0+i), dn=save.done[k], ok=po&&(i===0||save.done[LK(y,P.r,PATH0+i-1)]); orbs+=`<button class="orb${dn?' done':''}" data-path="${i}" ${ok?'':'disabled'}>${ok?i+1:'·'}</button>`; }
+      el3.innerHTML=`<div class="rhead"><div class="rsig">${po?P.icon:'🫥'}</div><div style="min-width:0"><div class="rname">${po?P.name:'Something hidden…'}</div><div class="rprof">${po?`A secret path in your ${YEAR_NAMES[y]} · five story brews`:'A whisper in the glass'}</div></div></div>
+        ${po?`<div class="orbs" style="grid-template-columns:repeat(5,1fr)">${orbs}</div>`:''}
+        <div class="rspell">${po?(save.pathDone&&save.pathDone[y]?`✦ Complete. ${P.end}`:'Every brew on this path tells part of a secret story.'):'Open every golden vial of this year, then brew perfectly to find a hidden one again.'}</div>`;
+      el.appendChild(el3); el3.querySelectorAll('[data-path]:not([disabled])').forEach(b=>b.onclick=()=>{ SFX.init(); openPathBrew(y,+b.dataset.path); }); }
     if($('#advGo')) $('#advGo').onclick=()=>{ SFX.init(); startLevel(A.r,ADV,y); };
     if($('#advUnlock')) $('#advUnlock').onclick=()=>{ SFX.init(); if(!(save.elixir>0)||y>save.year) return; save.elixir--; save.advOpen=Object.assign({},save.advOpen,{[y]:1}); persist(); SFX.magic(); toastMap(`🧪 The Lucky Elixir glows… ${A.name} is open!`); showMap('rooms'); };
     if(y>Math.min(save.year,YEARS)) el2.classList.add('locked'); }
@@ -1727,6 +1811,10 @@ function renderRooms(y){
 }
 function renderCraft(){
   const el=$('#craftList'); const yc=Math.min(save.year,YEARS); let h='';
+  const due=save.wsDue&&Object.keys(save.wsDue).length;
+  h+=`<div class="exam" style="border-color:#a57ee0"><div class="k">📖 Grimoire Workshop</div><h3>Witch's Gifts · ${GIFTS.filter((_,i)=>hasGift(i)).length} of ${GIFTS.length}</h3>
+    <div class="slots" style="flex-wrap:wrap">${GIFTS.map((Gf,i)=>`<span class="${hasGift(i)?'on':''}" title="${Gf.n}: ${Gf.d}">${Gf.i}</span>`).join('')}</div>
+    ${due?'<button class="craft" id="wsOpen">📖 The workshop is open: brew a potion</button>':`<p class="note dim">A breakout workshop opens after brew 15 of every classroom.</p>`}</div>`;
   if(save.year>YEARS) h+=`<div class="exam"><div class="k">${YEAR_NAMES[YEARS+1]}</div><h3>Every exam passed</h3>
       <p class="note">The professors are still preparing your next year. Keep brewing and crafting until then.</p></div>`;
   else { const ex=examsFor(yc), got=ex.filter(S=>has(S.key)).length;
@@ -1738,6 +1826,7 @@ function renderCraft(){
     SPELLS.filter(S=>S.year===y).sort((a,b)=>(has(a.key)-has(b.key))||(b.exam?1:0)-(a.exam?1:0)).forEach(S=>{ h+=recipeCard(S); });
   }
   el.innerHTML=h;
+  if($('#wsOpen')) $('#wsOpen').onclick=()=>{ SFX.init(); openWorkshop(()=>showMap('craft')); };
   el.querySelectorAll('.craft[data-k]').forEach(b=>b.onclick=()=>{ SFX.init(); craftSpell(SPELLS.find(S=>S.key===b.dataset.k)); });
 }
 function recipeCard(S){
@@ -1773,15 +1862,18 @@ function craftSpell(S){
     $('#mOk').onclick=()=>grad?showGraduation(grad):showMap('craft');
   }, {kicker:'Spellcraft', title:S.name, hint:'Stir the potions together to craft the spell.', acc:MAPTHEME.accent, skip:'Cancel', sealed:'The spell takes shape. ✦'});
 }
+function openPathBrew(y,i){ const P=PATH_INFO[y]; showChapter('p'+y+'-'+i,()=>startLevel(P.r,PATH0+i,y),'✦ Begin this brew'); }
 function showGraduation(y){
-  SFX.magic();
+  SFX.magic(); const gch='y'+(y-1)+'grad'; unlockChapter(gch);
   const open=y<=YEARS;
   modal(`<div class="kicker">Gloamwick Academy</div><div class="sigbig">🎓</div><h2>You are a ${YEAR_NAMES[y]}!</h2>
     <p class="quote">“Every exam spell, crafted by your own hand. Welcome to your ${YEAR_NAMES[y]}.”</p>
     ${y===PET_YEAR&&isSprout()?`<p class="note">🌿 And ${esc(save.pet.name)} is ready to bloom! Open the Familiar page in the grimoire to choose what they become.</p>`:''}
     ${open?`<p class="note">${YEAR_INTRO[y]||''}</p>`
           :`<p class="note">The professors are still preparing your ${YEAR_NAMES[y]}. It opens soon.</p>`}
+    ${storyGet(gch)?`<button class="btn ghost" id="mGch">📖 Chapter: ${storyGet(gch)[0]}</button>`:''}
     <div class="row"><button class="btn ghost" id="mG">Grimoire</button>${open?`<button class="btn" id="mY">Begin ${YEAR_NAMES[y]}</button>`:''}</div>`);
+  if($('#mGch')) $('#mGch').onclick=()=>showChapter(gch,()=>showGraduation(y),'Back');
   $('#mG').onclick=()=>showMap(open?'rooms':'craft');
   if(open) $('#mY').onclick=()=>startLevel(0,0,y);
 }
@@ -1938,6 +2030,57 @@ function endRemedy(won,why){
   if($('#rAgain')) $('#rAgain').onclick=()=>playRemedy(K.after);
   $('#rDone').onclick=()=>{ REM=null; K.after?K.after():showMap('pet'); };
 }
+/* ---- Grimoire Workshop: the breakout mini-game ----
+   Choose any potion you have discovered, then brew it: tap "Stir" when the heat needle is in the golden zone.
+   Three good stirs out of four and the potion is yours, along with the Witch's Gift for its color. */
+function discoveredPotions(){ const out=[];
+  for(let y=1;y<=YEARS;y++) for(let r=0;r<5;r++){ const cols=colorsFor(y,r); cols.forEach((C,c)=>{ if(save.ing&&save.ing[ingKey(y,r,c)]) out.push({name:C[2],ing:C[0],hex:C[1],hue:c,m:motifsFor(y,r)[c]}); }); }
+  return out; }
+function openWorkshop(after){
+  const pots=discoveredPotions(), y=Math.min(save.year,YEARS);
+  const byHue=HUE_NAMES.map((_,h)=>pots.filter(p=>p.hue===h));
+  modal(`<div class="kicker">📖 Breakout · Grimoire Workshop</div><h2>Choose a potion to create</h2>
+    <p class="note">Pick any potion from your grimoire so far. Brew it well and you earn the Witch's Gift of its color, yours to keep.</p>
+    <div class="perks" style="max-height:52vh;overflow-y:auto">${GIFTS.map((Gf,h)=>{ const own=hasGift(h), list=byHue[h];
+      return `<div class="perk${own?' on':''}" style="flex-direction:column;align-items:stretch;gap:6px"><div style="display:flex;gap:10px;align-items:center"><b style="min-width:26px;font-size:20px">${Gf.i}</b><div><b style="font-size:12px">${Gf.n}${own?' · ✓ yours':''}</b><br>${Gf.d}</div></div>
+        ${own?'':list.length?`<div class="chips">${list.slice(0,6).map((p,k)=>`<button class="chip ok" data-h="${h}" data-k="${k}" style="cursor:pointer;font:inherit;color:inherit"><span class="dot" style="background:${p.hex}"></span>${esc(p.name)}</button>`).join('')}</div>`:`<span class="dim">Discover ${an(HUE_NAMES[h])} potion to brew this one.</span>`}</div>`; }).join('')}</div>
+    <div class="row"><button class="btn ghost" id="wsLater">Later</button></div>`);
+  document.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{ SFX.init(); distillGame(byHue[+b.dataset.h][+b.dataset.k],y,after,2); });
+  $('#wsLater').onclick=()=>{ after?after():showMap('craft'); };
+}
+let DIST=null;
+function distillGame(pot,y,after,tries){
+  const zone=[.22,.17,.13][y-1], speed=[1.1,1.4,1.75][y-1], z0=.15+Math.random()*(.7-zone);
+  modal(`<div class="kicker">📖 Grimoire Workshop</div><h2>${esc(pot.name)}</h2>
+    <p class="note">Tap <b>Stir</b> while the needle is in the golden zone. You need 3 good stirs out of 4.</p>
+    <div style="position:relative;height:46px;border-radius:14px;background:linear-gradient(90deg,#2b3a7a,#7a2b3a);border:1px solid var(--line);overflow:hidden">
+      <div style="position:absolute;top:0;bottom:0;left:${z0*100}%;width:${zone*100}%;background:linear-gradient(180deg,#ffe9a0,#e0a42a);opacity:.85"></div>
+      <div id="dNeedle" style="position:absolute;top:-2px;bottom:-2px;width:4px;margin-left:-2px;background:#fff;box-shadow:0 0 10px #fff;left:0"></div></div>
+    <div class="meter" id="dMarks" style="font-size:22px">⚪⚪⚪⚪</div>
+    <button class="btn" id="dStir" style="font-size:16px;padding:16px">🥄 Stir!</button>`);
+  if(DIST) cancelAnimationFrame(DIST.raf);
+  DIST={t0:performance.now(),hits:0,taps:0,marks:[],done:false,pos:0};
+  const step=now=>{ const K=DIST; if(!K||K.done) return; const ph=((now-K.t0)/1000*speed)%2; K.pos=ph<1?ph:2-ph; const nd=$('#dNeedle'); if(!nd) return; nd.style.left=(K.pos*100)+'%'; K.raf=requestAnimationFrame(step); };
+  DIST.raf=requestAnimationFrame(step);
+  $('#dStir').onclick=()=>{ const K=DIST; if(K.done) return; SFX.init(); const ok=K.pos>=z0&&K.pos<=z0+zone; K.taps++; if(ok) K.hits++; K.marks.push(ok?'🟢':'🔴');
+    $('#dMarks').textContent=K.marks.join('')+'⚪'.repeat(4-K.taps); ok?SFX.tone(600+K.hits*120,0,.12,.05,'sine'):SFX.nope();
+    if(K.hits>=3||K.taps-K.hits>1||K.taps>=4){ K.done=true; cancelAnimationFrame(K.raf); setTimeout(()=>finishWorkshop(pot,K.hits>=3,after,tries),400); } };
+}
+function finishWorkshop(pot,won,after,tries){
+  const Gf=GIFTS[pot.hue];
+  if(won){ save.gifts=Object.assign({},save.gifts,{[pot.hue]:pot.name}); save.wsDone=save.wsDone||{}; Object.keys(save.wsDue||{}).slice(0,1).forEach(k=>{ save.wsDone[k]=1; delete save.wsDue[k]; }); persist(); checkAch(); SFX.win();
+    modal(`<div class="kicker">Witch's Gift</div><div class="sigbig">${Gf.i}</div><h2>${esc(pot.name)}</h2>
+      <div class="spellbox"><div class="sb-ic">${Gf.i}</div><div><b>${Gf.n}</b><br>${Gf.d}</div></div>
+      <p class="note dim">Brewed by your own hand. This gift is yours for good.</p><div class="row"><button class="btn" id="wsOk">Wonderful</button></div>`);
+    $('#wsOk').onclick=()=>{ after?after():showMap('craft'); }; }
+  else { const again=tries>1;
+    if(!again){ save.wsDone=save.wsDone||{}; Object.keys(save.wsDue||{}).slice(0,1).forEach(k=>{ save.wsDone[k]=1; delete save.wsDue[k]; }); persist(); }
+    modal(`<div class="kicker">The potion fizzled</div><div class="sigbig">💨</div><h2>So close!</h2>
+      <p class="note">${again?'The workshop gives you one more try.':"The workshop closes for now. The next one opens after brew 15 of your next classroom."}</p>
+      <div class="row">${again?'<button class="btn" id="wsAgain">Try again</button>':''}<button class="btn${again?' ghost':''}" id="wsOk">${again?'Not now':'Okay'}</button></div>`);
+    if($('#wsAgain')) $('#wsAgain').onclick=()=>distillGame(pot,Math.min(save.year,YEARS),after,tries-1);
+    $('#wsOk').onclick=()=>{ after?after():showMap('craft'); }; }
+}
 function renderHut(){
   const el=$('#hutList'), pt=save.pet, hp=petHP(), mx=petMax(), nm=pt?esc(pt.name):'your companion';
   const item=(id,ic,title,txt,cost,ok)=>`<div class="shop"><div class="si">${ic}</div><div class="st"><b>${title}</b>${txt}</div><button class="craft" id="${id}" ${ok&&(save.purse||0)>=cost?'':'disabled'}>✦ ${cost}</button></div>`;
@@ -1956,12 +2099,17 @@ function renderHut(){
   $('#hFull').onclick=()=>buy(HUT.full,()=>{ pt.hp=mx; },`💖 ${nm} is fully restored.`);
   $('#hWind').onclick=()=>buy(HUT.wind,()=>{ save.winds=(save.winds||0)+1; },'🌬️ A Second Wind, bottled for later.');
 }
+function storyHTML(){ const ids=['prologue',...STORY.map(x=>x[0]).filter(i=>i!=='prologue')];
+  [1,2,3].forEach(y=>{ for(let i=0;i<PATH_N;i++) ids.push('p'+y+'-'+i); ids.push('p'+y+'-end'); });
+  const got=ids.filter(i=>save.story&&save.story[i]);
+  return `<div class="ygroup">📖 The Story of Gloamwick · ${got.length} chapters</div>`+(got.length?got.map(i=>`<button class="lore" data-ch="${i}"><div class="li">${/^p\d/.test(i)?'🫥':'📖'}</div><div class="lt"><b>${storyGet(i)[0]}</b><span>${/^p(\d)/.test(i)?PATH_INFO[i[1]].name:'Chapter'}</span></div><div class="cost">Read →</div></button>`).join(''):'<p class="note dim" style="text-align:center">Finish classrooms to unlock chapters.</p>')+'<div class="ygroup">Sealed pages</div>'; }
 function renderLore(){
   let h=tokBar('Spend tokens to unlock pages of the grimoire.');
   LORE.forEach((L,i)=>{ const open=!!save.lore[i];
     h+=`<button class="lore${open?'':' locked'}" data-i="${i}"><div class="li">${L.i}</div><div class="lt"><b>${open?L.t:'Sealed page'}</b><span>${L.s}</span></div>
       <div class="cost">${open?'Read →':'◈ '+L.c}</div></button>`; });
-  $('#loreList').innerHTML=h;
+  $('#loreList').innerHTML=storyHTML()+h;
+  document.querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>{ SFX.init(); showChapter(b.dataset.ch,()=>showMap('lore'),'Back'); });
   document.querySelectorAll('.lore[data-i]').forEach(b=>b.onclick=()=>{ SFX.init(); const i=+b.dataset.i;
     if(save.lore[i]) return readLore(i);
     if(save.tok<loreCost(i)) return toastMap(`This page needs ◈ ${loreCost(i)}. Earn tokens with achievements.`);
@@ -2086,13 +2234,27 @@ function drawVial(c,i,ox,oy,ang,t,opt){
     c.strokeStyle='rgba(255,255,255,.8)'; c.lineWidth=1; for(let q=0;q<5;q++){ const yy=H*(.2+q*.15); c.beginPath(); c.moveTo(-r+2,yy); c.lineTo(-r+6,yy-4); c.moveTo(r-2,yy+5); c.lineTo(r-6,yy+1); c.stroke(); }
     if(fr>0){ c.fillStyle='#1b3a66'; c.font=`600 ${Math.round(W*.42)}px Cinzel, Georgia, serif`; c.textAlign='center'; c.textBaseline='middle'; c.fillText('❄',0,H*.4); c.fillText(fr,0,H*.62); }
     c.restore(); }
-  // spider web: strands across the mouth and body, burned away by the classroom's spell
-  const bt=G.burnT?t-G.burnT:9;
-  if(webAt(i)||bt<.7){ c.save(); c.globalAlpha=webAt(i)?.9:Math.max(0,1-bt/.7); c.strokeStyle='rgba(240,240,255,.85)'; c.lineWidth=.8;
-    const cx=0, cy=H*.32, R=r*1.5;
-    for(let q=0;q<8;q++){ const a=q/8*6.283; c.beginPath(); c.moveTo(cx,cy); c.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R*1.6); c.stroke(); }
-    for(let ring=1;ring<=3;ring++){ c.beginPath(); for(let q=0;q<=8;q++){ const a=q/8*6.283, rr2=R*ring/3*(q%2?.9:1); c.lineTo(cx+Math.cos(a)*rr2,cy+Math.sin(a)*rr2*1.6); } c.stroke(); }
-    c.font=`${Math.round(W*.36)}px serif`; c.textAlign='center'; c.textBaseline='middle'; c.fillText('🕷️',r*.55,cy+R*1.1+Math.sin(t*2+i)*2); c.restore(); }
+  // spider web: a thick silk trap wrapped round the whole vial, with dew and its spider; it tears when a neighbor is bottled
+  const tt=G.tear&&G.tear[i]!==undefined?t-G.tear[i]:9;
+  if(webAt(i)||tt<.8){ const fade=webAt(i)?1:Math.max(0,1-tt/.8), off=webAt(i)?0:tt*30; c.save(); c.globalAlpha=fade;
+    // milky cocoon haze
+    innerPath(c,r,g,H); c.fillStyle='rgba(225,225,245,.22)'; c.fill();
+    c.strokeStyle='rgba(245,245,255,.9)'; c.lineCap='round';
+    // anchor lines from beyond the glass to a hub near the top
+    const hx=0, hy=H*.28, anchors=[[-r-9,-6],[r+9,-4],[-r-11,H*.5],[r+11,H*.55],[-r-6,H+4],[r+7,H+6],[0,-12]];
+    c.lineWidth=1.1; anchors.forEach(([ax,ay],k)=>{ const sx=k%2?off:-off; c.beginPath(); c.moveTo(hx,hy); c.quadraticCurveTo((hx+ax)/2+sx,(hy+ay)/2+4,ax+sx,ay); c.stroke(); });
+    // spiral round the hub
+    c.lineWidth=.8; c.beginPath(); for(let q=0;q<=70;q++){ const a=q*.38, rr2=3+q*.42; c.lineTo(hx+Math.cos(a)*rr2*1.05,hy+Math.sin(a)*rr2*1.25); } c.stroke();
+    // silk bands wrapping the body like a cocoon
+    c.lineWidth=1.4; c.strokeStyle='rgba(240,240,255,.75)';
+    for(let q=0;q<6;q++){ const yy=H*.35+q*(H*.6/6); c.beginPath(); c.moveTo(-r-3,yy+6); c.quadraticCurveTo(0,yy-4+(q%2?3:-3),r+3,yy+7); c.stroke(); }
+    c.lineWidth=.7; for(let q=0;q<4;q++){ c.beginPath(); c.moveTo(-r-2,H*.3+q*H*.15); c.lineTo(r+2,H*.45+q*H*.15); c.stroke(); }
+    // dew drops
+    c.fillStyle='rgba(255,255,255,.95)'; for(let q=0;q<7;q++){ const dx=Math.sin(q*2.3+i)*r*.9, dy=H*(.25+q*.1); c.beginPath(); c.arc(dx,dy,1.3+Math.sin(t*3+q)*.3,0,6.283); c.fill(); }
+    // the spider, dangling on its thread
+    const sy=-6+Math.sin(t*1.6+i)*4; c.strokeStyle='rgba(245,245,255,.8)'; c.lineWidth=.6; c.beginPath(); c.moveTo(r*.6,-14); c.lineTo(r*.6,sy); c.stroke();
+    c.font=`${Math.round(W*.55)}px serif`; c.textAlign='center'; c.textBaseline='middle'; c.fillText('🕷️',r*.6,sy+6);
+    c.restore(); }
   if(sealKey(i)>=0&&sealKey(i)!==GOLD_SEAL){ let k=0; if(!sealedAt(i)){ const u0=G.unroll[i]; k=u0===undefined?1:Math.min(1,(t-u0)/.9); }
     const sk=sealKey(i), num=sk>=SEAL_COUNT;
     if(k<1) drawScroll(c,r,H,num?'#e9c46a':colOf(sk),k,t,i,num?String(Math.max(0,sk-SEAL_COUNT-bottled())):null); }
@@ -2301,7 +2463,7 @@ layout(); showMap(); requestAnimationFrame(frame);
   b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top,0px));background:#7a1f2b;color:#fff;font:600 14px Georgia,serif;text-align:center;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.5)';
   document.body.appendChild(b);
 })();
-window.__gw={get G(){return G}, get POS(){return POS}, get GEO(){return GEO}, get save(){return save}, persist, showMap, startLevel, solve, genLevel, LEVEL_SOL, LK, playRemedy};
+window.__gw={get G(){return G}, get POS(){return POS}, get GEO(){return GEO}, get save(){return save}, persist, showMap, startLevel, solve, genLevel, LEVEL_SOL, LK, playRemedy, openWorkshop};
 })();
 </script>
 

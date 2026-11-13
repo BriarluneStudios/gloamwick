@@ -49,13 +49,23 @@ Every bonus brew you win earns that classroom's Essence. Combine an Essence with
 Harder brews mix in blockers. Each year brings new ones (Year 1: scrolls and webs; Year 2: frost and numbered scrolls; Year 3: vial sizes and fragile vials) and mixes the earlier ones back in:
 
 - **Scrolls** seal a vial until you bottle the potion matching the wax seal; numbered scrolls open after that many potions of any color.
-- **Spider webs** block a vial until you cast the classroom's spell (that cast costs no star).
+- **Spider webs** trap a vial until you bottle a potion in a vial right next to it on the shelf.
 - **Frost** thaws after the number of pours shown.
 - **Fragile vials** crack on a wrong pour and shatter on the second. A Second Wind mends them; otherwise, start over.
 
+## The Grimoire Workshop
+
+After brew 15 of every classroom, a breakout opens: pick any potion you've discovered so far and brew it in a quick timing game (stir while the heat needle is in the golden zone). Brew it well and you earn the Witch's Gift of its color, nine in all (Courage, Warmth, Fortune, Mending, Clarity, Calm, Insight, Kindness and Ward). Gifts are yours, so they help long before your companion blooms.
+
+## The story and the Hidden Paths
+
+Gloamwick's lamps are going out, and something called the Hollow Lantern is to blame. Every classroom you finish unlocks a chapter of the story (re-read them in the Lore tab), all the way to the finale in your Third Year.
+
+Every brew also hides an invisible golden vial, found only by brewing perfectly: no help, and not one pour more than the cauldron's own solution. It pays bonus points, and if you've already opened every visible golden vial that year, it opens that year's Hidden Path: five secret story brews (The Lamplighter's Path, The Path of Stolen Dusk and The Founder's Path).
+
 ## Golden vials and Adventures
 
-Brew 18 of every classroom hides a golden vial. Bottle three potions in its secret order to open it for a Lucky Elixir, and spend that to unlock the year's Adventure: one very hard brew with every blocker at once. Your companion's Golden Sense reveals the order: one rune once your Sprout has bloomed, and one more for every Adventure you conquer.
+Brew 18 of every classroom holds a golden vial. Bottle three potions in its secret order to open it for a Lucky Elixir, and spend that to unlock the year's Adventure: one very hard brew with every blocker at once. Your companion's Golden Sense reveals the order: one rune once your Sprout has bloomed, and one more for every Adventure you conquer.
 
 ## Achievements and lore
 
