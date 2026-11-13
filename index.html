@@ -255,6 +255,14 @@ body.mapmode #map{display:block}
 .petc{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 10px;border-radius:20px;border:1px solid var(--line);background:linear-gradient(160deg,#2a1d40,#120c1c);color:var(--ink);font:inherit;cursor:pointer;text-align:center}
 .petc:focus-visible,.petname:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .petc .pe{font-size:40px;line-height:1.1}
+.pets.four{grid-template-columns:repeat(4,1fr);gap:8px}
+.pets.four .petc{padding:10px 4px;gap:2px}
+.pets.four .pe{font-size:30px}
+.pets.four b{font-size:11px;letter-spacing:.04em}
+.pets.three{grid-template-columns:repeat(3,1fr);gap:8px}
+.pets.three .petc{padding:12px 6px}
+.pets.three span{font-size:14px}
+.petc .pe span{font-size:inherit!important;font-style:normal}
 .petc b{font-family:var(--f-display);font-size:13px;letter-spacing:.06em;color:var(--accent)}
 .petc span{font-size:15px;color:var(--ink2);font-style:italic;line-height:1.2}
 .petc[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 22px -8px var(--accent), inset 0 0 22px -12px var(--accent)}
@@ -555,15 +563,33 @@ function buyLore(i){ if(save.lore[i]||save.tok<loreCost(i)) return false; save.t
 // save.purse: points you can spend (every brew's points go in; spending never lowers your score).
 // save.pet: {k: kind, name, bond: treats eaten, full: bowls 0..PET_FULL}
 const PET_COST=1500, TREAT_COST=250, PET_FULL=3;
+// Eight kinds of familiar, each with three companions to choose from. A companion's look is its emoji plus an
+// optional CSS filter (f) that recolors it, e.g. a red or blue dragon.
 const PETS=[
- {k:'cat',  i:'🐈‍⬛', n:'Black Cat', def:'Soot',    treat:'🐟', blurb:'Aloof, clever, secretly very fond of you.',
-  hint:['Mrrp. That one.','*taps the glass with one paw*','Obviously, this one. Obviously.'], hungry:'*stares meaningfully at the empty bowl*', fed:'*purrs like a tiny cauldron*', idle:'*curls up on the shelf*'},
- {k:'owl',  i:'🦉',   n:'Owl',       def:'Pip',     treat:'🫐', blurb:'Wide-eyed, patient, sees every layer twice.',
-  hint:['Hoo. Look there.','*ruffles feathers toward a vial*','Twice-look that one, witch.'], hungry:'*hoots sadly at the bowl*', fed:'*happy little hoots*', idle:'*watches the shelf, unblinking*'},
- {k:'toad', i:'🐸',   n:'Toad',      def:'Bramble', treat:'🐛', blurb:'Calm, damp, and wiser than he looks.',
-  hint:['Rrribbit. That one.','*hops toward the right vial*','Slow and sure. Pour there.'], hungry:'*croaks hungrily*', fed:'*blinks slowly, content*', idle:'*sits very still, being wise*'},
- {k:'fox',  i:'🦊',   n:'Fox',       def:'Ember',   treat:'🍎', blurb:'Quick, curious, and always one step ahead.',
-  hint:['Psst. That one!','*flicks a tail at the vial*','I saw it first. Pour there!'], hungry:'*paws at the treat jar*', fed:'*happy yip*', idle:'*trots along the shelf*'},
+ {k:'cat', n:'Cat', treat:'🐟', blurb:'Aloof, clever, secretly very fond of you.',
+  hint:['Mrrp. That one.','*taps the glass with one paw*','Obviously, this one. Obviously.'], hungry:'*stares meaningfully at the empty bowl*', fed:'*purrs like a tiny cauldron*', idle:'*curls up on the shelf*',
+  vars:[{n:'Soot',i:'🐈‍⬛',d:'Black as a moonless night'},{n:'Marmalade',i:'🐈',d:'Ginger, warm and smug'},{n:'Pearl',i:'🐈',f:'grayscale(1) brightness(1.5)',d:'White as fresh frost'}]},
+ {k:'dragon', n:'Dragon', treat:'🌶️', blurb:'Small, proud and very warm to sit near.',
+  hint:['*snorts a puff of smoke at a vial*','That one. Trust the fire.','Hmph. Pour there, obviously.'], hungry:'*sulks, smoke curling from its nose*', fed:'*happy little sparks*', idle:'*guards the shelf like a hoard*',
+  vars:[{n:'Moss',i:'🐉',d:'Green as the Glasshouse'},{n:'Cinder',i:'🐉',f:'hue-rotate(-110deg) saturate(1.4)',d:'Red as forge fire'},{n:'Frost',i:'🐉',f:'hue-rotate(80deg)',d:'Blue as a winter star'}]},
+ {k:'owl', n:'Owl', treat:'🫐', blurb:'Wide-eyed, patient, sees every layer twice.',
+  hint:['Hoo. Look there.','*ruffles feathers toward a vial*','Look twice at that one, witch.'], hungry:'*hoots sadly at the bowl*', fed:'*happy little hoots*', idle:'*watches the shelf, unblinking*',
+  vars:[{n:'Pip',i:'🦉',d:'A tawny barn owl'},{n:'Snowy',i:'🦉',f:'grayscale(1) brightness(1.45)',d:'White as a snowfield'},{n:'Midnight',i:'🦉',f:'grayscale(.6) brightness(.6)',d:'Dark as the Spire at night'}]},
+ {k:'rat', n:'Rat', treat:'🧀', blurb:'Small, bold and cleverer than anyone thinks.',
+  hint:['*squeaks and points a whisker*','Psst. That one!','*scurries to the right vial*'], hungry:'*nibbles hopefully at the empty bowl*', fed:'*happy squeaks*', idle:'*cleans its whiskers*',
+  vars:[{n:'Whiskers',i:'🐀',d:'A sleek brown rat'},{n:'Pepper',i:'🐀',f:'grayscale(.7) brightness(.55)',d:'Dark and speckled'},{n:'Button',i:'🐁',d:'A tiny white mouse'}]},
+ {k:'frog', n:'Frog', treat:'🪰', blurb:'Calm, damp, and wiser than it looks.',
+  hint:['Rrribbit. That one.','*hops toward the right vial*','Slow and sure. Pour there.'], hungry:'*croaks hungrily*', fed:'*blinks slowly, content*', idle:'*sits very still, being wise*',
+  vars:[{n:'Bramble',i:'🐸',d:'A plump green pond frog'},{n:'Bluebell',i:'🐸',f:'hue-rotate(95deg) saturate(1.3)',d:'A tiny bright-blue tree frog'},{n:'Goldie',i:'🐸',f:'hue-rotate(-55deg) saturate(1.4)',d:'Golden as buttercups'}]},
+ {k:'snake', n:'Snake', treat:'🥚', blurb:'Quiet, coiled and always paying attention.',
+  hint:['Sssss. That one.','*flicks its tongue toward a vial*','Patience. Then pour there.'], hungry:'*coils around the empty bowl*', fed:'*a long, happy hiss*', idle:'*basks in the candlelight*',
+  vars:[{n:'Sage',i:'🐍',d:'A soft green grass snake'},{n:'Ruby',i:'🐍',f:'hue-rotate(-120deg) saturate(1.5)',d:'Red as rosehip'},{n:'Onyx',i:'🐍',f:'grayscale(.8) brightness(.45)',d:'Black and glossy'}]},
+ {k:'spider', n:'Spider', treat:'🦗', blurb:'Patient, precise, and spins very good luck.',
+  hint:['*taps a vial with one long leg*','That one. I have been watching.','*spins a silk thread to the vial*'], hungry:'*drums eight legs on the bowl*', fed:'*a delighted little dance*', idle:'*spins a web in the corner*',
+  vars:[{n:'Lace',i:'🕷️',d:'Black and velvety'},{n:'Silk',i:'🕷️',f:'invert(1) brightness(1.1)',d:'White as moonlit thread'},{n:'Velvet',i:'🕷️',f:'invert(.5) sepia(1) saturate(4) hue-rotate(220deg)',d:'Purple as twilight'}]},
+ {k:'tree', n:'Tree', treat:'💧', blurb:'A little potted tree that grows with you.',
+  hint:['*rustles its leaves toward a vial*','*drops a leaf on the right vial*','Mmm. That one. Grow there.'], hungry:'*droops, a little thirsty*', fed:'*leaves perk up and shimmer*', idle:'*sways in a breeze nobody else feels*',
+  vars:[{n:'Sprig',i:'🌱',d:'A brave little sapling'},{n:'Oakley',i:'🌳',d:'A sturdy young oak'},{n:'Needles',i:'🌲',d:'A tiny evergreen pine'}]},
 ];
 // Bond levels: treats needed, title, and what it unlocks.
 const PET_LV=[
@@ -573,13 +599,16 @@ const PET_LV=[
  {need:9,  t:'Devoted',       d:'Two hints per brew.'},
  {need:14, t:'Best Friends',  d:'Its hints no longer cost you stars.'},
 ];
-const petKind=()=>save.pet&&PETS.find(P=>P.k===save.pet.k);
+const petKind=()=>save.pet&&(PETS.find(P=>P.k===save.pet.k)||PETS[0]);
+const petVar=()=>{ const P=petKind(); return P&&(P.vars[save.pet.v||0]||P.vars[0]); };
+// The companion's emoji, recolored by its filter. Pass a kind and variant to draw one that isn't adopted yet.
+function petGlyph(P,V){ P=P||petKind(); V=V||petVar(); if(!P) return ''; return `<span style="display:inline-block${V.f?`;filter:${V.f}`:''}">${V.i}</span>`; }
 const petLv=()=>{ if(!save.pet) return 0; let lv=0; PET_LV.forEach((L,i)=>{ if(save.pet.bond>=L.need) lv=i+1; }); return lv; };
 const petCharges=()=>{ const lv=petLv(); return lv>=4?2:lv>=2?1:0; };
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
-function adoptPet(k,name){ if(save.pet||save.purse<PET_COST) return false; const P=PETS.find(x=>x.k===k); if(!P) return false;
-  save.purse-=PET_COST; save.pet={k,name:(name||'').trim().slice(0,14)||P.def,bond:0,full:PET_FULL}; persist(); checkAch(); return true; }
+function adoptPet(k,v,name){ if(save.pet||save.purse<PET_COST) return false; const P=PETS.find(x=>x.k===k); if(!P||!P.vars[v]) return false;
+  save.purse-=PET_COST; save.pet={k,v,name:(name||'').trim().slice(0,14)||P.vars[v].n,bond:0,full:PET_FULL}; persist(); checkAch(); return true; }
 function feedPet(){ const pt=save.pet; if(!pt) return 'none'; if(pt.full>=PET_FULL) return 'full'; if(save.purse<TREAT_COST) return 'poor';
   const before=petLv(); save.purse-=TREAT_COST; pt.full++; pt.bond++; persist(); checkAch(); return petLv()>before?'level':'ok'; }
 function buySprout(){ if(save.tok<SPROUT_COST) return false; save.tok-=SPROUT_COST; save.sprouts=(save.sprouts||0)+1; persist(); return true; }
@@ -906,7 +935,7 @@ function updateHUD(){
   $('#btnSpell').classList.toggle('armed',G.unbind);
   $('#btnUndo').classList.toggle('spent',G.undos<=0||!G.undo.length);
   { const pt=save.pet, P=petKind(), b=$('#btnPet'); b.hidden=!pt;
-    if(pt){ b.innerHTML=`${P.i}${G.pet>0&&pt.full>0?`<span class="ct">${G.pet}</span>`:''}`; b.classList.toggle('hungry',pt.full===0); b.classList.toggle('ready',G.pet>0&&pt.full>0);
+    if(pt){ b.innerHTML=`${petGlyph()}${G.pet>0&&pt.full>0?`<span class="ct">${G.pet}</span>`:''}`; b.classList.toggle('hungry',pt.full===0); b.classList.toggle('ready',G.pet>0&&pt.full>0);
       b.setAttribute('aria-label',`${pt.name} the ${P.n.toLowerCase()}: ${pt.full===0?'hungry':G.pet>0?G.pet+' hint'+(G.pet>1?'s':'')+' left':'no hints left this brew'}`); } }
   $('#btnPocket').hidden=!(save.sprouts>0); $('#ctPocket').textContent=save.sprouts||0;
   $('#btnPocket').setAttribute('aria-label',`Pocket Sprout: grow an extra empty vial. ${save.sprouts||0} left`);
@@ -1027,7 +1056,7 @@ function showResults(key,stars,brewed,stirred,canBefore,cz){
       </ul>
       <div class="best">${newBest&&prevBest?'New best for this brew! ':''}Best ${save.best[key]} · Total ${totalPoints()}</div>${extra}
       <p class="note dim">${has('hearth')?brewed.length*2:brewed.length} potions added to your shelf · ✦ ${(save.purse||0).toLocaleString()} points to spend.</p>
-      ${save.pet&&save.pet.full===0?`<p class="note dim">${petKind().i} ${esc(save.pet.name)} is hungry. Feed them in the grimoire.</p>`:''}
+      ${save.pet&&save.pet.full===0?`<p class="note dim">${petGlyph()} ${esc(save.pet.name)} is hungry. Feed them in the grimoire.</p>`:''}
       ${caulNote?`<p class="note dim">${caulNote}</p>`:''}
       ${cando>canBefore?`<button class="btn ghost" id="mCraft">✦ A spell is ready to craft</button>`:''}
       <p class="quote small">“${line}” — ${R.short}</p>
@@ -1415,23 +1444,27 @@ function renderAwards(){
   $('#goLore').onclick=()=>{ SFX.tick(); showMap('lore'); };
 }
 const purseBar=lbl=>`<div class="tokbar"><div class="big">✦ ${(save.purse||0).toLocaleString()}</div><div class="lbl">${lbl}</div></div>`;
-let petPick='cat';
+let petPick='cat', petPickV=0, petNameTyped='';
 function renderPet(){
   const el=$('#petList'); const pt=save.pet;
   if(!pt){
-    const can=save.purse>=PET_COST;
+    const can=save.purse>=PET_COST, P=PETS.find(x=>x.k===petPick), V=P.vars[petPickV];
     el.innerHTML=purseBar(`Points to spend. Every brew adds to it, and spending never lowers your score. Adopting a familiar costs ✦ ${PET_COST.toLocaleString()}.`)
-      +`<div class="ygroup">Choose your familiar</div><div class="pets">${PETS.map(P=>`<button class="petc" data-k="${P.k}" aria-pressed="${P.k===petPick}"><div class="pe">${P.i}</div><b>${P.n}</b><span>${P.blurb}</span></button>`).join('')}</div>
-      <input class="petname" id="petName" maxlength="14" placeholder="Name your familiar" value="${esc(PETS.find(P=>P.k===petPick).def)}" aria-label="Familiar's name">
-      <button class="craft" id="adopt" ${can?'':'disabled'}>${can?`✦ Adopt for ${PET_COST.toLocaleString()} points`:`Needs ✦ ${PET_COST.toLocaleString()} points · keep brewing`}</button>
+      +`<div class="ygroup">1 · Choose a kind</div><div class="pets four">${PETS.map(Q=>`<button class="petc kind" data-k="${Q.k}" aria-pressed="${Q.k===petPick}"><div class="pe">${petGlyph(Q,Q.vars[0])}</div><b>${Q.n}</b></button>`).join('')}</div>
+      <p class="note" style="text-align:center">${P.blurb}</p>
+      <div class="ygroup">2 · Choose your companion</div><div class="pets three">${P.vars.map((W,i)=>`<button class="petc var" data-v="${i}" aria-pressed="${i===petPickV}"><div class="pe">${petGlyph(P,W)}</div><b>${W.n}</b><span>${W.d}</span></button>`).join('')}</div>
+      <div class="ygroup">3 · Name them</div>
+      <input class="petname" id="petName" maxlength="14" placeholder="${esc(V.n)}" value="${esc(petNameTyped)}" aria-label="Familiar's name">
+      <button class="craft" id="adopt" ${can?'':'disabled'}>${can?`✦ Adopt ${esc(petNameTyped.trim()||V.n)} for ${PET_COST.toLocaleString()} points`:`Needs ✦ ${PET_COST.toLocaleString()} points · keep brewing`}</button>
       <div class="perks">${PET_LV.map((L,i)=>`<div class="perk"><b>Lv ${i+1}</b>${L.d}</div>`).join('')}</div>`;
-    el.querySelectorAll('.petc').forEach(b=>b.onclick=()=>{ SFX.tick(); const nm=$('#petName').value, old=PETS.find(P=>P.k===petPick).def;
-      petPick=b.dataset.k; renderPet(); if(nm&&nm!==old) $('#petName').value=nm; });
-    $('#adopt').onclick=()=>{ SFX.init(); const P=PETS.find(x=>x.k===petPick);
-      if(adoptPet(petPick,$('#petName').value)){ SFX.magic();
-        modal(`<div class="kicker">A new familiar</div><div class="sigbig">${P.i}</div><h2>Welcome, ${esc(save.pet.name)}!</h2>
+    el.querySelectorAll('.petc.kind').forEach(b=>b.onclick=()=>{ SFX.tick(); petPick=b.dataset.k; petPickV=0; renderPet(); });
+    el.querySelectorAll('.petc.var').forEach(b=>b.onclick=()=>{ SFX.tick(); petPickV=+b.dataset.v; renderPet(); });
+    $('#petName').oninput=e=>{ petNameTyped=e.target.value; const a=$('#adopt'); if(can) a.textContent=`✦ Adopt ${petNameTyped.trim()||V.n} for ${PET_COST.toLocaleString()} points`; };
+    $('#adopt').onclick=()=>{ SFX.init();
+      if(adoptPet(petPick,petPickV,petNameTyped)){ SFX.magic(); petNameTyped='';
+        modal(`<div class="kicker">A new familiar</div><div class="sigbig">${petGlyph()}</div><h2>Welcome, ${esc(save.pet.name)}!</h2>
           <p class="quote small">${P.fed}</p>
-          <p class="note">Feed ${esc(save.pet.name)} treats to grow your bond. As you grow closer, ${esc(save.pet.name)} will start pointing out pours. Tap ${P.i} at the top of the screen while you brew.</p>
+          <p class="note">Feed ${esc(save.pet.name)} treats to grow your bond. As you grow closer, ${esc(save.pet.name)} will start pointing out pours. Tap ${petGlyph()} at the top of the screen while you brew.</p>
           <div class="row"><button class="btn" id="mOk">Wonderful</button></div>`);
         $('#mOk').onclick=()=>showMap('pet'); } };
     return;
@@ -1441,7 +1474,7 @@ function renderPet(){
   const say=pt.full===0?P.hungry:pt.full>=PET_FULL?P.fed:P.idle;
   const feed=pt.full>=PET_FULL?'Too full for treats':save.purse<TREAT_COST?`Needs ✦ ${TREAT_COST} points`:`${P.treat} Feed a treat · ✦ ${TREAT_COST}`;
   el.innerHTML=purseBar('Points to spend. Every brew adds to it.')
-    +`<div class="pethome"><div class="big" id="petBig">${P.i}</div><h3>${esc(pt.name)}</h3><div class="lv">Level ${lv} · ${PET_LV[lv-1].t}</div>
+    +`<div class="pethome"><div class="big" id="petBig">${petGlyph()}</div><h3>${esc(pt.name)}</h3><div class="lv">${petVar().d} · ${petKind().n}</div><div class="lv">Level ${lv} · ${PET_LV[lv-1].t}</div>
       <div class="say">${say}</div>
       <div class="meter" aria-label="${pt.full} of ${PET_FULL} bowls full">${Array.from({length:PET_FULL},(_,i)=>`<span class="${i<pt.full?'':'off'}">🥣</span>`).join('')}</div>
       <div class="bond" aria-label="Bond ${pct}% to the next level"><i style="width:${pct}%"></i></div>
@@ -1454,7 +1487,7 @@ function renderPetAfterFeed(r){
   showMap('pet'); const b=$('#petBig'); if(b) b.classList.add('munch');
   if(r==='level'){ const lv=petLv(), P=petKind(); SFX.magic();
     toastMap(`${esc(save.pet.name)} reached Level ${lv}: ${PET_LV[lv-1].t}!`);
-    setTimeout(()=>{ if(!document.body.classList.contains('mapmode')) return; modal(`<div class="kicker">Bond grows</div><div class="sigbig">${P.i}</div><h2>${esc(save.pet.name)} is ${PET_LV[lv-1].t}</h2>
+    setTimeout(()=>{ if(!document.body.classList.contains('mapmode')) return; modal(`<div class="kicker">Bond grows</div><div class="sigbig">${petGlyph()}</div><h2>${esc(save.pet.name)} is ${PET_LV[lv-1].t}</h2>
       <div class="spellbox"><div class="sb-ic">✦</div><div>${PET_LV[lv-1].d}</div></div>
       <div class="row"><button class="btn" id="mOk">Lovely</button></div>`); $('#mOk').onclick=()=>showMap('pet'); },700); }
 }

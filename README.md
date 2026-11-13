@@ -26,7 +26,7 @@ Craft all of your year's **exam spells** to move up a year. Your Second Year bri
 
 ## Familiars
 
-Cash in points to adopt a familiar: a black cat, an owl, a toad or a fox. Feed it treats to grow your bond. As you grow closer it starts pointing out pours, up to two hints a brew that no longer cost you stars. Each brew empties one of its bowls, so keep it fed.
+Cash in points to adopt a familiar. Choose a kind (cat, dragon, owl, rat, frog, snake, spider or a little tree), then one of three companions of that kind, and give them a name. Feed it treats to grow your bond. As you grow closer it starts pointing out pours, up to two hints a brew that no longer cost you stars. Each brew empties one of its bowls, so keep it fed.
 
 ## Achievements and lore
 
