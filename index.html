@@ -562,34 +562,42 @@ function buyLore(i){ if(save.lore[i]||save.tok<loreCost(i)) return false; save.t
 // gives hints. Each finished brew empties one of its bowls, and a hungry familiar will not help.
 // save.purse: points you can spend (every brew's points go in; spending never lowers your score).
 // save.pet: {k: kind, name, bond: treats eaten, full: bowls 0..PET_FULL}
-const PET_COST=1500, TREAT_COST=250, PET_FULL=3;
+const PET_COST=1500, TREAT_COST=250, PET_FULL=3, PET_YEAR=3;   // familiars arrive in the Third Year
 // Eight kinds of familiar, each with three companions to choose from. A companion's look is its emoji plus an
 // optional CSS filter (f) that recolors it, e.g. a red or blue dragon.
 const PETS=[
- {k:'cat', n:'Cat', treat:'🐟', blurb:'Aloof, clever, secretly very fond of you.',
+ {k:'cat', stages:['Kitten','Cat','Moon Cat'], talent:{n:'Curiosity', d:['Extra hints: +1 per brew','Extra hints: +2 per brew']},
+  n:'Cat', treat:'🐟', blurb:'Aloof, clever, secretly very fond of you.',
   hint:['Mrrp. That one.','*taps the glass with one paw*','Obviously, this one. Obviously.'], hungry:'*stares meaningfully at the empty bowl*', fed:'*purrs like a tiny cauldron*', idle:'*curls up on the shelf*',
   vars:[{n:'Soot',i:'🐈‍⬛',d:'Black as a moonless night'},{n:'Marmalade',i:'🐈',d:'Ginger, warm and smug'},{n:'Pearl',i:'🐈',f:'grayscale(1) brightness(1.5)',d:'White as fresh frost'}]},
- {k:'dragon', n:'Dragon', treat:'🌶️', blurb:'Small, proud and very warm to sit near.',
+ {k:'dragon', stages:['Hatchling','Drake','Elder Dragon'], forms:['🐲'], talent:{n:'Warm Breath', d:['+10% points on every brew','+20% points on every brew']},
+  n:'Dragon', treat:'🌶️', blurb:'Small, proud and very warm to sit near.',
   hint:['*snorts a puff of smoke at a vial*','That one. Trust the fire.','Hmph. Pour there, obviously.'], hungry:'*sulks, smoke curling from its nose*', fed:'*happy little sparks*', idle:'*guards the shelf like a hoard*',
   vars:[{n:'Moss',i:'🐉',d:'Green as the Glasshouse'},{n:'Cinder',i:'🐉',f:'hue-rotate(-110deg) saturate(1.4)',d:'Red as forge fire'},{n:'Frost',i:'🐉',f:'hue-rotate(80deg)',d:'Blue as a winter star'}]},
- {k:'owl', n:'Owl', treat:'🫐', blurb:'Wide-eyed, patient, sees every layer twice.',
+ {k:'owl', stages:['Owlet','Owl','Great Owl'], forms:['🐣'], talent:{n:'Night Eyes', d:['Uncovers 2 veiled layers as each brew begins','Uncovers 5 veiled layers as each brew begins']},
+  n:'Owl', treat:'🫐', blurb:'Wide-eyed, patient, sees every layer twice.',
   hint:['Hoo. Look there.','*ruffles feathers toward a vial*','Look twice at that one, witch.'], hungry:'*hoots sadly at the bowl*', fed:'*happy little hoots*', idle:'*watches the shelf, unblinking*',
   vars:[{n:'Pip',i:'🦉',d:'A tawny barn owl'},{n:'Snowy',i:'🦉',f:'grayscale(1) brightness(1.45)',d:'White as a snowfield'},{n:'Midnight',i:'🦉',f:'grayscale(.6) brightness(.6)',d:'Dark as the Spire at night'}]},
- {k:'rat', n:'Rat', treat:'🧀', blurb:'Small, bold and cleverer than anyone thinks.',
+ {k:'rat', stages:['Pinkie','Rat','Rat Sage'], forms:['🐁'], talent:{n:'Scavenger', d:['Finds 1 extra potion for your shelf each brew','Finds 2 extra potions for your shelf each brew']},
+  n:'Rat', treat:'🧀', blurb:'Small, bold and cleverer than anyone thinks.',
   hint:['*squeaks and points a whisker*','Psst. That one!','*scurries to the right vial*'], hungry:'*nibbles hopefully at the empty bowl*', fed:'*happy squeaks*', idle:'*cleans its whiskers*',
   vars:[{n:'Whiskers',i:'🐀',d:'A sleek brown rat'},{n:'Pepper',i:'🐀',f:'grayscale(.7) brightness(.55)',d:'Dark and speckled'},{n:'Button',i:'🐁',d:'A tiny white mouse'}]},
- {k:'frog', n:'Frog', treat:'🪰', blurb:'Calm, damp, and wiser than it looks.',
+ {k:'frog', stages:['Froglet','Frog','Toad Sage'], talent:{n:'Lucky Leap', d:['25% chance to find a token after each brew','50% chance to find a token after each brew']},
+  n:'Frog', treat:'🪰', blurb:'Calm, damp, and wiser than it looks.',
   hint:['Rrribbit. That one.','*hops toward the right vial*','Slow and sure. Pour there.'], hungry:'*croaks hungrily*', fed:'*blinks slowly, content*', idle:'*sits very still, being wise*',
   vars:[{n:'Bramble',i:'🐸',d:'A plump green pond frog'},{n:'Bluebell',i:'🐸',f:'hue-rotate(95deg) saturate(1.3)',d:'A tiny bright-blue tree frog'},{n:'Goldie',i:'🐸',f:'hue-rotate(-55deg) saturate(1.4)',d:'Golden as buttercups'}]},
- {k:'snake', n:'Snake', treat:'🥚', blurb:'Quiet, coiled and always paying attention.',
+ {k:'snake', stages:['Snakelet','Snake','Serpent'], talent:{n:'Shed Skin', d:['Your first undo each brew costs no stars','Your first two undos each brew cost no stars']},
+  n:'Snake', treat:'🥚', blurb:'Quiet, coiled and always paying attention.',
   hint:['Sssss. That one.','*flicks its tongue toward a vial*','Patience. Then pour there.'], hungry:'*coils around the empty bowl*', fed:'*a long, happy hiss*', idle:'*basks in the candlelight*',
   vars:[{n:'Sage',i:'🐍',d:'A soft green grass snake'},{n:'Ruby',i:'🐍',f:'hue-rotate(-120deg) saturate(1.5)',d:'Red as rosehip'},{n:'Onyx',i:'🐍',f:'grayscale(.8) brightness(.45)',d:'Black and glossy'}]},
- {k:'spider', n:'Spider', treat:'🦗', blurb:'Patient, precise, and spins very good luck.',
+ {k:'spider', stages:['Spiderling','Spider','Weaver'], talent:{n:'Precise Weave', d:['+50% swift-brewing bonus','Double swift-brewing bonus']},
+  n:'Spider', treat:'🦗', blurb:'Patient, precise, and spins very good luck.',
   hint:['*taps a vial with one long leg*','That one. I have been watching.','*spins a silk thread to the vial*'], hungry:'*drums eight legs on the bowl*', fed:'*a delighted little dance*', idle:'*spins a web in the corner*',
   vars:[{n:'Lace',i:'🕷️',d:'Black and velvety'},{n:'Silk',i:'🕷️',f:'invert(1) brightness(1.1)',d:'White as moonlit thread'},{n:'Velvet',i:'🕷️',f:'invert(.5) sepia(1) saturate(4) hue-rotate(220deg)',d:'Purple as twilight'}]},
- {k:'tree', n:'Tree', treat:'💧', blurb:'A little potted tree that grows with you.',
+ {k:'tree', stages:['Seed','Sapling','Tree'], forms:['🌰','🌱'], plainForms:true, talent:{n:'Deep Roots', d:['Bowls empty only every other brew','Bowls empty only every third brew']},
+  n:'Tree', treat:'💧', blurb:'A little potted tree that grows with you.',
   hint:['*rustles its leaves toward a vial*','*drops a leaf on the right vial*','Mmm. That one. Grow there.'], hungry:'*droops, a little thirsty*', fed:'*leaves perk up and shimmer*', idle:'*sways in a breeze nobody else feels*',
-  vars:[{n:'Sprig',i:'🌱',d:'A brave little sapling'},{n:'Oakley',i:'🌳',d:'A sturdy young oak'},{n:'Needles',i:'🌲',d:'A tiny evergreen pine'}]},
+  vars:[{n:'Oakley',i:'🌳',d:'A sturdy little oak'},{n:'Needles',i:'🌲',d:'A tiny evergreen pine'},{n:'Blossom',i:'🌳',f:'hue-rotate(230deg) saturate(1.6) brightness(1.15)',d:'A cherry tree in bloom'}]},
 ];
 // Bond levels: treats needed, title, and what it unlocks.
 const PET_LV=[
@@ -602,13 +610,26 @@ const PET_LV=[
 const petKind=()=>save.pet&&(PETS.find(P=>P.k===save.pet.k)||PETS[0]);
 const petVar=()=>{ const P=petKind(); return P&&(P.vars[save.pet.v||0]||P.vars[0]); };
 // The companion's emoji, recolored by its filter. Pass a kind and variant to draw one that isn't adopted yet.
-function petGlyph(P,V){ P=P||petKind(); V=V||petVar(); if(!P) return ''; return `<span style="display:inline-block${V.f?`;filter:${V.f}`:''}">${V.i}</span>`; }
+// st: growth stage (defaults to your familiar's own stage; the picker shows grown forms with st=2).
+function petGlyph(P,V,st){ const own=!P; P=P||petKind(); V=V||petVar(); if(!P) return ''; if(st===undefined) st=own?petStage():2;
+  const form=(P.forms&&P.forms[st]&&!(P.k==='rat'&&V.i==='🐁'))?P.forms[st]:V.i;
+  let f=(P.plainForms&&form!==V.i)?'':(V.f||'');
+  if(st===2&&own) f+=' drop-shadow(0 0 6px rgba(243,217,138,.85))';
+  const sc=[.68,.84,1][st];
+  return `<span style="display:inline-block;font-size:${sc}em${f?`;filter:${f}`:''}">${form}</span>`; }
 const petLv=()=>{ if(!save.pet) return 0; let lv=0; PET_LV.forEach((L,i)=>{ if(save.pet.bond>=L.need) lv=i+1; }); return lv; };
-const petCharges=()=>{ const lv=petLv(); return lv>=4?2:lv>=2?1:0; };
+// Growth: familiars grow up with you. Young needs bond Lv 3 and 10 brews together; Grown needs Lv 5 and 30.
+// Their talent switches on when Young and doubles when Grown (tier 1 and 2).
+const GROW=[{lv:1,brews:0},{lv:3,brews:10},{lv:5,brews:30}];
+const petStage=()=>{ if(!save.pet) return 0; const lv=petLv(), b=save.pet.brews||0; let st=0; GROW.forEach((g,i)=>{ if(lv>=g.lv&&b>=g.brews) st=i; }); return st; };
+const petStageName=()=>petKind().stages[petStage()];
+const talent=k=>save.pet&&save.pet.k===k&&petStage()>0?petStage():0;   // 0 off, 1 young, 2 grown
+const petCharges=()=>{ const lv=petLv(); return (lv>=4?2:lv>=2?1:0)+(lv>=2?talent('cat'):0); };
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
-function adoptPet(k,v,name){ if(save.pet||save.purse<PET_COST) return false; const P=PETS.find(x=>x.k===k); if(!P||!P.vars[v]) return false;
-  save.purse-=PET_COST; save.pet={k,v,name:(name||'').trim().slice(0,14)||P.vars[v].n,bond:0,full:PET_FULL}; persist(); checkAch(); return true; }
+const an=w=>(/^[aeiou]/i.test(w)?'an ':'a ')+w;
+function adoptPet(k,v,name){ if(save.pet||save.purse<PET_COST||save.year<PET_YEAR) return false; const P=PETS.find(x=>x.k===k); if(!P||!P.vars[v]) return false;
+  save.purse-=PET_COST; save.pet={k,v,name:(name||'').trim().slice(0,14)||P.vars[v].n,bond:0,full:PET_FULL,brews:0,seen:0}; persist(); checkAch(); return true; }
 function feedPet(){ const pt=save.pet; if(!pt) return 'none'; if(pt.full>=PET_FULL) return 'full'; if(save.purse<TREAT_COST) return 'poor';
   const before=petLv(); save.purse-=TREAT_COST; pt.full++; pt.bond++; persist(); checkAch(); return petLv()>before?'level':'ok'; }
 function buySprout(){ if(save.tok<SPROUT_COST) return false; save.tok-=SPROUT_COST; save.sprouts=(save.sprouts||0)+1; persist(); return true; }
@@ -886,7 +907,8 @@ function startLevel(r,l,y){
   if(has('wellspring')){ raw.push([]); caps.push(CAP); }
   raw.forEach((v,i)=>{ if(!v.length) caps[i]=spareCap(); });
   const tot={}; raw.forEach(v=>v.forEach(c=>tot[c]=(tot[c]||0)+1));
-  G={y,r,l,caps,tot,mixed:caps.some(c=>c!==CAP),vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-open}))),undo:[],undos:undosFor(y,r,l)+(has('lantern')?1:0),charges:R.spell.charges+(has('echo')?1:0),unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[LK(y,r,l)]||null,nudged:false,pet:petCharges()};
+  G={y,r,l,caps,tot,mixed:caps.some(c=>c!==CAP),vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-open}))),undo:[],undos:undosFor(y,r,l)+(has('lantern')?1:0),charges:R.spell.charges+(has('echo')?1:0),unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[LK(y,r,l)]||null,nudged:false,pet:petCharges(),freeUndo:[0,1,2][talent('snake')]};
+  if(talent('owl')){ const hid=[]; G.vials.forEach(v=>v.forEach(u=>{ if(u.h) hid.push(u); })); shuffle(hid,Math.random).slice(0,[0,2,5][talent('owl')]).forEach(u=>u.h=false); }
   sel=null; anim=null; hint=null; grains=[]; bursts=[]; floats=[]; lift=[]; shake=[]; sparks=[];
   layout(); updateHUD();
   if(save.tut && y>=3 && !save.seen.sizes) showSizes();
@@ -914,13 +936,15 @@ function tallyScore(){
   const potions=G.vials.filter(v=>v.length).length;
   const base=potions*PTS.potion;
   const par=G.par||G.moves; const slack=Math.max(0,(par+4)-G.moves), q=has('quill')?2:1;
-  const swift=Math.min(PTS.swiftMax*q,slack*PTS.swiftPer*q);
+  const q2=q*[1,1.5,2][talent('spider')];
+  const swift=Math.round(Math.min(PTS.swiftMax*q2,slack*PTS.swiftPer*q2));
   const pure=G.helps===0?PTS.pure:0;
   const help=G.helps*PTS.help;
   const stir=G.stirred?PTS.stir:0;
   const sub=Math.max(0,base+swift+pure+stir-help), bonusX=G.l===BONUS?sub*(has('pebble')?2:1):0;
   const ladle=has('ladle')?Math.round((sub+bonusX)*.1):0;
-  return {potions,base,swift,pure,stir,help,bonusX,ladle,total:sub+bonusX+ladle};
+  const breath=Math.round((sub+bonusX)*[0,.1,.2][talent('dragon')]);
+  return {potions,base,swift,pure,stir,help,bonusX,ladle,breath,total:sub+bonusX+ladle+breath};
 }
 function totalPoints(){ return Object.values(save.best||{}).reduce((a,b)=>a+b,0); }
 function updateHUD(){
@@ -998,7 +1022,8 @@ function brew(i){
   SFX.chime(); try{navigator.vibrate&&navigator.vibrate(18)}catch(e){}
 }
 function win(){
-  if(save.pet&&save.pet.full>0) save.pet.full--;
+  if(save.pet){ const pt=save.pet; pt.brews=(pt.brews||0)+1; pt.drain=(pt.drain||0)+1;
+    if(pt.full>0 && pt.drain%[1,2,3][talent('tree')]===0) pt.full--; }
   G.won=true; const key=LK(G.y,G.r,G.l); const stars=G.helps===0?3:G.helps<=2?2:1;
   save.done[key]=1; save.stars[key]=Math.max(save.stars[key]||0,stars); persist();
   setTimeout(()=>{
@@ -1019,6 +1044,12 @@ function showResults(key,stars,brewed,stirred,canBefore,cz){
     const sc=tallyScore(); const prevBest=save.best[key]||0; const newBest=sc.total>prevBest;
     save.best[key]=Math.max(prevBest,sc.total);
     save.purse=(save.purse||0)+sc.total;
+    let petNote='';
+    if(save.pet){ const nm=esc(save.pet.name);
+      const rat=talent('rat'); if(rat){ for(let k=0;k<rat;k++){ const b=brewed[Math.floor(Math.random()*brewed.length)], ref=G.r+'-'+R.colors.indexOf(b); save.pot[ref]=(save.pot[ref]||0)+1; }
+        petNote+=`<p class="note dim">${petGlyph()} ${nm} scavenged ${rat} extra potion${rat>1?'s':''} for your shelf.</p>`; }
+      if(talent('frog')&&Math.random()<[0,.25,.5][talent('frog')]){ save.tok++; petNote+=`<p class="note dim">${petGlyph()} ${nm} leapt off and came back with a token! ◈</p>`; }
+      const st=petStage(); if(st>(save.pet.seen||0)){ save.pet.seen=st; petNote+=`<p class="note">✦ ${nm} grew into <b>${an(petStageName())}</b>! ${petGlyph()}</p>`; } }
     // cauldron: remember brews waiting to be stirred; once stirred, they get their stir bonus too
     const C=save.caul; let caulNote='';
     if(cz&&cz.pending){ C.keys.push([key,sc.total]); const left=CAUL_EVERY-cz.pending;
@@ -1052,10 +1083,12 @@ function showResults(key,stars,brewed,stirred,canBefore,cz){
         ${sc.help?`<li class="neg"><span>Help used</span><span>−${sc.help}</span></li>`:''}
         ${sc.bonusX?`<li><span>Bonus brew ×${has('pebble')?3:2}</span><span>+${sc.bonusX}</span></li>`:''}
         ${sc.ladle?`<li><span>🪙 Gilded Ladle</span><span>+${sc.ladle}</span></li>`:''}
+        ${sc.breath?`<li><span>🐉 ${esc(save.pet.name)}'s Warm Breath</span><span>+${sc.breath}</span></li>`:''}
         <li class="tot"><span>Points</span><span>${sc.total}</span></li>
       </ul>
       <div class="best">${newBest&&prevBest?'New best for this brew! ':''}Best ${save.best[key]} · Total ${totalPoints()}</div>${extra}
       <p class="note dim">${has('hearth')?brewed.length*2:brewed.length} potions added to your shelf · ✦ ${(save.purse||0).toLocaleString()} points to spend.</p>
+      ${petNote}
       ${save.pet&&save.pet.full===0?`<p class="note dim">${petGlyph()} ${esc(save.pet.name)} is hungry. Feed them in the grimoire.</p>`:''}
       ${caulNote?`<p class="note dim">${caulNote}</p>`:''}
       ${cando>canBefore?`<button class="btn ghost" id="mCraft">✦ A spell is ready to craft</button>`:''}
@@ -1211,7 +1244,7 @@ function doUndo(){
   if(!G.undo.length) return toast('Nothing to undo yet.');
   if(G.undos<=0) return toast('Out of undos for this brew.');
   const s=G.undo.pop(); while(s.length<G.vials.length) s.push([]);
-  G.vials=s; G.undos--; G.helps++; sel=null; hint=null; SFX.tick(); updateHUD();
+  G.vials=s; G.undos--; if(G.freeUndo>0) G.freeUndo--; else G.helps++; sel=null; hint=null; SFX.tick(); updateHUD();
 }
 function findHint(){ const s=G.vials.map(v=>v.map(u=>u.c)); const p=solve(s,60000,G.caps); return p&&p[0]; }
 function castSpell(){
@@ -1308,7 +1341,7 @@ const GUIDE=[
     ['📖','<b>Spellcraft</b><br>In the grimoire, combine discovered ingredients and bottled potions in the cauldron to craft spells. Crafted spells help in every brew, for good.'],
     ['🎓','<b>Academy years</b><br>Craft all of your year\'s <b>exam spells</b> to move up a year, with new and harder brews in every classroom.'],
     ['🏆','<b>Achievements</b><br>Earn tokens to spend on Pocket Sprouts and sealed lore pages in the grimoire.'],
-    ['🐾','<b>Familiars</b><br>Spend points to adopt a familiar and feed it treats. The closer you grow, the more it helps with hints.']]},
+    ['🐾','<b>Familiars</b><br>From your Third Year, spend points to adopt a familiar. Feed it and brew together: it grows up, gives hints and learns a talent of its own.']]},
 ];
 function showGuide(p,done){
   const P=GUIDE[p], last=p===GUIDE.length-1;
@@ -1333,7 +1366,7 @@ function showMap(tab){
   document.querySelectorAll('.tab[data-tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===mapTab));
   $('#craftBadge').hidden=!craftable().length;
   $('#awardBadge').hidden=!save.newAch;
-  $('#petBadge').hidden=!(save.pet?(save.pet.full<PET_FULL&&save.purse>=TREAT_COST):save.purse>=PET_COST);
+  $('#petBadge').hidden=save.year<PET_YEAR||!(save.pet?(save.pet.full<PET_FULL&&save.purse>=TREAT_COST):save.purse>=PET_COST);
   $('#loreBadge').hidden=!LORE.some((L,i)=>!save.lore[i]&&save.tok>=L.c);
   $('#mapList').hidden=!rooms; $('#craftList').hidden=mapTab!=='craft'; $('#awardList').hidden=mapTab!=='awards'; $('#loreList').hidden=mapTab!=='lore'; $('#petList').hidden=mapTab!=='pet';
   // Year switcher appears once you have reached a second year.
@@ -1447,12 +1480,20 @@ const purseBar=lbl=>`<div class="tokbar"><div class="big">✦ ${(save.purse||0).
 let petPick='cat', petPickV=0, petNameTyped='';
 function renderPet(){
   const el=$('#petList'); const pt=save.pet;
+  if(!pt&&save.year<PET_YEAR){
+    el.innerHTML=`<div class="exam"><div class="k">🔒 ${YEAR_NAMES[PET_YEAR]}</div><h3>Familiars arrive in your ${YEAR_NAMES[PET_YEAR]}</h3>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;font-size:34px;line-height:1.2">${PETS.map(Q=>petGlyph(Q,Q.vars[0],2)).join('')}</div>
+      <p class="note">Every Third Year witch may adopt a companion: a cat, dragon, owl, rat, frog, snake, spider or a little tree. They grow up alongside you and learn to help with your brews.</p>
+      <p class="note dim">Keep brewing: your points are saving up. You have ✦ ${(save.purse||0).toLocaleString()}, and adopting costs ✦ ${PET_COST.toLocaleString()}.</p></div>`;
+    return;
+  }
   if(!pt){
     const can=save.purse>=PET_COST, P=PETS.find(x=>x.k===petPick), V=P.vars[petPickV];
     el.innerHTML=purseBar(`Points to spend. Every brew adds to it, and spending never lowers your score. Adopting a familiar costs ✦ ${PET_COST.toLocaleString()}.`)
-      +`<div class="ygroup">1 · Choose a kind</div><div class="pets four">${PETS.map(Q=>`<button class="petc kind" data-k="${Q.k}" aria-pressed="${Q.k===petPick}"><div class="pe">${petGlyph(Q,Q.vars[0])}</div><b>${Q.n}</b></button>`).join('')}</div>
+      +`<div class="ygroup">1 · Choose a kind</div><div class="pets four">${PETS.map(Q=>`<button class="petc kind" data-k="${Q.k}" aria-pressed="${Q.k===petPick}"><div class="pe">${petGlyph(Q,Q.vars[0],2)}</div><b>${Q.n}</b></button>`).join('')}</div>
       <p class="note" style="text-align:center">${P.blurb}</p>
-      <div class="ygroup">2 · Choose your companion</div><div class="pets three">${P.vars.map((W,i)=>`<button class="petc var" data-v="${i}" aria-pressed="${i===petPickV}"><div class="pe">${petGlyph(P,W)}</div><b>${W.n}</b><span>${W.d}</span></button>`).join('')}</div>
+      <div class="spellbox"><div class="sb-ic">✦</div><div><b>Talent · ${P.talent.n}</b><br>${P.talent.d[0]}, growing to: ${P.talent.d[1].charAt(0).toLowerCase()+P.talent.d[1].slice(1)}. <span class="dim">Starts as ${an(P.stages[0])}, grows into ${an(P.stages[2])}.</span></div></div>
+      <div class="ygroup">2 · Choose your companion</div><div class="pets three">${P.vars.map((W,i)=>`<button class="petc var" data-v="${i}" aria-pressed="${i===petPickV}"><div class="pe">${petGlyph(P,W,2)}</div><b>${W.n}</b><span>${W.d}</span></button>`).join('')}</div>
       <div class="ygroup">3 · Name them</div>
       <input class="petname" id="petName" maxlength="14" placeholder="${esc(V.n)}" value="${esc(petNameTyped)}" aria-label="Familiar's name">
       <button class="craft" id="adopt" ${can?'':'disabled'}>${can?`✦ Adopt ${esc(petNameTyped.trim()||V.n)} for ${PET_COST.toLocaleString()} points`:`Needs ✦ ${PET_COST.toLocaleString()} points · keep brewing`}</button>
@@ -1464,7 +1505,7 @@ function renderPet(){
       if(adoptPet(petPick,petPickV,petNameTyped)){ SFX.magic(); petNameTyped='';
         modal(`<div class="kicker">A new familiar</div><div class="sigbig">${petGlyph()}</div><h2>Welcome, ${esc(save.pet.name)}!</h2>
           <p class="quote small">${P.fed}</p>
-          <p class="note">Feed ${esc(save.pet.name)} treats to grow your bond. As you grow closer, ${esc(save.pet.name)} will start pointing out pours. Tap ${petGlyph()} at the top of the screen while you brew.</p>
+          <p class="note">${esc(save.pet.name)} is just a little ${P.stages[0].toLowerCase()} for now. Feed them treats and brew together, and they will grow up, start pointing out pours and learn their talent, <b>${P.talent.n}</b>. Tap ${petGlyph()} at the top of the screen while you brew.</p>
           <div class="row"><button class="btn" id="mOk">Wonderful</button></div>`);
         $('#mOk').onclick=()=>showMap('pet'); } };
     return;
@@ -1474,17 +1515,22 @@ function renderPet(){
   const say=pt.full===0?P.hungry:pt.full>=PET_FULL?P.fed:P.idle;
   const feed=pt.full>=PET_FULL?'Too full for treats':save.purse<TREAT_COST?`Needs ✦ ${TREAT_COST} points`:`${P.treat} Feed a treat · ✦ ${TREAT_COST}`;
   el.innerHTML=purseBar('Points to spend. Every brew adds to it.')
-    +`<div class="pethome"><div class="big" id="petBig">${petGlyph()}</div><h3>${esc(pt.name)}</h3><div class="lv">${petVar().d} · ${petKind().n}</div><div class="lv">Level ${lv} · ${PET_LV[lv-1].t}</div>
+    +`<div class="pethome"><div class="big" id="petBig">${petGlyph()}</div><h3>${esc(pt.name)}</h3><div class="lv">${petStageName()} · ${petVar().d}</div><div class="lv">Bond level ${lv} · ${PET_LV[lv-1].t}</div>
       <div class="say">${say}</div>
       <div class="meter" aria-label="${pt.full} of ${PET_FULL} bowls full">${Array.from({length:PET_FULL},(_,i)=>`<span class="${i<pt.full?'':'off'}">🥣</span>`).join('')}</div>
       <div class="bond" aria-label="Bond ${pct}% to the next level"><i style="width:${pct}%"></i></div>
-      <div class="note dim">${nx?`${nx.need-pt.bond} more treat${nx.need-pt.bond>1?'s':''} to Level ${lv+1}`:'Best friends forever ✦'} · each brew empties one bowl</div>
+      <div class="note dim">${nx?`${nx.need-pt.bond} more treat${nx.need-pt.bond>1?'s':''} to bond level ${lv+1}`:'Best friends forever ✦'} · ${['each brew empties one bowl','bowls empty every other brew','bowls empty every third brew'][talent('tree')]}</div>
       <button class="craft" id="feed" style="width:100%" ${pt.full<PET_FULL&&save.purse>=TREAT_COST?'':'disabled'}>${feed}</button></div>
+    ${(()=>{ const st=petStage(), T=P.talent, ng=GROW[st+1], b=pt.brews||0;
+      return `<div class="ygroup">Growing up</div><div class="perks">${P.stages.map((nm,i)=>`<div class="perk${i<=st?' on':''}"><b style="min-width:34px;font-size:26px;text-align:center;line-height:1">${petGlyph(P,petVar(),i)}</b><div><b style="font-size:12px">${nm}</b><br>${i===0?'Just adopted.':`Bond level ${GROW[i].lv} and ${GROW[i].brews} brews together${i<=st?'':` · ${Math.min(b,GROW[i].brews)}/${GROW[i].brews} brews`}.`} ${i>0?`<span class="dim">${T.n}: ${T.d[i-1].charAt(0).toLowerCase()+T.d[i-1].slice(1)}.</span>`:''}</div></div>`).join('')}</div>
+      <div class="spellbox"><div class="sb-ic">✦</div><div><b>Talent · ${T.n}</b><br>${st?T.d[st-1]+'.':`Wakes up when ${esc(pt.name)} grows into ${an(P.stages[1])}.`}</div></div>`; })()}
+    <div class="ygroup">Bond</div>
     <div class="perks">${PET_LV.map((L,i)=>`<div class="perk${i<lv?' on':''}"><b>Lv ${i+1}</b>${L.d}</div>`).join('')}</div>`;
   $('#feed').onclick=()=>{ SFX.init(); const r=feedPet(); if(r==='ok'||r==='level'){ SFX.chime(); renderPetAfterFeed(r); } };
 }
 function renderPetAfterFeed(r){
   showMap('pet'); const b=$('#petBig'); if(b) b.classList.add('munch');
+  const st=petStage(); if(st>(save.pet.seen||0)){ save.pet.seen=st; persist(); SFX.magic(); toastMap(`${esc(save.pet.name)} grew into ${an(petStageName())}!`); }
   if(r==='level'){ const lv=petLv(), P=petKind(); SFX.magic();
     toastMap(`${esc(save.pet.name)} reached Level ${lv}: ${PET_LV[lv-1].t}!`);
     setTimeout(()=>{ if(!document.body.classList.contains('mapmode')) return; modal(`<div class="kicker">Bond grows</div><div class="sigbig">${petGlyph()}</div><h2>${esc(save.pet.name)} is ${PET_LV[lv-1].t}</h2>
