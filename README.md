@@ -16,7 +16,7 @@ A cozy, witchy sand-sorting puzzle game. Pour glittering enchanted sands across 
 | Tea-Leaf Parlor | Madame Seraphine Lune, Divination | **Foretell**: points to the best next pour |
 | Hushed Crypt | Corvin Ashgrave, Shadow Arts | **Unbind**: your next pour ignores the color rule |
 
-30 levels that get harder brew by brew inside every classroom: more colors, trickier starting mixes, longer solves, and fewer undos as you go. Finish a classroom to unlock its **bonus brew**: harder, fully veiled, and worth double points. Every level is checked to be solvable.
+Each year has 150 brews: 30 in every classroom, getting steadily harder across the whole year (more colors, longer solves, fewer undos and more blockers). Every 10th brew is a 🔥 peak, followed by two 🍃 breathers with a fresh, easy layout every time you play. Finish a classroom to unlock its **bonus brew**: harder, fully veiled, and worth double points. Every level is checked to be solvable. Vials are filled with real ingredients, with new ingredients and potions every year (135 in all).
 
 ## Spellcraft and academy years
 
@@ -28,6 +28,8 @@ Craft all of your year's **exam spells** to move up a year. Your Second Year bri
 
 Every witch starts with a little Sprout. It grows with you: a seedling in your First Year, a leafy sprout in your Second. In your Third Year it blooms into the familiar you choose: a kind (cat, dragon, owl, rat, frog, snake, spider or a little tree), one of three companions of that kind, and a name. Feed it treats with your points to grow your bond and it starts pointing out pours. As you finish Third Year classrooms it grows up and wakes a talent of its own: extra hints, warm breath for bonus points, night eyes that lift veils, scavenged potions, lucky tokens, free undos, a sharper swift bonus or deep roots that keep it fed longer.
 
+Every so often your companion asks to brew a remedy with you: a quick memory game where you add the recipe's ingredients in order. Win and it learns a new charm (Rainbow Coat, Featherlight, Pathfinder and more); lose and it is injured, without hints, talents or charms, until you win a remedy brew together.
+
 Giving up on a brew after pouring is a failed attempt: it costs 100 points and one of your companion's three hearts. With no hearts left it is too worn out to help, until you win a brew or feed it.
 
 ## The Healer's Hut
@@ -36,7 +38,7 @@ Mother Thimbleweed trades points for help: heal one of your companion's hearts, 
 
 ## Timed brews
 
-Brew 4 of each classroom (and brew 6 from your Second Year) has a clock that starts with your first pour. Time left over earns bonus points; if it runs out, use a Second Wind or try again.
+Brews 6, 16 and 26 of each classroom have a clock that starts with your first pour. Time left over earns bonus points; if it runs out, use a Second Wind or try again.
 
 ## Companion attributes
 
@@ -44,7 +46,7 @@ Every bonus brew you win earns that classroom's Essence. Combine an Essence with
 
 ## Whimsical blockers
 
-Harder brews mix in blockers, more of them each year:
+Harder brews mix in blockers. Each year brings new ones (Year 1: scrolls and webs; Year 2: frost and numbered scrolls; Year 3: vial sizes and fragile vials) and mixes the earlier ones back in:
 
 - **Scrolls** seal a vial until you bottle the potion matching the wax seal; numbered scrolls open after that many potions of any color.
 - **Spider webs** block a vial until you cast the classroom's spell (that cast costs no star).
@@ -53,7 +55,7 @@ Harder brews mix in blockers, more of them each year:
 
 ## Golden vials and Adventures
 
-Brew 5 of every classroom hides a golden vial. Bottle three potions in its secret order to open it for a Lucky Elixir, and spend that to unlock the year's Adventure: one very hard brew with every blocker at once. Your companion's Golden Sense reveals the order: one rune once your Sprout has bloomed, and one more for every Adventure you conquer.
+Brew 18 of every classroom hides a golden vial. Bottle three potions in its secret order to open it for a Lucky Elixir, and spend that to unlock the year's Adventure: one very hard brew with every blocker at once. Your companion's Golden Sense reveals the order: one rune once your Sprout has bloomed, and one more for every Adventure you conquer.
 
 ## Achievements and lore
 

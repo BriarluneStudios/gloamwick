@@ -106,6 +106,10 @@ body.mapmode #map{display:block}
 .orb.next{animation:orbpulse 1.8s ease-in-out infinite}
 @keyframes orbpulse{50%{box-shadow:0 0 18px 0 var(--ra)}}
 .orb:disabled{opacity:.35;cursor:default}
+.orb.k-peak:not(.done){border-color:#ff8a5c;box-shadow:inset 0 0 10px -3px #ff8a5c}
+.orb.k-ease:not(.done){border-style:dashed}
+.orb.k-gold:not(.done){border-color:#ffd75e;box-shadow:inset 0 0 10px -3px #ffd75e}
+.orb.k-timed:not(.done){border-color:#9fd3ff}
 .orb.bonus{aspect-ratio:auto;border-radius:14px;padding:9px 12px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ra);display:block;width:100%}
 .orb.bonus.done{color:var(--night)}
 .orb .st{position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:1px;color:var(--ra);white-space:nowrap}
@@ -293,6 +297,19 @@ body.mapmode #map{display:block}
 .hut h3{margin:0;font-family:var(--f-display);font-weight:600;font-size:19px;color:var(--accent)}
 .attrs{display:flex;justify-content:center;gap:6px;font-size:20px;min-height:0}
 .attrs span{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.35);border:1px solid color-mix(in srgb, var(--accent) 45%, transparent)}
+.remedy{display:flex;flex-direction:column;gap:10px}
+.rcp{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;min-height:64px}
+.rcp .slot{width:52px;height:60px;border-radius:14px;border:1px dashed var(--line);display:grid;place-items:center;font:600 13px var(--f-display);color:var(--ink3);position:relative}
+.rcp .slot.on{border-style:solid;border-color:var(--accent);box-shadow:0 0 14px -4px var(--accent)}
+.rcp .slot canvas,.tiles canvas{width:40px;height:40px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tile{appearance:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px 6px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.3);color:var(--ink);font:500 12px/1.1 var(--f-body);cursor:pointer;min-height:76px}
+.tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tile.ok{border-color:#9be38a;background:rgba(80,160,70,.25)}
+.tile.bad{border-color:#ff8a7a;animation:armed .4s 2}
+.tile:disabled{opacity:.55}
+.rbar{height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}
+.rbar i{display:block;height:100%;background:var(--accent);transition:width .1s linear}
 .crest .total{font-family:var(--f-display);font-size:13px;letter-spacing:.14em;color:var(--accent);margin-top:6px}
 @media (prefers-reduced-motion: reduce){ #achBanner{transition:none} .recipe.ready,.card,.stars span.on,.orb.next,.spell.armed,.spell.nudge,#levelName .pts.bump{animation:none} }
 </style>
@@ -340,7 +357,7 @@ body.mapmode #map{display:block}
       <div id="loreList" style="display:flex;flex-direction:column;gap:10px" hidden></div>
       <div id="petList" style="display:flex;flex-direction:column;gap:14px" hidden></div>
       <div id="hutList" style="display:flex;flex-direction:column;gap:14px" hidden></div>
-      <div class="map-foot">Five classrooms · thirty brews a year · spells to craft · ✦ stars for brewing without help · <a href="#" id="mapHelp" style="color:inherit">how to play</a><br>Gloamwick™ © 2026 Briarlune Studios · All rights reserved · <a href="https://briarlunestudios.github.io/gloamwick/" style="color:inherit">official site</a></div>
+      <div class="map-foot">Five classrooms · 150 brews a year · 🔥 peaks and 🍃 breathers · spells to craft · ✦ stars for brewing without help · <a href="#" id="mapHelp" style="color:inherit">how to play</a><br>Gloamwick™ © 2026 Briarlune Studios · All rights reserved · <a href="https://briarlunestudios.github.io/gloamwick/" style="color:inherit">official site</a></div>
     </div>
   </section>
   <div id="achBanner" role="status" aria-live="polite"></div>
@@ -414,7 +431,8 @@ let save={done:{},stars:{},seen:{},best:{},ing:{},pot:{},spells:{},year:1,view:1
 try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.done) save=Object.assign(save,s);}catch(e){}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
 function isUnlocked(r,l,y){ y=y||1; if(y>Math.min(save.year,YEARS)) return false;
-  if(r>0 && !save.done[LK(y,r-1,5)]) return false; return l===0 || !!save.done[LK(y,r,l-1)]; }
+  // Classrooms finished under the old six-brew rules stay finished, so the next one stays open.
+  if(r>0 && !save.done[LK(y,r-1,PER-1)] && !(save.legacy&&save.legacy[y+'-'+(r-1)])) return false; return l===0 || !!save.done[LK(y,r,l-1)]; }
 
 /* ======================= SPELLCRAFT ======================= */
 // Spells are crafted in the grimoire. Each recipe needs some discovered ingredients (catalysts, never used up)
@@ -472,14 +490,15 @@ const examsDone=y=>examsFor(y).every(S=>has(S.key));
 
 /* ======================= ACHIEVEMENTS & TOKENS ======================= */
 // Achievements pay out tokens. Tokens buy Pocket Sprouts (an extra empty vial in any brew) and unlock lore pages.
-const roomDone=(y,r)=>[0,1,2,3,4,5].every(l=>save.done[LK(y,r,l)]);
+const roomSlots=()=>Array.from({length:PER},(_,i)=>i);
+const roomDone=(y,r)=>roomSlots().every(l=>save.done[LK(y,r,l)]);
 const anyRoom=f=>{ for(let y=1;y<=YEARS;y++) for(let r=0;r<5;r++) if(f(y,r)) return true; return false; };
 const nDone=()=>Object.keys(save.done).length;
 const nStars3=()=>Object.values(save.stars).filter(v=>v===3).length;
 const nBonus=y=>[0,1,2,3,4].filter(r=>save.done[LK(y,r,BONUS)]).length;
 const ACH=[
  {k:'first',   i:'🧪', n:'First Brew',            d:'Finish your first brew.',                         t:1, ok:()=>nDone()>=1},
- {k:'room',    i:'🌿', n:'Top of the Class',      d:'Finish all six brews in a classroom.',            t:2, ok:()=>anyRoom(roomDone)},
+ {k:'room',    i:'🌿', n:'Top of the Class',      d:'Finish all 30 brews in a classroom.',            t:2, ok:()=>anyRoom(roomDone)},
  {k:'allrooms',i:'🏰', n:'Every Classroom',       d:'Finish every classroom in a year.',               t:3, ok:()=>anyRoom((y,r)=>r===4&&roomDone(y,4))},
  {k:'bonus',   i:'🎁', n:'Bonus Brewer',          d:'Finish a bonus brew.',                            t:2, ok:()=>nBonus(1)+nBonus(2)+nBonus(3)>=1},
  {k:'bonus5',  i:'🏅', n:'Overachiever',          d:'Finish all five bonus brews in a year.',          t:4, ok:()=>[1,2,3].some(y=>nBonus(y)===5), p:()=>[Math.max(nBonus(1),nBonus(2),nBonus(3)),5]},
@@ -487,11 +506,11 @@ const ACH=[
  {k:'year3',   i:'⚗️', n:'Third Year',            d:'Move up to your Third Year.',                     t:3, ok:()=>save.year>=3},
  {k:'pure',    i:'✦',  n:'Pure Brew',             d:'Earn three stars on a brew.',                     t:1, ok:()=>nStars3()>=1},
  {k:'pure10',  i:'🌟', n:'Steady Hand',           d:'Earn three stars on ten brews.',                  t:3, ok:()=>nStars3()>=10, p:()=>[nStars3(),10]},
- {k:'starroom',i:'🌌', n:'Starry Classroom',      d:'Three stars on all six brews of a classroom.',    t:3, ok:()=>anyRoom((y,r)=>[0,1,2,3,4,5].every(l=>save.stars[LK(y,r,l)]===3))},
+ {k:'starroom',i:'🌌', n:'Starry Classroom',      d:'Three stars on every brew of a classroom.',       t:3, ok:()=>anyRoom((y,r)=>roomSlots().every(l=>save.stars[LK(y,r,l)]===3))},
  {k:'pureb',   i:'🕯️', n:'Unveiled',              d:'Three stars on a bonus brew.',                    t:3, ok:()=>anyRoom((y,r)=>save.stars[LK(y,r,BONUS)]===3)},
  {k:'swift',   i:'☄️', n:'Swift as a Comet',      d:'Finish a brew in as few pours as the cauldron would.', t:2, ok:()=>save.stats.swift>=1},
  {k:'ing10',   i:'🌱', n:'Gatherer',              d:'Discover 10 ingredients.',                        t:1, ok:()=>Object.keys(save.ing).length>=10, p:()=>[Object.keys(save.ing).length,10]},
- {k:'ingall',  i:'🧺', n:'Every Ingredient',      d:'Discover all 45 ingredients.',                    t:4, ok:()=>Object.keys(save.ing).length>=TOTAL_ING, p:()=>[Object.keys(save.ing).length,TOTAL_ING]},
+ {k:'ingall',  i:'🧺', n:'Every Ingredient',      d:'Discover every ingredient in all three years.',                    t:4, ok:()=>Object.keys(save.ing).length>=TOTAL_ING, p:()=>[Object.keys(save.ing).length,TOTAL_ING]},
  {k:'pot100',  i:'🍾', n:'Busy Cauldron',         d:'Bottle 100 potions.',                             t:2, ok:()=>save.stats.pot>=100, p:()=>[save.stats.pot,100]},
  {k:'pot500',  i:'🏺', n:'Potion Hoarder',        d:'Bottle 500 potions.',                             t:4, ok:()=>save.stats.pot>=500, p:()=>[save.stats.pot,500]},
  {k:'spell1',  i:'📖', n:'Spellwright',           d:'Craft your first spell.',                         t:1, ok:()=>Object.keys(save.spells).length>=1},
@@ -501,6 +520,7 @@ const ACH=[
  {k:'owl',     i:'🦉', n:'Night Owl',             d:'Finish a brew between midnight and 4 a.m.',       t:1, ok:c=>!!(c&&c.owl)},
    {k:'gold',    i:'🏆', n:'Lucky Find',            d:'Open a golden vial.',                             t:2, ok:()=>(save.stats.gold||0)>=1},
  {k:'adv',     i:'🗝️', n:'Adventurer',            d:'Conquer an Adventure.',                           t:3, ok:()=>advWins()>=1},
+ {k:'care',    i:'🧉', n:'Brewing Buddies',       d:'Brew a remedy with your companion.',              t:2, ok:()=>(save.stats.remedies||0)>=1},
  {k:'clock',   i:'⏳', n:'Beat the Clock',        d:'Win a timed brew.',                               t:2, ok:()=>(save.stats.timed||0)>=1},
  {k:'attr',    i:'🎀', n:'Gifted Companion',      d:'Give your companion an attribute.',               t:2, ok:()=>!!(save.pet&&save.pet.attr&&Object.keys(save.pet.attr).length)},
  {k:'pet',     i:'🌸', n:'In Full Bloom',         d:'Your Sprout blooms into a familiar.',             t:2, ok:()=>!!save.pet&&!isSprout()},
@@ -630,7 +650,21 @@ const ATTRS=[
  {k:'tea',   r:3, i:'🫖', n:'Tea-Leaf Charm',   d:'One more hint every brew (from bond level 2).',             pot:{'3-0':2,'3-8':2}},
  {k:'shade', r:4, i:'🌑', n:'Hourglass Shade',  d:'+30 seconds on every timed brew.',                          pot:{'4-0':2,'4-8':2}},
 ];
-const hasAttr=k=>!!(save.pet&&save.pet.attr&&save.pet.attr[k]);
+const hasAttr=k=>!!(save.pet&&!save.pet.injured&&save.pet.attr&&save.pet.attr[k]);
+// Charms: won by brewing a remedy with your companion (the mini-game). An injured companion's charms rest.
+const CHARMS=[
+ {k:'rainbow', i:'🌈', n:'Rainbow Coat',   d:'+5% points on every brew.'},
+ {k:'feather', i:'🪶', n:'Featherlight',   d:"Once per brew, a wrong pour onto a fragile vial doesn't crack it."},
+ {k:'compass', i:'🧭', n:'Pathfinder',     d:'Golden Sense +1: reveals one more golden rune.'},
+ {k:'clover',  i:'🍀', n:'Clover Charm',   d:'A 10% chance to find a token after every brew.'},
+ {k:'quick',   i:'⚡', n:'Quickstep',      d:'+15 seconds on timed brews.'},
+ {k:'ward',    i:'🛡️', n:'Warded',         d:'Failed attempts cost 50 points instead of 100.'},
+ {k:'burn',    i:'🔥', n:'Webburner',      d:'Webs burn away on their own after 6 pours.'},
+ {k:'thaw',    i:'☀️', n:'Sunny Paws',     d:'Frost thaws 2 pours sooner.'},
+ {k:'star',    i:'💫', n:'Stardust Trail', d:'+1 Undo in every brew.'},
+];
+const hasCharm=k=>!!(save.pet&&!save.pet.injured&&save.pet.charms&&save.pet.charms[k]);
+const injured=()=>!!(save.pet&&save.pet.injured);
 const essCount=r=>(save.ess&&save.ess[r])||0;
 const canAttr=A=>!hasAttr(A.k)&&essCount(A.r)>=1&&Object.entries(A.pot).every(([p,n])=>potCount(p)>=n);
 function giveAttr(k){ const A=ATTRS.find(x=>x.k===k); if(!A||!canAttr(A)) return false;
@@ -639,8 +673,8 @@ function giveAttr(k){ const A=ATTRS.find(x=>x.k===k); if(!A||!canAttr(A)) return
 // Healer's Hut: Mother Thimbleweed trades points for hearts and Second Winds (continuations).
 const HUT={heart:300, full:700, wind:400, windNow:500};
 const WIND_TIME=45, WIND_UNDOS=2;
-// Timed brews: brew 4 of each classroom (not the Year 1 Glasshouse), and brew 6 from Year 2 on.
-const timedFor=(y,r,l)=>(l===3&&!(y===1&&r===0))||(y>=2&&l===5);
+// Timed brews: brews 6, 16 and 26 of each classroom (not the first ten in the Year 1 Glasshouse).
+const timedFor=(y,r,l)=>l<PER&&l%10===5&&!(y===1&&r===0&&l<10);
 const fmtTime=sec=>{ sec=Math.max(0,Math.ceil(sec)); return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0'); };
 // Bond levels: treats needed, title, and what it unlocks.
 const PET_LV=[
@@ -671,8 +705,8 @@ const petStage=()=>{ if(!save.pet) return 0; if(isSprout()) return save.year>=2?
 const petStageName=()=>petKind().stages[petStage()];
 const petMax=()=>PET_HP+(hasAttr('crown')?1:0);
 const petHP=()=>save.pet?Math.min(petMax(),save.pet.hp===undefined?PET_HP:save.pet.hp):0;
-const talent=k=>save.pet&&save.pet.k===k&&petHP()>0&&petStage()>0?petStage():0;   // 0 off, 1 young, 2 grown
-const petCharges=()=>{ if(petHP()===0) return 0; const lv=petLv(); return (lv>=4?2:lv>=2?1:0)+(lv>=2?talent('cat'):0)+(lv>=2&&hasAttr('tea')?1:0); };
+const talent=k=>save.pet&&save.pet.k===k&&!save.pet.injured&&petHP()>0&&petStage()>0?petStage():0;   // 0 off, 1 young, 2 grown
+const petCharges=()=>{ if(petHP()===0||injured()) return 0; const lv=petLv(); return (lv>=4?2:lv>=2?1:0)+(lv>=2?talent('cat'):0)+(lv>=2&&hasAttr('tea')?1:0); };
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 const an=w=>(/^[aeiou]/i.test(w)?'an ':'a ')+w;
@@ -686,7 +720,7 @@ function feedPet(){ const pt=save.pet; if(!pt) return 'none'; if(pt.full>=PET_FU
 // A failed attempt: you gave up on a brew after pouring. The Year 1 Glasshouse is free while you learn.
 const failCounts=()=>!!G&&G.moves>0&&!G.won&&!(G.y===1&&G.r===0);
 function failAttempt(){ if(!failCounts()) return ''; G.moves=0;
-  const lost=Math.min(FAIL_COST,save.purse||0); save.purse=(save.purse||0)-lost; save.stats.fails=(save.stats.fails||0)+1;
+  const lost=Math.min(hasCharm('ward')?50:FAIL_COST,save.purse||0); save.purse=(save.purse||0)-lost; save.stats.fails=(save.stats.fails||0)+1;
   let m=`Failed attempt: −${lost} points`;
   if(save.pet){ save.pet.hp=Math.max(0,petHP()-1); m+=` · ${save.pet.name} lost a heart${save.pet.hp===0?' and is too worn out to help':''} ${hearts()}`; }
   persist(); return m; }
@@ -769,42 +803,51 @@ function solve(start,limit,caps,seals,frost){
   return null;
 }
 const LEVEL_CACHE={}, LEVEL_PAR={};
-// Difficulty ramps inside every classroom: more colors every two brews, no starting pairs from brew 4 on,
-// and each slot uses a pre-picked layout whose solution gets longer brew by brew (verified offline).
-// Slot 6 in every room is the optional Bonus Brew. Colors per brew climb faster than before, and each seed was
-// picked offline so the shortest solve keeps growing (12 pours on the very first brew up to ~34 in the Crypt bonus).
-const BONUS=6;
-// Academy years: each year replays the five classrooms with its own, harder set of brews.
-// Year 2 adds more colors, veils every classroom and allows no starting pairs at all.
-// Year 3 brings different vial sizes: tiny 3-layer vials, standard 4s and great 5-layer flasks.
+// ---- Level design ----------------------------------------------------------------------------------
+// Each year: five classrooms x 30 brews (150 a year), plus a bonus brew per classroom and one Adventure.
+// Difficulty climbs smoothly across the whole year. Every 10th brew is a peak (a super-hard spike), and the two
+// brews after a peak (and the first two of each classroom) are breathers: simple layouts, freshly randomized
+// every time you play them. Each year brings new blockers and mixes the earlier years' ones back in at random.
+const PER=30, BONUS=PER, ADV=PER+1;   // brews per classroom, then the bonus brew slot and the Adventure slot
 const YEARS=3;
-const NCOL={1:[[4,5,5,6,6,7,7],[6,6,7,7,8,8,9],[7,7,8,8,9,9,9],[8,8,9,9,9,9,9],[8,9,9,9,9,9,9]],
-            2:[[6,6,7,7,8,8,9],[7,7,8,8,9,9,9],[8,8,9,9,9,9,9],[9,9,9,9,9,9,9],[9,9,9,9,9,9,9]],
-            3:[[5,5,6,6,7,7,8],[6,6,7,7,8,8,8],[6,7,7,8,8,8,9],[7,7,8,8,9,9,9],[7,8,8,9,9,9,9]]};
-const SEEDS={1:[[15,14,5,1,81,178,254],[38,27,81,73,3,184,178],[15,7,49,112,85,244,222],[29,17,43,44,51,160,94],[30,6,20,86,90,210,127]],
-             2:[[32,69,16,7,196,17,152],[29,77,38,176,86,65,234],[5,34,10,193,152,160,15],[37,19,28,49,251,205,251],[83,29,3,234,65,165,152]],
-             3:[[35,31,542,439,186,226,51],[74,67,483,347,467,526,6],[92,5,299,25,19,422,121],[38,92,198,177,576,204,450],[23,39,292,127,219,260,263]]};
-function spec(y,r,l){ return {n:l===ADV?9:NCOL[y][r][l], empties:2, maxRun:(y>=2||l>=2)?2:3}; }
-// Blockers: how many of each a brew has. Later brews, later classrooms and later years have more.
-//  color: scrolls sealed by one potion · count: scrolls that open after 3 potions · web: cleared by casting the
-//  classroom's spell · frost: thaws after some pours · fragile: cracks on a wrong pour and shatters on the second.
-const ADV=7;   // slot of each year's Adventure brew
 // Adventures: one very hard brew per year, unlocked with a Lucky Elixir from a golden vial.
 const ADV_INFO={1:{r:4,name:'The Gilded Catacombs',icon:'🗝️'},2:{r:2,name:'The Molten Vault',icon:'🌋'},3:{r:1,name:'The Star-Drowned Library',icon:'📚'}};
-const ADV_SEEDS={1:85,2:344,3:390};
-function scrollsFor(y,r,l){ return l===ADV?2 : y===1?(l>=4?1:0) : y===2?(l===BONUS?2:l>=2?1:0) : (l>=4?2:l>=1?1:0); }
-function blockersFor(y,r,l){
+// Pre-picked layouts (tools/seeds.js): SEEDS[year][room][brew], breathers are random so they hold 0.
+const ADV_SEEDS={1:287,
+             2:334,
+             3:7};
+const SEEDS={1:[[0,0,3,14,17,0,16,3,1,1,0,0,3,7,10,1,13,13,7,36,0,0,18,1,20,17,1,17,9,18,26],[0,0,16,2,11,7,3,14,5,21,0,0,7,16,35,1,11,13,24,14,0,0,39,3,38,4,34,27,8,27,48],[0,0,5,11,43,22,18,37,5,10,0,0,26,6,18,9,16,39,10,33,0,0,6,18,1,24,32,29,8,36,28],[0,0,16,35,26,17,16,25,19,30,0,0,20,2,21,15,27,14,12,18,0,0,2,8,26,35,0,25,31,19,41],[0,0,35,37,3,31,38,38,16,3,0,0,26,44,7,16,45,29,33,45,0,0,4,23,36,33,37,44,0,27,31]],
+             2:[[0,0,18,13,0,9,4,14,13,13,0,0,16,20,1,27,40,13,21,45,0,0,15,19,15,1,51,6,41,48,52],[0,0,9,5,15,20,13,16,22,9,0,0,0,19,26,27,7,25,33,20,0,0,37,29,37,30,1,19,8,21,76],[0,0,17,38,26,8,36,32,42,6,0,0,42,6,9,23,2,25,16,37,0,0,30,16,11,13,17,6,28,19,59],[0,0,40,11,30,1,46,26,22,8,0,0,35,5,32,45,14,43,51,25,0,0,33,19,16,6,35,28,35,46,116],[0,0,45,30,5,33,8,32,23,76,0,0,40,27,62,64,53,44,43,5,0,0,44,29,67,5,71,44,58,76,68]],
+             3:[[0,0,0,42,42,34,42,43,9,29,0,0,51,24,23,1,22,18,18,29,0,0,11,26,24,16,33,39,6,48,73],[0,0,38,18,17,47,51,2,1,42,0,0,34,34,12,26,56,10,49,19,0,0,17,22,8,27,40,9,38,34,19],[0,0,49,10,43,11,20,28,47,18,0,0,19,25,35,23,32,40,15,2,0,0,2,21,9,31,52,38,44,12,10],[0,0,65,53,22,40,12,40,51,1,0,0,29,29,38,37,38,14,40,11,0,0,10,47,48,35,25,47,9,53,27],[0,0,4,55,12,19,1,19,56,58,0,0,7,46,56,31,1,12,58,42,0,0,53,19,38,0,13,67,24,37,30]]};
+const slotKind=l=>l===BONUS?'bonus':l===ADV?'adv':l%10===9?'peak':(l%10<=1)?'ease':'ramp';
+const isEase=(y,r,l)=>slotKind(l)==='ease';
+const YEAR_D={1:[.05,.8],2:[.3,.92],3:[.45,1]};   // difficulty at the start and end of each year
+// Difficulty 0..1 for a brew. R (optional) randomizes breathers.
+function diffFor(y,r,l,R){ const k=slotKind(l), [a,b]=YEAR_D[y];
+  if(k==='adv') return 1; if(k==='bonus') return Math.min(1,b+.1);
+  if(k==='ease') return .05+.15*(R?R():.5);
+  const p=(r*PER+l)/(5*PER-1); return Math.min(1,a+(b-a)*p+(k==='peak'?.15:0)); }
+// Blocker kinds each year adds (new ones are picked more often), and how far into the year they first appear.
+const BLOCKER_YEARS={color:[1,.12],web:[1,.55],frost:[2,0],count:[2,.3],fragile:[3,0]};
+function spec(y,r,l){ const D=diffFor(y,r,l,null); return {n:l===ADV?9:Math.max(4,Math.min(9,Math.round(4+D*5))), empties:2, maxRun:D<.25?3:2, D}; }
+function undosFor(y,r,l){ return Math.max(1,Math.round(5-diffFor(y,r,l,null)*4)); }
+// How many blockers of each kind; R picks the kinds, so every brew mixes them differently.
+function blockersFor(y,r,l,R){
+  const B={color:0,count:0,web:0,frost:0,fragile:0};
   if(l===ADV) return {color:2,count:1,web:2,frost:1,fragile:2};
-  return {color:scrollsFor(y,r,l),
-    count: y===1?(l>=5?1:0) : y===2?(l>=3?1:0) : (l>=2?1:0),
-    web:   y===1?(r>=2&&l>=3?1:0) : (l>=1?1:0),
-    frost: y===1?(r>=3&&l>=2?1:0) : y===2?(l>=2?1:0) : (l>=3?1:0),
-    fragile: y===1?(l===BONUS?1:0) : y===2?(l>=4?1:0) : (l===BONUS?2:l>=3?1:0)}; }
-function undosFor(y,r,l){ const base=l>=BONUS?2 : l>=4?(r>=2?2:3) : l>=2?4:5; return Math.max(1,base-Math.min(1,y-1)); }
+  const k=slotKind(l); if(k==='ease') return B;
+  const D=diffFor(y,r,l,null), p=k==='bonus'?1:(r*PER+l)/(5*PER-1);
+  let nb=Math.round(D*D*(y+1.5)); if(k==='bonus') nb=Math.max(nb,y);
+  const pool=Object.keys(BLOCKER_YEARS).filter(t=>{ const [yr,from]=BLOCKER_YEARS[t]; return yr<y||(yr===y&&p>=from); });
+  for(let i=0;i<nb&&pool.length;i++){ const w=pool.map(t=>BLOCKER_YEARS[t][0]===y?2:1), tot=w.reduce((x,z)=>x+z,0); let q=R()*tot, t=pool[0];
+    for(let j=0;j<pool.length;j++){ q-=w[j]; if(q<0){ t=pool[j]; break; } }
+    if(B[t]<2) B[t]++; }
+  return B; }
 // Returns {v: vials (arrays of color indexes), caps: each vial's capacity}, or null if the shuffle breaks a rule.
 function buildLevel(y,r,l,att){
-  const {n,empties,maxRun}=spec(y,r,l);
   const R=rng(9173+r*1009+l*131+att*7919+(y-1)*104729);
+  let {n,empties,maxRun}=spec(y,r,l);
+  if(slotKind(l)==='ease'){ n=4+Math.floor(R()*2)+(y>=2?1:0); maxRun=3; }
   const cols=shuffle([0,1,2,3,4,5,6,7,8],R).slice(0,n);
   // From Year 3 each color comes in 3, 4 or 5 grains, and there is one vial of each matching size.
   const size=y>=3?shuffle(cols.map((_,i)=>[3,4,5][i%3]),R):cols.map(()=>CAP);
@@ -814,7 +857,7 @@ function buildLevel(y,r,l,att){
   if(vials.some(v=>v.every(x=>x===v[0]))) return null;
   if(vials.some(v=>runLen(v)>=maxRun)) return null;
   // Scrolls: wrap some filled vials, each sealed by a color that isn't inside it.
-  const seals=vials.map(()=>-1), B=blockersFor(y,r,l);
+  const seals=vials.map(()=>-1), B=blockersFor(y,r,l,R);
   for(let k=0;k<B.color;k++){ const free=vials.map((_,i)=>i).filter(i=>seals[i]<0); const i=free[Math.floor(R()*free.length)];
     const keys=cols.filter(c=>!vials[i].includes(c)); if(!keys.length) return null; seals[i]=keys[Math.floor(R()*keys.length)]; }
   // Other blockers go on vials that don't already have one (fragile ones may be empty vials too).
@@ -833,12 +876,13 @@ function buildLevel(y,r,l,att){
 // Save keys: Year 1 keeps the original "room-brew" keys so existing progress carries over.
 const LK=(y,r,l)=>y===1?r+'-'+l:'y'+y+':'+r+'-'+l;
 // Returns {v, caps, seals, frost, web, fragile} with fresh copies.
-const seedFor=(y,r,l)=>l===ADV?ADV_SEEDS[y]:SEEDS[y][r][l];
+const seedFor=(y,r,l)=>l===ADV?ADV_SEEDS[y]:((SEEDS[y]&&SEEDS[y][r]&&SEEDS[y][r][l])||0);
 const LEVEL_SOL={};
 function genLevel(y,r,l){
   const k=LK(y,r,l), cp=L=>({v:L.v.map(x=>x.slice()),caps:L.caps.slice(),seals:L.seals.slice(),frost:L.frost.slice(),web:L.web.slice(),fragile:L.fragile.slice()});
-  if(LEVEL_CACHE[k]) return cp(LEVEL_CACHE[k]);
   const ok=(L,sol)=>{ LEVEL_CACHE[k]=cp(L); LEVEL_PAR[k]=sol.length; LEVEL_SOL[k]=sol; return cp(L); };
+  if(isEase(y,r,l)){ const s0=Math.floor(Math.random()*1e6); for(let att=s0;att<s0+60;att++){ const L=buildLevel(y,r,l,att); let sol; if(L&&(sol=solve(L.v,20000,L.caps,L.seals,L.frost))) return ok(L,sol); } }
+  if(LEVEL_CACHE[k]) return cp(LEVEL_CACHE[k]);
   const seeded=buildLevel(y,r,l,seedFor(y,r,l)); let sol;
   if(seeded && (sol=solve(seeded.v,30000,seeded.caps,seeded.seals,seeded.frost))) return ok(seeded,sol);
   let last=null;
@@ -863,7 +907,14 @@ const MOTIFS=[
   ['seed','root','petal','leaf','leaf','bell','sprig','petal','moon'],           // Parlor
   ['moon','ember','drop','root','swirl','feather','berry','petal','bone'],       // Crypt
 ];
-const motifOf=c=>MOTIFS[G.r][c];
+// Every year brings its own ingredients and potions to each classroom (same colors, new things to brew).
+// VARIANTS[year][room][color] = [ingredient, potion, motif]. Year 1 uses ROOMS and MOTIFS.
+const VARIANTS={2:[[["Wild Strawberry", "Strawberry Sweetheart Syrup", "berry"], ["Pumpkin Blossom", "Pumpkin Harvest Tonic", "flower"], ["Dandelion Fluff", "Dandelion Wishing Brew", "puff"], ["Mint Sprig", "Mintleaf Cooling Balm", "sprig"], ["Lily Pad", "Lily Pad Calm Draught", "pad"], ["Cornflower", "Cornflower Clear-Sky Tea", "flower"], ["Elderberry", "Elderberry Warding Wine", "berry"], ["Peony Petal", "Peony Blush Philter", "petal"], ["Snowdrop", "Snowdrop Winter Cordial", "bell"]], [["Red Giant Ember", "Red Giant Courage Draught", "sun"], ["Solar Flare Dust", "Solar Flare Tonic", "flame"], ["Sunbeam Thread", "Sunbeam Spirit Elixir", "sun"], ["Meteor Moss", "Meteor Moss Mending Brew", "shard"], ["Comet Ice", "Comet Ice Clarity Drops", "snowflake"], ["Neptune Pearl", "Neptune Deepsight Draught", "pearl"], ["Void Crystal", "Void Crystal Focus Philter", "gem"], ["Nebula Bloom", "Nebula Bloom Dream Tea", "swirl"], ["Starlight Feather", "Starlight Lullaby", "feather"]], [["Garnet", "Garnet Valor Draught", "gem"], ["Dragon Scale", "Dragonscale Fireproof Tonic", "scale"], ["Gold Leaf", "Gold Leaf Fortune Elixir", "coin"], ["Jade Bead", "Jade Serenity Brew", "pearl"], ["Turquoise Chip", "Turquoise Traveler's Tonic", "shard"], ["Lapis Lazuli", "Lapis Wisdom Draught", "gem"], ["Violet Flame", "Violet Flame Cleansing Brew", "flame"], ["Coral Branch", "Coral Kinship Cordial", "coral"], ["Quicksilver", "Quicksilver Swiftness Draught", "drop"]], [["Hibiscus", "Hibiscus Heart Tea", "flower"], ["Orange Peel", "Orange Zest Cheer Tea", "slice"], ["Lemon Balm", "Lemon Balm Bright Tisane", "leaf"], ["Sage Leaf", "Sage Clear-Thought Steep", "leaf"], ["Peppermint Crystal", "Peppermint Frost Tea", "crystal"], ["Blue Lotus", "Blue Lotus Visions", "flower"], ["Candied Violet", "Candied Violet Charm", "heart"], ["Strawberry Cream", "Strawberry Cream Dream", "berry"], ["Sugar Cube", "Sugar Cube Comfort Tea", "cube"]], [["Vampire Rose", "Crimson Night Draught", "petal"], ["Lantern Seed", "Lantern Glow Tonic", "seed"], ["Will-o'-Wisp Light", "Wisp Guiding Elixir", "flame"], ["Toad Wart", "Toad Wart Hex-Breaker", "dots"], ["Banshee Tear", "Banshee Echo Draught", "drop"], ["Ghost Orchid", "Ghost Orchid Veil", "flower"], ["Bat Wing", "Batwing Night-Flight Brew", "wing"], ["Phantom Heart", "Phantom Heart Remembrance", "heart"], ["Spider Silk", "Spider Silk Binding Draught", "web"]]],
+  3:[[["Toadstool Cap", "Toadstool Tumble Tonic", "mushroom"], ["Calendula", "Calendula Golden Salve", "flower"], ["Honeysuckle", "Honeysuckle Nectar", "bell"], ["Four-Leaf Clover", "Four-Leaf Fortune Draught", "clover"], ["Sea Holly", "Sea Holly Tide Tonic", "thorn"], ["Forget-Me-Not", "Forget-Me-Not Memory Mist", "flower"], ["Wolfsbane", "Wolfsbane Moon Ward", "bell"], ["Cherry Blossom", "Cherry Blossom Spring Elixir", "flower"], ["Puffball Spore", "Puffball Dream Dust", "puff"]], [["Mars Ruby", "Mars Ruby Fortitude Brew", "gem"], ["Saturn Ring Dust", "Saturn Ring Balance Tonic", "ring"], ["Shooting Star", "Shooting Star Wishwater", "star"], ["Aurora Ribbon", "Aurora Ribbon Joy Draught", "swirl"], ["Moonwater Drop", "Moonwater Healing Draught", "drop"], ["Midnight Sapphire", "Sapphire Night-Eye Elixir", "gem"], ["Eclipse Shard", "Eclipse Shadow Philter", "moon"], ["Pulsar Petal", "Pulsar Heartbeat Tonic", "star"], ["Moon Dust", "Moon Dust Sleep Powder", "dots"]], [["Salamander Scale", "Salamander Firewalk Tonic", "scale"], ["Amber Resin", "Amber Preservation Salve", "drop"], ["Brimstone", "Brimstone Blaze Draught", "crystal"], ["Emerald Dust", "Emerald Vigor Elixir", "gem"], ["Clockwork Gear", "Clockwork Precision Tonic", "gear"], ["Star Iron", "Star Iron Shield Brew", "shard"], ["Obsidian Flake", "Obsidian Ward Philter", "shard"], ["Rose Gold Filing", "Rose Gold Charm Cordial", "coin"], ["Moonstone", "Moonstone Calm Draught", "pearl"]], [["Cinnamon Bark", "Cinnamon Warm-Heart Chai", "stick"], ["Ginger Root", "Ginger Spark Tonic", "root"], ["Honey Drop", "Honey Golden-Hour Tea", "drop"], ["Jasmine Bud", "Jasmine Moonlight Tea", "seed"], ["Bergamot Rind", "Bergamot Insight Tea", "slice"], ["Blueberry", "Blueberry Daydream Tea", "berry"], ["Plum Blossom", "Plum Blossom Omen Tea", "flower"], ["Rosy Candy", "Rosy Fortune Cordial", "heart"], ["Cloud Milk", "Cloud Milk Sleep Tea", "puff"]], [["Dragon's Blood Resin", "Dragon's Blood Warding Wine", "drop"], ["Ember Moth Wing", "Moth Wing Lightstep Tonic", "wing"], ["Cursed Coin", "Cursed Coin Luck-Turner", "coin"], ["Witch's Eye", "Witch's Eye Truthsight", "eye"], ["Spectral Key", "Spectral Key Unlocking Elixir", "key"], ["Raven Feather", "Raven's Hush Draught", "feather"], ["Shadowcap", "Shadowcap Vanishing Brew", "mushroom"], ["Fairy Ring Spore", "Fairy Ring Glamour Dust", "puff"], ["Bone Flower", "Bone Flower Restful Draught", "flower"]]]};
+function colorsFor(y,r){ return ROOMS[r].colors.map((C,c)=>y>=2&&VARIANTS[y]?[VARIANTS[y][r][c][0],C[1],VARIANTS[y][r][c][1]]:C); }
+function motifsFor(y,r){ return ROOMS[r].colors.map((_,c)=>y>=2&&VARIANTS[y]?VARIANTS[y][r][c][2]:MOTIFS[r][c]); }
+const motifOf=c=>(G.motifs||MOTIFS[G.r])[c];
+const ingKey=(y,r,c)=>y===1?r+'-'+c:'y'+y+':'+r+'-'+c;
 function motifPath(c,m){
   c.beginPath();
   switch(m){
@@ -886,10 +937,33 @@ function motifPath(c,m){
     case 'root': c.moveTo(-.1,-1); c.bezierCurveTo(.3,-.3,-.4,.2,.1,1); c.moveTo(0,-.2); c.quadraticCurveTo(.5,0,.8,.5); c.moveTo(-.05,.25); c.quadraticCurveTo(-.5,.4,-.7,.8); break;
     case 'swirl': for(let k=0;k<=24;k++){ const a=k*.42, rr=.08+k*.038; c.lineTo(Math.cos(a)*rr,Math.sin(a)*rr); } break;
     case 'feather': c.moveTo(0,1); c.lineTo(0,-1); c.moveTo(0,-.95); c.quadraticCurveTo(.6,-.4,.1,.55); c.moveTo(0,-.95); c.quadraticCurveTo(-.6,-.4,-.1,.55); break;
+    case 'flower': for(let k=0;k<5;k++){ const a=k*1.2566-1.57; c.moveTo(Math.cos(a)*.5+.42*Math.cos(a),Math.sin(a)*.5+.42*Math.sin(a)); c.ellipse(Math.cos(a)*.5,Math.sin(a)*.5,.42,.27,a,0,6.28); } c.moveTo(.28,0); c.arc(0,0,.28,0,6.28); break;
+    case 'puff': for(let k=0;k<8;k++){ const a=k*.785; c.moveTo(Math.cos(a)*.62+.24,Math.sin(a)*.62); c.arc(Math.cos(a)*.62,Math.sin(a)*.62,.24,0,6.28); } c.moveTo(.36,0); c.arc(0,0,.36,0,6.28); break;
+    case 'pad': c.moveTo(0,0); c.arc(0,0,.9,.35,6.0); c.closePath(); break;
+    case 'mushroom': c.moveTo(-.95,.05); c.quadraticCurveTo(0,-1.35,.95,.05); c.closePath(); c.rect(-.24,.05,.48,.85); break;
+    case 'clover': for(const [dx,dy] of [[0,-.42],[.42,0],[0,.42],[-.42,0]]){ c.moveTo(dx+.4,dy); c.arc(dx,dy,.4,0,6.28); } break;
+    case 'sun': c.arc(0,0,.5,0,6.28); for(let k=0;k<8;k++){ const a=k*.785; c.moveTo(Math.cos(a-.18)*.6,Math.sin(a-.18)*.6); c.lineTo(Math.cos(a)*1,Math.sin(a)*1); c.lineTo(Math.cos(a+.18)*.6,Math.sin(a+.18)*.6); } break;
+    case 'flame': c.moveTo(0,-1); c.bezierCurveTo(.55,-.35,.85,.45,0,1); c.bezierCurveTo(-.85,.45,-.55,-.35,0,-1); break;
+    case 'snowflake': for(let k=0;k<3;k++){ const a=k*1.047; c.moveTo(Math.cos(a)*1,Math.sin(a)*1); c.lineTo(-Math.cos(a),-Math.sin(a));
+        for(const sg of [1,-1]){ const bx=Math.cos(a)*.55*sg, by=Math.sin(a)*.55*sg; c.moveTo(bx,by); c.lineTo(bx+Math.cos(a+.8*sg)*.3*sg,by+Math.sin(a+.8*sg)*.3*sg); c.moveTo(bx,by); c.lineTo(bx+Math.cos(a-.8*sg)*.3*sg,by+Math.sin(a-.8*sg)*.3*sg); } } break;
+    case 'gem': c.moveTo(-.85,-.3); c.lineTo(-.45,-.8); c.lineTo(.45,-.8); c.lineTo(.85,-.3); c.lineTo(0,.95); c.closePath(); break;
+    case 'ring': c.ellipse(0,0,1,.38,-.35,0,6.28); c.moveTo(.42,0); c.arc(0,0,.42,0,6.28); break;
+    case 'scale': c.moveTo(-.85,-.25); c.quadraticCurveTo(0,1.35,.85,-.25); c.quadraticCurveTo(0,-.7,-.85,-.25); break;
+    case 'coin': c.arc(0,0,.8,0,6.28); break;
+    case 'coral': c.moveTo(0,1); c.lineTo(0,-.1); c.lineTo(-.55,-.85); c.moveTo(0,-.1); c.lineTo(.45,-.9); c.moveTo(0,.35); c.lineTo(.7,-.05); c.moveTo(-.25,-.45); c.lineTo(-.85,-.35); break;
+    case 'gear': for(let k=0;k<=16;k++){ const a=k*.3927, rr=k%2?.68:.95; c.lineTo(Math.cos(a)*rr,Math.sin(a)*rr); } c.closePath(); break;
+    case 'slice': c.arc(0,.25,.9,Math.PI,0); c.closePath(); break;
+    case 'heart': c.moveTo(0,.9); c.bezierCurveTo(-1.25,0,-.6,-1.05,0,-.35); c.bezierCurveTo(.6,-1.05,1.25,0,0,.9); break;
+    case 'cube': c.moveTo(0,-.9); c.lineTo(.8,-.45); c.lineTo(.8,.45); c.lineTo(0,.9); c.lineTo(-.8,.45); c.lineTo(-.8,-.45); c.closePath(); break;
+    case 'stick': c.rect(-.95,-.2,1.9,.4); break;
+    case 'wing': c.moveTo(-.9,.35); c.quadraticCurveTo(-.2,-1.15,.95,-.6); c.quadraticCurveTo(.35,-.1,.65,.45); c.quadraticCurveTo(0,.15,-.9,.35); break;
+    case 'web': for(let k=0;k<6;k++){ const a=k*1.047; c.moveTo(0,0); c.lineTo(Math.cos(a),Math.sin(a)); } for(const rr of [.45,.85]){ for(let k=0;k<=6;k++){ const a=k*1.047; k?c.lineTo(Math.cos(a)*rr,Math.sin(a)*rr):c.moveTo(rr,0); } } break;
+    case 'eye': c.moveTo(-.95,0); c.quadraticCurveTo(0,-.95,.95,0); c.quadraticCurveTo(0,.95,-.95,0); c.closePath(); break;
+    case 'key': c.arc(-.5,0,.4,0,6.28); c.rect(-.12,-.11,1.05,.22); c.rect(.6,.1,.16,.32); c.rect(.28,.1,.13,.24); break;
     case 'bone': c.moveTo(-.65,-.12); c.lineTo(.65,-.12); c.arc(.75,-.25,.2,Math.PI*.6,Math.PI*1.9,true); c.moveTo(.95,.12); c.arc(.75,.25,.2,Math.PI*.1,Math.PI*1.4,true); c.lineTo(-.65,.12); c.arc(-.75,.25,.2,-Math.PI*.6,-Math.PI*1.9,true); c.moveTo(-.95,-.12); c.arc(-.75,-.25,.2,-Math.PI*.1,-Math.PI*1.4,true); c.closePath(); break;
   }
 }
-const LINE_MOTIFS={root:1,swirl:1,feather:1};
+const LINE_MOTIFS={root:1,swirl:1,feather:1,snowflake:1,coral:1,web:1};
 function drawMotifs(cx,hex,m,G,s){
   const light=mix(hex,'#ffffff',.55), dark=mix(hex,'#000000',.45);
   // spread flecks on a jittered grid so every layer of sand shows a few, tiling seamlessly
@@ -905,17 +979,16 @@ function drawMotifs(cx,hex,m,G,s){
   }
 }
 // Every color starts as glittering sand. Bottle it once and it becomes its real ingredient for good.
-const known=c=>!!(save.ing&&save.ing[G.r+'-'+c]);
-const TOTAL_ING=ROOMS.length*9;
+const TOTAL_ING=ROOMS.length*9*YEARS;   // every year has its own ingredients
 function ingredientPattern(ctx,hex,motif){
   const key='ing'+hex+motif+DPR; if(PAT[key]) return PAT[key];
   const G=72, S=Math.round(G*DPR); const c=document.createElement('canvas'); c.width=c.height=S; const x=c.getContext('2d');
-  // dim jar-shadow backdrop so the pieces read as a heap, not a flat color
-  x.fillStyle=mix(hex,'#0a0610',.62); x.fillRect(0,0,S,S);
+  // a rich backdrop in the ingredient's own color, so the pieces read as a bright heap, not sand
+  const bg=x.createLinearGradient(0,0,S,S); bg.addColorStop(0,mix(hex,'#140a1c',.42)); bg.addColorStop(1,mix(hex,'#140a1c',.28)); x.fillStyle=bg; x.fillRect(0,0,S,S);
   const line=!!LINE_MOTIFS[motif];
-  const pieces=(lyr)=>{ const N=lyr?26:20;
-    for(let k=0;k<N;k++){ const px=Math.random()*G, py=Math.random()*G, size=(line?6.5:5.4)+Math.random()*2.6, rot=Math.random()*6.28;
-      const shade=lyr?.0+Math.random()*.18:-.35+Math.random()*.15;
+  const pieces=(lyr)=>{ const N=lyr?22:18;
+    for(let k=0;k<N;k++){ const px=Math.random()*G, py=Math.random()*G, size=(line?7.5:6.6)+Math.random()*3, rot=Math.random()*6.28;
+      const shade=lyr?.05+Math.random()*.25:-.22+Math.random()*.12;
       const col=shade>=0?mix(hex,'#ffffff',shade):mix(hex,'#000000',-shade);
       for(const [ox,oy] of [[0,0],[G,0],[-G,0],[0,G],[0,-G],[G,G],[-G,-G],[G,-G],[-G,G]]){
         if(px+ox<-12||px+ox>G+12||py+oy<-12||py+oy>G+12) continue;
@@ -923,7 +996,7 @@ function ingredientPattern(ctx,hex,motif){
         motifPath(x,motif); x.lineJoin='round'; x.lineCap='round';
         if(line){ x.lineWidth=.5; x.strokeStyle=mix(col,'#000000',.45); x.stroke(); x.lineWidth=.3; x.strokeStyle=col; x.stroke(); }
         else { x.fillStyle=col; x.fill(); x.lineWidth=.14; x.strokeStyle=mix(hex,'#000000',.55); x.stroke();
-          if(lyr){ x.save(); x.clip(); x.fillStyle='rgba(255,255,255,.28)'; x.beginPath(); x.ellipse(-.25,-.35,.5,.3,-.5,0,6.28); x.fill(); x.restore(); } }
+          x.save(); x.clip(); x.fillStyle=lyr?'rgba(255,255,255,.42)':'rgba(255,255,255,.18)'; x.beginPath(); x.ellipse(-.25,-.35,.5,.3,-.5,0,6.28); x.fill(); x.restore(); }
         x.restore(); } } };
   pieces(0); pieces(1);
   // a few glints so it still feels magical
@@ -981,8 +1054,8 @@ const sealedAt=i=>{ const k=sealKey(i); if(k<0) return false; if(k===GOLD_SEAL) 
 const frozenAt=i=>((G.frost&&G.frost[i])||0)>G.moves;
 const webAt=i=>!!(G.web&&G.web[i]);
 const blockedAt=i=>sealedAt(i)||frozenAt(i)||webAt(i)||G.broken===i;
-// Golden vials: brew 5 of every classroom. The secret order comes from a real solution, so it can always be done.
-const goldFor=(y,r,l)=>l===4;
+// Golden vials: brew 18 of every classroom. The secret order comes from a real solution, so it can always be done.
+const goldFor=(y,r,l)=>l===17;
 function goldSequence(y,r,l,L){
   const path=LEVEL_SOL[LK(y,r,l)], v=L.v.map(x=>x.slice()), caps=L.caps, tot={}, order=[];
   v.forEach(x=>x.forEach(c=>tot[c]=(tot[c]||0)+1));
@@ -994,7 +1067,7 @@ function goldSequence(y,r,l,L){
 // Golden Sense: how many of the golden vial's runes your companion reveals. A bloomed companion reveals one,
 // and every Adventure you conquer reveals one more.
 const advWins=()=>[1,2,3].filter(y=>save.done[LK(y,ADV_INFO[y].r,ADV)]).length;
-const goldSense=()=>Math.min(3,(save.pet&&!isSprout()?1:0)+advWins());
+const goldSense=()=>Math.min(3,(save.pet&&!isSprout()?1:0)+advWins()+(hasCharm('compass')?1:0));
 function goldStep(c){ const q=G.gold; if(!q||q.open) return;
   // Only the three rune potions matter: bottling one out of order resets the runes; other potions don't.
   if(!q.seq.includes(c)) return;
@@ -1006,7 +1079,8 @@ function goldStep(c){ const q=G.gold; if(!q||q.open) return;
 function burnWebs(){ if(!G.web||!G.web.some(Boolean)) return false;
   G.web.forEach((w,i)=>{ if(!w) return; G.web[i]=0; const p=POS[i]; for(let k=0;k<26;k++){ const a=Math.random()*6.28,sp=30+Math.random()*90; bursts.push({x:p.x+(Math.random()-.5)*GEO.W,y:p.y+Math.random()*p.h,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-70,life:0,max:.9,c:k%2?'#ffb347':'#fff1d0',s:2}); } });
   G.burnT=performance.now()/1000; return true; }
-function crackVial(i){ G.fragile[i]++; SFX.nope(); try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}
+function crackVial(i){ if(hasCharm('feather')&&!G.feather){ G.feather=true; return toast('🪶 Featherlight! Your companion steadies the glass. No crack.',2600); }
+  G.fragile[i]++; SFX.nope(); try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}
   if(G.fragile[i]>=3) return shatter(i);
   toast('💔 Crack! That vial is fragile. One more wrong pour onto it and it shatters.',3200); }
 function shatter(i){ G.preBreak={vials:snapshot(),i}; const p=POS[i], col=G.vials[i].length?colOf(G.vials[i][0].c):'#cfe6ff';
@@ -1079,8 +1153,10 @@ function startLevel(r,l,y){
   if(goldFor(y,r,l)&&!(save.gold&&save.gold[LK(y,r,l)])&&LEVEL_SOL[LK(y,r,l)]){ const seq=goldSequence(y,r,l,L); if(seq){ addVial(CAP,GOLD_SEAL); gold={i:raw.length-1,seq,prog:0,open:false,flash:0}; } }
   raw.forEach((v,i)=>{ if(!v.length) caps[i]=spareCap(); });
   const tot={}; raw.forEach(v=>v.forEach(c=>tot[c]=(tot[c]||0)+1));
-  G={y,r,l,caps,tot,seal,frost,web,fragile,gold,broken:-1,thaw:{},burnT:0,unroll:{},mixed:caps.some(c=>c!==CAP),vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-open}))),undo:[],undos:undosFor(y,r,l)+(has('lantern')?1:0),charges:R.spell.charges+(has('echo')?1:0),unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[LK(y,r,l)]||null,nudged:false,pet:petCharges(),timed:timedFor(y,r,l),elapsed:0,started:false,timeout:false,limit:0,freeUndo:[0,1,2][talent('snake')]};
-  if(G.timed){ G.limit=Math.round(30+(G.par||20)*3.5)+(hasAttr('shade')?30:0); }
+  G={y,r,l,cols:colorsFor(y,r),motifs:motifsFor(y,r),caps,tot,seal,frost,web,fragile,gold,broken:-1,thaw:{},burnT:0,unroll:{},mixed:caps.some(c=>c!==CAP),vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-open}))),undo:[],undos:undosFor(y,r,l)+(has('lantern')?1:0),charges:R.spell.charges+(has('echo')?1:0),unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[LK(y,r,l)]||null,nudged:false,pet:petCharges(),timed:timedFor(y,r,l),elapsed:0,started:false,timeout:false,limit:0,freeUndo:[0,1,2][talent('snake')]};
+  if(G.timed){ G.limit=Math.round(30+(G.par||20)*3.5)+(hasAttr('shade')?30:0)+(hasCharm('quick')?15:0); }
+  if(hasCharm('thaw')) G.frost=G.frost.map(f=>f?Math.max(1,f-2):0);
+  if(hasCharm('star')) G.undos++;
   if(talent('owl')){ const hid=[]; G.vials.forEach(v=>v.forEach(u=>{ if(u.h) hid.push(u); })); shuffle(hid,Math.random).slice(0,[0,2,5][talent('owl')]).forEach(u=>u.h=false); }
   sel=null; anim=null; hint=null; grains=[]; bursts=[]; floats=[]; lift=[]; shake=[]; sparks=[];
   layout(); updateHUD();
@@ -1120,7 +1196,7 @@ function tallyScore(){
   const stir=G.stirred?PTS.stir:0;
   const clock=G.timed?Math.min(300,Math.round(Math.max(0,G.limit-G.elapsed))*5):0;
   const sub=Math.max(0,base+swift+pure+stir+clock-help), bonusX=G.l===BONUS?sub*(has('pebble')?2:1):0;
-  const ladle=has('ladle')?Math.round((sub+bonusX)*.1):0;
+  const ladle=Math.round((sub+bonusX)*((has('ladle')?.1:0)+(hasCharm('rainbow')?.05:0)));
   const breath=Math.round((sub+bonusX)*[0,.1,.2][talent('dragon')]);
   return {potions,base,swift,pure,stir,clock,help,bonusX,ladle,breath,total:sub+bonusX+ladle+breath};
 }
@@ -1130,7 +1206,7 @@ function updateHUD(){
   $('#roomName').textContent=G.l===ADV?ADV_INFO[G.y].name:R.place;
   const live=Math.max(0,G.vials.filter(isDone).length*PTS.potion-G.helps*PTS.help);
   const bumped=live>G.pts; G.pts=live;
-  $('#levelName').innerHTML=`${G.y>1?'Year '+G.y+' · ':''}${G.l===ADV?'✦ Adventure':G.l===BONUS?'✦ Bonus brew':`Brew ${G.l+1} of 6`} · <span class="pts${bumped?' bump':''}">✦ ${G.pts} pts</span>`;
+  $('#levelName').innerHTML=`${G.y>1?'Year '+G.y+' · ':''}${G.l===ADV?'✦ Adventure':G.l===BONUS?'✦ Bonus brew':`Brew ${G.l+1} of ${PER}${slotKind(G.l)==='peak'?' 🔥':slotKind(G.l)==='ease'?' 🍃':''}`} · <span class="pts${bumped?' bump':''}">✦ ${G.pts} pts</span>`;
   $('#ctUndo').textContent=G.undos;
   $('#spIc').textContent=R.spell.icon; $('#spNm').textContent=R.spell.name; $('#ctSpell').textContent=G.charges;
   $('#btnSpell').classList.toggle('spent',G.charges<=0);
@@ -1171,6 +1247,7 @@ function finishPour(){
   for(let i=0;i<n;i++){ const u=A.pop(); u.h=false; B.push(u); }
   if(A.length) A[A.length-1].h=false;
   G.moves++; anim=null;
+  if(hasCharm('burn')&&G.moves>=6&&burnWebs()) setTimeout(()=>toast('🔥 Your companion burns the webs away!',2200),200);
   if(isDone(B)){ B.forEach(u=>u.h=false); brew(to); goldStep(B[0].c); }
   checkScrolls();
   updateHUD();
@@ -1208,12 +1285,12 @@ function offerWind(kind){
 function timeOut(){ if(G.timeout) return; G.timeout=true; sel=null; hint=null; SFX.nope(); $('#timer').textContent='⏳ 0:00'; offerWind('time'); }
 function anyMove(){ for(let a=0;a<G.vials.length;a++) for(let b=0;b<G.vials.length;b++) if(canPour(a,b)) return true; return false; }
 function brew(i){
-  const R=room(), [ing,hex,pot]=R.colors[G.vials[i][0].c];
+  const R=room(), [ing,hex,pot]=G.cols[G.vials[i][0].c];
   const p=POS[i];
   for(let k=0;k<26;k++){ const a=Math.random()*Math.PI*2, s=40+Math.random()*120; bursts.push({x:p.x,y:p.y-6,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,life:0,max:.7+Math.random()*.6,c:Math.random()<.5?hex:'#fff4d0',s:1.5+Math.random()*2.5}); }
   floats.push({txt:pot,x:p.x,y:p.y-24,t:0,c:hex});
-  const ik=G.r+'-'+G.vials[i][0].c;
-  save.pot[ik]=(save.pot[ik]||0)+(has('hearth')?2:1); save.stats.pot=(save.stats.pot||0)+1;
+  const ik=ingKey(G.y,G.r,G.vials[i][0].c), pk=G.r+'-'+G.vials[i][0].c;
+  save.pot[pk]=(save.pot[pk]||0)+(has('hearth')?2:1); save.stats.pot=(save.stats.pot||0)+1;
   persist();
   if(!save.ing[ik]){ save.ing[ik]=1; persist();
     setTimeout(()=>{ toast(`✦ New ingredient discovered: ${ing}! ✦`,2800); SFX.magic(); },700);
@@ -1228,7 +1305,7 @@ function win(){
   save.done[key]=1; save.stars[key]=Math.max(save.stars[key]||0,stars); persist();
   setTimeout(()=>{
     if(!G||G.won!==true) return;
-    const R=room(); const brewed=G.vials.filter(v=>v.length).map(v=>R.colors[v[0].c]);
+    const R=room(); const brewed=G.vials.filter(v=>v.length).map(v=>G.cols[v[0].c]);
     const canBefore=craftable().length;
     // The cauldron fills over a few brews; you stir it once it is full.
     const C=save.caul=Object.assign({n:0,cols:[],keys:[]},save.caul);
@@ -1245,11 +1322,14 @@ function showResults(key,stars,brewed,stirred,canBefore,cz){
     save.best[key]=Math.max(prevBest,sc.total);
     save.purse=(save.purse||0)+sc.total;
     let petNote='';
+    if(hasCharm('clover')&&Math.random()<.1){ save.tok++; petNote+=`<p class="note dim">🍀 Clover Charm: you found a token! ◈</p>`; }
+    // Companion care: from your 10th brew, every 6th win your companion asks to brew a remedy with you.
+    if(save.pet&&!save.pet.injured&&nDone()>=10){ save.pet.since=(save.pet.since||0)+1; if(save.pet.since>=6){ save.pet.since=0; save.pet.careDue=1; } }
     if(G.timed){ save.stats.timed=(save.stats.timed||0)+1; }
     if(G.l===BONUS){ save.ess=save.ess||{}; save.ess[G.r]=(save.ess[G.r]||0)+1;
       petNote+=`<p class="note">✦ +1 ${ROOMS[G.r].place.replace(/^The /,'')} Essence. Use it on the Familiar page to give ${save.pet?esc(save.pet.name):'your companion'} ${an(ATTRS[G.r].n)}.</p>`; }
     if(save.pet){ const nm=esc(save.pet.name);
-      const rat=talent('rat'); if(rat){ for(let k=0;k<rat;k++){ const b=brewed[Math.floor(Math.random()*brewed.length)], ref=G.r+'-'+R.colors.indexOf(b); save.pot[ref]=(save.pot[ref]||0)+1; }
+      const rat=talent('rat'); if(rat){ for(let k=0;k<rat;k++){ const b=brewed[Math.floor(Math.random()*brewed.length)], ref=G.r+'-'+G.cols.indexOf(b); save.pot[ref]=(save.pot[ref]||0)+1; }
         petNote+=`<p class="note dim">${petGlyph()} ${nm} scavenged ${rat} extra potion${rat>1?'s':''} for your shelf.</p>`; }
       if(talent('frog')&&Math.random()<[0,.25,.5][talent('frog')]){ save.tok++; petNote+=`<p class="note dim">${petGlyph()} ${nm} leapt off and came back with a token! ◈</p>`; }
       const st=petStage(); if(st>(save.pet.seen||0)){ save.pet.seen=st; petNote+=`<p class="note">✦ ${nm} grew into <b>${an(petStageName())}</b>! ${petGlyph()}</p>`; } }
@@ -1266,7 +1346,7 @@ function showResults(key,stars,brewed,stirred,canBefore,cz){
     persist();
     setTimeout(()=>checkAch({owl:new Date().getHours()<4}),600);
     const chips=brewed.map(([ing,hex,pot])=>`<li><span class="dot" style="background:${hex};box-shadow:0 0 10px ${hex}"></span>${pot}</li>`).join('');
-    const last=G.l===5, bonus=G.l===BONUS, adv=G.l===ADV; let next='Next brew', extra='';
+    const last=G.l===PER-1, bonus=G.l===BONUS, adv=G.l===ADV; let next='Next brew', extra='';
     if(adv){ next='Grimoire'; extra=`<p class="note">✦ ${ADV_INFO[G.y].name} conquered! The whole Academy is talking about it.</p>`;
       if(!save.advPaid||!save.advPaid[G.y]){ save.advPaid=Object.assign({},save.advPaid,{[G.y]:1}); save.tok+=5; save.purse+=1000;
         extra+=`<p class="note">Reward: ◈ 5 tokens and ✦ 1,000 points. Your companion's <b>Golden Sense</b> grows: they now reveal ${goldSense()} of a golden vial's 3 runes.</p>`; }
@@ -1302,8 +1382,10 @@ function showResults(key,stars,brewed,stirred,canBefore,cz){
       ${cando>canBefore?`<button class="btn ghost" id="mCraft">✦ A spell is ready to craft</button>`:''}
       <p class="quote small">“${line}” — ${R.short}</p>
       ${stars<3?'<p class="note dim">Brew without spells or undos for all three stars.</p>':''}
+      ${save.pet&&(save.pet.careDue||save.pet.injured)?`<button class="btn" id="mCare" style="background:linear-gradient(180deg,#ffe6a8,#e0a84a)">${petGlyph()} ${save.pet.injured?`${esc(save.pet.name)} is injured. Brew a remedy!`:`${esc(save.pet.name)} wants to brew with you!`}</button>`:''}
       <div class="row"><button class="btn ghost" id="mMap">Grimoire</button><button class="btn" id="mNext">${next}</button></div>`);
     $('#mMap').onclick=()=>{closeModal();showMap()};
+    if($('#mCare')) $('#mCare').onclick=()=>playRemedy(()=>showMap('pet'));
     $('#mNext').onclick=()=>{ if(G.l===ADV) return showMap('rooms'); if(G.l<BONUS) startLevel(G.r,G.l+1,G.y); else if(G.r<4) startLevel(G.r+1,0,G.y); else startLevel(G.r,G.l,G.y); };
     if($('#mSkip')) $('#mSkip').onclick=e=>{ e.preventDefault(); startLevel(G.r+1,0,G.y); };
     if($('#mCraft')) $('#mCraft').onclick=()=>{ closeModal(); showMap('craft'); };
@@ -1484,12 +1566,12 @@ game.addEventListener('pointerdown',e=>{
   const v=G.vials[i];
   if(blockedAt(i)){ shake[i]=.35; SFX.nope(); sel=null; const k=sealKey(i), R=room();
     if(G.gold&&i===G.gold.i){ const q=G.gold, sn=goldSense();
-      return toast(q.open?'🏆 Lucky Elixir found! It is yours to keep.':`🏆 Bottle three potions in a secret order to open it. ${sn?`${save.pet?esc(save.pet.name):'Your companion'} senses: ${q.seq.slice(0,sn).map(c=>R.colors[c][0]).join(', then ')}${sn<3?'…':''}`:'Each right potion lights a rune.'}`,3800); }
+      return toast(q.open?'🏆 Lucky Elixir found! It is yours to keep.':`🏆 Bottle three potions in a secret order to open it. ${sn?`${save.pet?esc(save.pet.name):'Your companion'} senses: ${q.seq.slice(0,sn).map(c=>G.cols[c][0]).join(', then ')}${sn<3?'…':''}`:'Each right potion lights a rune.'}`,3800); }
     if(G.broken===i) return toast('💔 Shattered.',1600);
     if(webAt(i)) return toast(`🕸️ Webbed! Cast ${R.spell.icon} ${R.spell.name} to burn the webs away.`,3000);
     if(frozenAt(i)){ const n=G.frost[i]-G.moves; return toast(`❄️ Frozen! It thaws in ${n} more pour${n>1?'s':''}.`,2600); }
     if(k>=SEAL_COUNT){ const n=k-SEAL_COUNT-bottled(); return toast(`📜 This scroll unravels after ${n} more potion${n>1?'s':''} of any color.`,3000); }
-    return toast(`📜 Sealed. Bottle the ${R.colors[k][2]} to unravel this scroll.`,3000); }
+    return toast(`📜 Sealed. Bottle the ${G.cols[k][2]} to unravel this scroll.`,3000); }
   if(sel===null){
     if(!v.length||isDone(v)){ shake[i]=.35; SFX.nope(); return; }
     sel=i; SFX.tick(); return;
@@ -1502,6 +1584,7 @@ game.addEventListener('pointerdown',e=>{
 $('#btnUndo').onclick=()=>{SFX.init();doUndo()};
 $('#btnSpell').onclick=()=>{SFX.init();castSpell()};
 $('#btnPet').onclick=()=>{ SFX.init(); if(!G||anim||G.won||!save.pet) return; const pt=save.pet, P=petKind(), lv=petLv(), nm=pt.name;
+  if(injured()) return toast(`🤕 ${nm} is injured. Brew a remedy together on the Familiar page to heal them.`,3400);
   if(petHP()===0) return toast(`${nm} is too worn out to help ${hearts()}. Win a brew or feed them to restore a heart.`,3200);
   if(pt.full===0) return toast(`${nm}: ${P.hungry} Feed them in the grimoire.`,3000);
   if(lv<2) return toast(`${nm}: ${P.idle} (Feed ${nm} to grow your bond.)`,3000);
@@ -1564,7 +1647,7 @@ const GUIDE=[
     ['📖','<b>Spellcraft</b><br>In the grimoire, combine discovered ingredients and bottled potions in the cauldron to craft spells. Crafted spells help in every brew, for good.'],
     ['🎓','<b>Academy years</b><br>Craft all of your year\'s <b>exam spells</b> to move up a year, with new and harder brews in every classroom.'],
     ['🏆','<b>Achievements</b><br>Earn tokens to spend on Pocket Sprouts and sealed lore pages in the grimoire.'],
-    ['🐾','<b>Your Sprout</b><br>A little companion that grows with you and blooms into a familiar of your choice in your Third Year. Feed it, and it helps with hints. Giving up a brew costs points and one of its hearts; the Healer\'s Hut can mend them. Bonus brews earn Essences that give it new attributes.']]},
+    ['🐾','<b>Your Sprout</b><br>A little companion that grows with you and blooms into a familiar of your choice in your Third Year. Feed it, and it helps with hints. Giving up a brew costs points and one of its hearts; the Healer\'s Hut can mend them. Bonus brews earn Essences that give it new attributes, and every so often it asks to brew a remedy with you: win for a new charm, lose and it is injured until you win one.']]},
   {k:'How to brew · 6 of 6', h:'Whimsical blockers', items:[
     ['📜','<b>Scrolls</b><br>A wax seal opens when you bottle that potion; a numbered scroll after that many potions.'],
     ['🕸️','<b>Spider webs</b><br>Cast the classroom\'s spell to burn them away. That cast costs no star.'],
@@ -1595,7 +1678,7 @@ function showMap(tab){
   document.querySelectorAll('.tab[data-tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===mapTab));
   $('#craftBadge').hidden=!craftable().length;
   $('#awardBadge').hidden=!save.newAch;
-  $('#petBadge').hidden=!save.pet||!((isSprout()&&save.year>=PET_YEAR)||(save.pet.full<PET_FULL&&save.purse>=TREAT_COST));
+  $('#petBadge').hidden=!save.pet||!(save.pet.injured||save.pet.careDue||(isSprout()&&save.year>=PET_YEAR)||(save.pet.full<PET_FULL&&save.purse>=TREAT_COST));
   $('#loreBadge').hidden=!LORE.some((L,i)=>!save.lore[i]&&save.tok>=L.c);
   $('#mapList').hidden=!rooms; $('#craftList').hidden=mapTab!=='craft'; $('#awardList').hidden=mapTab!=='awards'; $('#loreList').hidden=mapTab!=='lore'; $('#petList').hidden=mapTab!=='pet'; $('#hutList').hidden=mapTab!=='hut';
   // Year switcher appears once you have reached a second year.
@@ -1614,7 +1697,7 @@ function renderRooms(y){
       ${dn?`<button class="orb bonus done" id="advGo">✓ Conquered · ${'✦'.repeat(st)} · play again</button>`
         :open?`<button class="orb bonus" id="advGo">✦ Begin the Adventure</button>`
         :`<button class="orb bonus" id="advUnlock" ${ex?'':'disabled'}>${ex?`🧪 Unlock with a Lucky Elixir (you have ${ex})`:'🔒 Needs a Lucky Elixir'}</button>`}
-      <div class="rspell">${dn||open?'Scrolls, webs, frost and fragile vials, all at once. Good luck, witch.':'Lucky Elixirs hide in golden vials (brew 5 of every classroom). Bottle three potions in their secret order to open one.'}</div>`;
+      <div class="rspell">${dn||open?'Scrolls, webs, frost and fragile vials, all at once. Good luck, witch.':'Lucky Elixirs hide in golden vials (brew 18 of every classroom, marked in gold). Bottle three potions in their secret order to open one.'}</div>`;
     el.appendChild(el2);
     if($('#advGo')) $('#advGo').onclick=()=>{ SFX.init(); startLevel(A.r,ADV,y); };
     if($('#advUnlock')) $('#advUnlock').onclick=()=>{ SFX.init(); if(!(save.elixir>0)||y>save.year) return; save.elixir--; save.advOpen=Object.assign({},save.advOpen,{[y]:1}); persist(); SFX.magic(); toastMap(`🧪 The Lucky Elixir glows… ${A.name} is open!`); showMap('rooms'); };
@@ -1624,14 +1707,15 @@ function renderRooms(y){
     const card=document.createElement('div'); card.className='room'+(unlocked?'':' locked');
     card.style.setProperty('--ra',R.accent); card.style.setProperty('--rb0',R.bg[1]); card.style.setProperty('--rb1',R.bg[2]);
     let orbs='';
-    for(let l=0;l<6;l++){
+    for(let l=0;l<PER;l++){
       const k=LK(y,ri,l), ok=isUnlocked(ri,l,y), dn=save.done[k], st=save.stars[k]||0;
-      let cls='orb'+(dn?' done':''); if(ok&&!dn&&!nextFound){cls+=' next'; nextFound=true;}
+      let cls='orb'+(dn?' done':'')+' k-'+slotKind(l)+(goldFor(y,ri,l)?' k-gold':timedFor(y,ri,l)?' k-timed':''); if(ok&&!dn&&!nextFound){cls+=' next'; nextFound=true;}
       orbs+=`<button class="${cls}" data-r="${ri}" data-l="${l}" ${ok?'':'disabled'} aria-label="${R.place}, brew ${l+1}${dn?`, ${st} stars`:''}">${ok?l+1:'·'}${dn?`<span class="st">${'✦'.repeat(st)}</span>`:''}</button>`;
     }
-    const lockMsg = ri>0 ? `Locked. Finish all six brews in ${ROOMS[ri-1].place} to enter.` : `Locked. Craft every ${YEAR_NAMES[y-1]} exam spell to become a ${YEAR_NAMES[y]}.`;
+    const lockMsg = ri>0 ? `Locked. Finish all ${PER} brews in ${ROOMS[ri-1].place} to enter.` : `Locked. Craft every ${YEAR_NAMES[y-1]} exam spell to become a ${YEAR_NAMES[y]}.`;
     card.innerHTML=`<div class="rhead"><div class="rsig">${R.sigil}</div><div style="min-width:0"><div class="rname">${R.place}</div><div class="rprof">${R.prof} · ${R.subject}</div></div></div>
       <div class="orbs">${orbs}</div>
+      <div class="rprof" style="font-size:14px;text-align:center"><span style="color:#ff8a5c">◯ peak</span> · <span style="opacity:.8">◌ breather</span> · <span style="color:#9fd3ff">◯ timed</span> · <span style="color:#ffd75e">◯ golden vial</span></div>
       ${(()=>{ const k=LK(y,ri,BONUS), ok=isUnlocked(ri,BONUS,y), dn=save.done[k], st=save.stars[k]||0, bp=save.best[k];
         return `<button class="orb bonus${dn?' done':''}" data-r="${ri}" data-l="${BONUS}" ${ok?'':'disabled'} aria-label="${R.place}, bonus brew">
           ✦ Bonus brew${ok?(dn?` · ${'✦'.repeat(st)} · ${bp} pts`:' · double points'):' · locked'}</button>`; })()}
@@ -1749,7 +1833,9 @@ function renderPet(){
   const say=hp===0?'*too worn out to help*':pt.full===0?P.hungry:pt.full>=PET_FULL?P.fed:P.idle;
   const feed=pt.full>=PET_FULL?'Too full for treats':save.purse<TREAT_COST?`Needs ✦ ${TREAT_COST} points`:`${P.treat} Feed a treat · ✦ ${TREAT_COST}`;
   const home=`<div class="pethome"><div class="big" id="petBig">${petGlyph()}</div><h3>${esc(pt.name)}</h3><div class="lv">${petStageName()}${sp?'':' · '+petVar().d}</div><div class="lv">Bond level ${lv} · ${PET_LV[lv-1].t}</div>
-      <div class="say">${say}</div>
+      <div class="say">${pt.injured?'🤕 *injured, needs a remedy*':say}</div>
+      ${pt.injured||pt.careDue?`<button class="craft" id="care" style="width:100%">${pt.injured?`🤕 Brew a healing remedy`:`🐾 ${esc(pt.name)} wants to brew with you!`}</button>`:''}
+      ${pt.charms&&Object.keys(pt.charms).length?`<div class="attrs">${CHARMS.filter(C=>pt.charms[C.k]).map(C=>`<span title="${C.n}: ${C.d}">${C.i}</span>`).join('')}</div>`:''}
       ${pt.attr&&Object.keys(pt.attr).length?`<div class="attrs">${ATTRS.filter(A=>hasAttr(A.k)).map(A=>`<span title="${A.n}">${A.i}</span>`).join('')}</div>`:''}
       <div class="meter" aria-label="${hp} of ${petMax()} hearts">${hearts()}</div>
       <div class="meter" aria-label="${pt.full} of ${PET_FULL} bowls full">${Array.from({length:PET_FULL},(_,i)=>`<span class="${i<pt.full?'':'off'}">🥣</span>`).join('')}</div>
@@ -1780,6 +1866,8 @@ function renderPet(){
         ${got?'<b style="min-width:0">✓</b>':`<button class="craft" data-attr="${A.k}" ${ok?'':'disabled'} style="padding:8px 10px">${ok?'Give':'—'}</button>`}</div>`; }).join('')}</div>`;
   el.innerHTML=purseBar('Points to spend on treats. Every brew adds to it.')+home+grow+attrs
     +`<div class="ygroup">Bond</div><div class="perks">${PET_LV.map((L,i)=>`<div class="perk${i<lv?' on':''}"><b>Lv ${i+1}</b>${L.d}</div>`).join('')}</div>`;
+  if($('#care')) $('#care').onclick=()=>{ SFX.init(); playRemedy(()=>showMap('pet')); };
+  el.insertAdjacentHTML('beforeend',`<div class="ygroup">Charms</div><p class="note dim" style="text-align:center">Won by brewing remedies together. ${injured()?'Resting while injured.':''}</p><div class="perks">${CHARMS.map(C=>`<div class="perk${pt.charms&&pt.charms[C.k]?' on':''}"><b style="min-width:30px;font-size:22px;text-align:center">${C.i}</b><div><b style="font-size:12px">${C.n}</b><br>${C.d}</div></div>`).join('')}</div>`);
   $('#feed').onclick=()=>{ SFX.init(); const r=feedPet(); if(r==='ok'||r==='level'){ SFX.chime(); renderPetAfterFeed(r); } };
   if(sp&&save.year>=PET_YEAR) wirePicker();
   el.querySelectorAll('[data-attr]').forEach(b=>b.onclick=()=>{ SFX.init(); const A=ATTRS.find(x=>x.k===b.dataset.attr);
@@ -1795,6 +1883,61 @@ function renderPetAfterFeed(r){
       <div class="spellbox"><div class="sb-ic">✦</div><div>${PET_LV[lv-1].d}</div></div>
       <div class="row"><button class="btn" id="mOk">Lovely</button></div>`); $('#mOk').onclick=()=>showMap('pet'); },700); }
 }
+/* ---- Remedy brew: the companion mini-game ----
+   A recipe of ingredients flashes up; memorize it, then tap the ingredients in the same order before time runs out.
+   One mistake is forgiven. Win: a new charm (or tokens once it has them all) and any injury is healed.
+   Lose: your companion is injured until you win a remedy brew. */
+function remedyPool(){ const y=Math.min(save.year,YEARS), out=[]; for(let r=0;r<5;r++){ const cols=colorsFor(y,r), mot=motifsFor(y,r); cols.forEach((C,c)=>out.push({n:C[0],hex:C[1],m:mot[c]})); } return out; }
+function ingIcon(it){ const cv=document.createElement('canvas'), S=Math.round(40*DPR); cv.width=cv.height=S; const x=cv.getContext('2d');
+  const g=x.createRadialGradient(S*.4,S*.35,2,S/2,S/2,S/2); g.addColorStop(0,mix(it.hex,'#ffffff',.35)); g.addColorStop(1,mix(it.hex,'#140a1c',.35));
+  x.fillStyle=g; x.beginPath(); x.arc(S/2,S/2,S/2-1,0,6.283); x.fill();
+  x.save(); x.translate(S/2,S/2); x.scale(S*.3,S*.3); motifPath(x,it.m); x.lineJoin='round'; x.lineCap='round';
+  if(LINE_MOTIFS[it.m]){ x.lineWidth=.16; x.strokeStyle='#ffffff'; x.stroke(); } else { x.fillStyle=mix(it.hex,'#ffffff',.55); x.fill(); x.lineWidth=.08; x.strokeStyle=mix(it.hex,'#000000',.5); x.stroke(); }
+  x.restore(); return cv; }
+let REM=null;
+function playRemedy(after){
+  if(!save.pet) return; const pt=save.pet, nm=esc(pt.name), y=Math.min(save.year,YEARS);
+  const N=2+y, pool=shuffle(remedyPool(),Math.random), recipe=pool.slice(0,N), tiles=shuffle(pool.slice(0,8),Math.random);
+  const showMs=1500+800*N, playS=4+2*N;
+  if(REM&&REM.timer) clearInterval(REM.timer);
+  REM={recipe,tiles,step:0,miss:0,left:playS,phase:'show',after};
+  modal(`<div class="kicker">${pt.injured?'🤕 Healing remedy':'🐾 Brewing together'}</div><div class="sigbig" style="font-size:40px">${petGlyph()}</div>
+    <h2 id="rH">Memorize the remedy!</h2>
+    <div class="remedy"><div class="rcp" id="rRcp"></div><div class="rbar"><i id="rBar" style="width:100%"></i></div>
+    <p class="note" id="rNote">${nm} needs these ${N} ingredients, in this order.</p><div class="tiles" id="rTiles"></div></div>`);
+  const rc=$('#rRcp'); recipe.forEach((it,i)=>{ const d=document.createElement('div'); d.className='slot on'; d.appendChild(ingIcon(it)); d.title=it.n; rc.appendChild(d); });
+  const notes=$('#rNote'); notes.innerHTML=recipe.map((it,i)=>`${i+1}. ${esc(it.n)}`).join(' · ');
+  const t0=performance.now();
+  REM.timer=setInterval(()=>{ const K=REM; if(!K) return;
+    if(K.phase==='show'){ const f=1-(performance.now()-t0)/showMs; $('#rBar').style.width=Math.max(0,f*100)+'%'; if(f<=0) startPick(); }
+    else if(K.phase==='pick'){ K.left-=.1; $('#rBar').style.width=Math.max(0,K.left/playS*100)+'%'; if(K.left<=0) endRemedy(false,'Time ran out.'); } },100);
+  function startPick(){ const K=REM; K.phase='pick'; $('#rH').textContent='Now add them in order!'; notes.textContent=`Tap the ingredients in the right order. One mistake is forgiven.`;
+    rc.innerHTML=''; recipe.forEach((_,i)=>{ const d=document.createElement('div'); d.className='slot'; d.textContent=i+1; rc.appendChild(d); });
+    const tg=$('#rTiles'); tiles.forEach(it=>{ const b=document.createElement('button'); b.className='tile'; b.appendChild(ingIcon(it)); const sp=document.createElement('span'); sp.textContent=it.n; b.appendChild(sp);
+      b.onclick=()=>{ if(K.phase!=='pick') return; SFX.init();
+        if(it===recipe[K.step]){ b.classList.add('ok'); b.disabled=true; const sl=rc.children[K.step]; sl.className='slot on'; sl.textContent=''; sl.appendChild(ingIcon(it)); K.step++; SFX.tone(520+K.step*90,0,.12,.05,'sine');
+          if(K.step>=recipe.length) endRemedy(true); }
+        else { b.classList.remove('bad'); void b.offsetWidth; b.classList.add('bad'); K.miss++; SFX.nope(); if(K.miss>=2) endRemedy(false,'Two wrong ingredients.'); else notes.textContent='Careful! That was not next. One more mistake and the remedy spoils.'; } };
+      tg.appendChild(b); }); }
+}
+function endRemedy(won,why){
+  const K=REM; if(!K||K.phase==='end') return; K.phase='end'; clearInterval(K.timer);
+  const pt=save.pet, nm=esc(pt.name), wasHurt=!!pt.injured; let reward='';
+  pt.careDue=0;
+  if(won){ pt.injured=false; save.stats.remedies=(save.stats.remedies||0)+1;
+    const left=CHARMS.filter(C=>!(pt.charms&&pt.charms[C.k]));
+    if(left.length){ const C=pick(left); pt.charms=Object.assign({},pt.charms,{[C.k]:1}); reward=`<div class="spellbox"><div class="sb-ic">${C.i}</div><div><b>${C.n}</b><br>${C.d}</div></div>`; }
+    else { save.tok+=3; reward='<p class="note">◈ 3 tokens: your companion already has every charm!</p>'; }
+    SFX.win(); }
+  else { pt.injured=true; SFX.nope(); }
+  persist(); checkAch();
+  modal(`<div class="kicker">${won?'Remedy brewed':'The remedy spoiled'}</div><div class="sigbig">${petGlyph()}</div>
+    <h2>${won?(wasHurt?`${nm} is healed!`:`${nm} learned something new!`):`${nm} is injured!`}</h2>
+    ${won?reward:`<p class="note">${why||''} ${nm} got a nasty scorch from the spoiled brew. While injured they can't give hints, use talents or charms. Win a remedy brew together to heal them.</p>`}
+    <div class="row">${won?'':'<button class="btn" id="rAgain">Try again</button>'}<button class="btn${won?'':' ghost'}" id="rDone">${won?'Wonderful':'Later'}</button></div>`);
+  if($('#rAgain')) $('#rAgain').onclick=()=>playRemedy(K.after);
+  $('#rDone').onclick=()=>{ REM=null; K.after?K.after():showMap('pet'); };
+}
 function renderHut(){
   const el=$('#hutList'), pt=save.pet, hp=petHP(), mx=petMax(), nm=pt?esc(pt.name):'your companion';
   const item=(id,ic,title,txt,cost,ok)=>`<div class="shop"><div class="si">${ic}</div><div class="st"><b>${title}</b>${txt}</div><button class="craft" id="${id}" ${ok&&(save.purse||0)>=cost?'':'disabled'}>✦ ${cost}</button></div>`;
@@ -1805,8 +1948,10 @@ function renderHut(){
     +item('hHeart','❤️','Heal a heart',`Restores one of ${nm}'s hearts.`,HUT.heart,pt&&hp<mx)
     +item('hFull','💖','Full restore',`Restores every heart at once.`,HUT.full,pt&&hp<mx-1)
     +item('hWind','🌬️',`Second Wind · you have ${save.winds||0}`,`Carry on when a brew goes wrong: +${WIND_TIME} seconds when a timed brew runs out, or +${WIND_UNDOS} undos when you're out of pours. (✦ ${HUT.windNow} if bought on the spot.)`,HUT.wind,true)
-    +`<p class="note dim" style="text-align:center">Hearts also come back when you win a brew or feed a treat.</p>`;
+    +`<p class="note dim" style="text-align:center">Hearts also come back when you win a brew or feed a treat.</p>`
+    +(injured()?`<div class="shop"><div class="si">🤕</div><div class="st"><b>${nm} is injured</b>“That scorch needs a remedy brewed by your own hand, dear. I can't do it for you.”</div><button class="craft" id="hCare">Brew it</button></div>`:'');
   const buy=(cost,fn,msg)=>{ if((save.purse||0)<cost) return; save.purse-=cost; fn(); persist(); SFX.magic(); toastMap(msg); showMap('hut'); };
+  if($('#hCare')) $('#hCare').onclick=()=>{ SFX.init(); playRemedy(()=>showMap('hut')); };
   $('#hHeart').onclick=()=>buy(HUT.heart,()=>{ pt.hp=Math.min(mx,hp+1); },`❤️ ${nm} feels better.`);
   $('#hFull').onclick=()=>buy(HUT.full,()=>{ pt.hp=mx; },`💖 ${nm} is fully restored.`);
   $('#hWind').onclick=()=>buy(HUT.wind,()=>{ save.winds=(save.winds||0)+1; },'🌬️ A Second Wind, bottled for later.');
@@ -1874,7 +2019,7 @@ function drawVial(c,i,ox,oy,ang,t,opt){
   let y=H-g; const segY=[];
   segs.forEach((sg,s)=>{
     const hh=sg.amt*U; if(hh<.05) return; const y0=y-hh; const isTop=s===segs.length-1;
-    c.fillStyle=sandPattern(c, sg.h?(has('lens')?mix(HIDDEN_HEX,colOf(sg.c),.32):HIDDEN_HEX):colOf(sg.c), sg.h, (sg.h||!known(sg.c))?null:motifOf(sg.c));
+    c.fillStyle=sandPattern(c, sg.h?(has('lens')?mix(HIDDEN_HEX,colOf(sg.c),.32):HIDDEN_HEX):colOf(sg.c), sg.h, sg.h?null:motifOf(sg.c));
     c.beginPath();
     const bump=isTop?Math.min(3.2,hh*.45):0;
     const topY = isTop? y0 : y0-2.5;
@@ -2008,8 +2153,8 @@ function animPose(dt){
   a.p=p; a.pose={x,y,ang,pouring,M};
   if(pouring){
     const hex=colOf(a.c); const cnt=Math.ceil(dt*260);
-    if(known(a.c)){ const m=motifOf(a.c); if(Math.random()<dt*38) grains.push({x:M.x+(Math.random()-.5)*4,y:M.y+2,vx:(Math.random()-.5)*16,vy:30+Math.random()*50,c:Math.random()<.4?mix(hex,'#ffffff',.25):hex,to:a.to,m,rot:Math.random()*6.28,spin:(Math.random()-.5)*14,sz:3.2+Math.random()*1.4}); }
-    else for(let k=0;k<cnt;k++) grains.push({x:M.x+(Math.random()-.5)*2.4,y:M.y+2,vx:(Math.random()-.5)*10,vy:40+Math.random()*60,c:Math.random()<.18?mix(hex,'#ffffff',.5):Math.random()<.3?mix(hex,'#000000',.25):hex,to:a.to});
+    { const m=motifOf(a.c); if(Math.random()<dt*38) grains.push({x:M.x+(Math.random()-.5)*4,y:M.y+2,vx:(Math.random()-.5)*16,vy:30+Math.random()*50,c:Math.random()<.4?mix(hex,'#ffffff',.25):hex,to:a.to,m,rot:Math.random()*6.28,spin:(Math.random()-.5)*14,sz:3.2+Math.random()*1.4}); }
+    // (sand grains are gone: pours always show the real ingredient)
   }
 }
 function surfaceY(i){ const T=POS[i]; let n=G.vials[i].length; if(anim&&anim.to===i) n+=anim.p*anim.n; return T.y+T.h-3-n*GEO.U; }
@@ -2041,7 +2186,7 @@ function drawGame(t,dt){
   if(hint&&hint.b>=0){ hint.t+=dt; const p=POS[hint.b]; const bob=Math.sin(t*5)*4; c.fillStyle=acc; c.globalAlpha=.9;
     c.beginPath(); c.moveTo(p.x,p.y-12+bob); c.lineTo(p.x-8,p.y-24+bob); c.lineTo(p.x+8,p.y-24+bob); c.closePath(); c.fill(); c.globalAlpha=1; }
   // stream
-  if(anim&&anim.pose&&anim.pose.pouring&&!known(anim.c)){ const M=anim.pose.M, sy=surfaceY(anim.to); const hex=colOf(anim.c);
+  if(false){ const M=anim.pose.M, sy=surfaceY(anim.to); const hex=colOf(anim.c);
     const gr=c.createLinearGradient(0,M.y,0,sy); gr.addColorStop(0,rgba(hex,.85)); gr.addColorStop(1,rgba(hex,.35));
     c.fillStyle=gr; c.fillRect(M.x-1.3,M.y+1,2.6,Math.max(0,sy-M.y)); }
   for(let k=grains.length-1;k>=0;k--){ const q=grains[k]; q.vy+=1500*dt; q.x+=q.vx*dt; q.y+=q.vy*dt;
@@ -2134,6 +2279,11 @@ if(!save.pv){ Object.keys(save.done).forEach(k=>{ const m=/^(\d)-(\d)$/.exec(k);
     levelColors(1,+m[1],+m[2]).forEach(c=>{ const p=m[1]+'-'+c; save.pot[p]=(save.pot[p]||0)+1; }); });
   save.pv=1; persist(); }
 save.stats=Object.assign({pot:0,stirs:0,swift:0},save.stats); save.lore=save.lore||{0:1}; save.lore[0]=1;
+// Saves from before 30-brew classrooms: the bonus brew was slot 6 and the Adventure slot 7.
+if(!save.mv30){ save.legacy={}; Object.keys(save.done||{}).forEach(k=>{ const m=/^(?:y(\d+):)?(\d)-5$/.exec(k); if(m) save.legacy[(m[1]||1)+'-'+m[2]]=1; });
+  ['done','stars','best'].forEach(f=>{ const o=save[f]||{}, n={};
+    Object.keys(o).forEach(k=>{ const m=/^(.*-)(\d+)$/.exec(k); const l=m?+m[2]:-1; n[l===6?m[1]+BONUS:l===7?m[1]+ADV:k]=o[k]; }); save[f]=n; });
+  save.mv30=1; persist(); }
 if(save.purse===undefined) save.purse=totalPoints();
 if(!save.pet) save.pet=newSprout(); if(save.pet.hp===undefined) save.pet.hp=PET_HP;
 checkAch(null,true);
@@ -2151,7 +2301,7 @@ layout(); showMap(); requestAnimationFrame(frame);
   b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top,0px));background:#7a1f2b;color:#fff;font:600 14px Georgia,serif;text-align:center;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.5)';
   document.body.appendChild(b);
 })();
-window.__gw={get G(){return G}, get POS(){return POS}, get GEO(){return GEO}, get save(){return save}, persist, showMap, startLevel, solve, genLevel, LEVEL_SOL, LK};
+window.__gw={get G(){return G}, get POS(){return POS}, get GEO(){return GEO}, get save(){return save}, persist, showMap, startLevel, solve, genLevel, LEVEL_SOL, LK, playRemedy};
 })();
 </script>
 
