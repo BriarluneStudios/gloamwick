@@ -205,7 +205,7 @@ body.mapmode #map{display:block}
 .craft{appearance:none;border:0;border-radius:14px;padding:11px;font:600 12px var(--f-display);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;
   background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 95%, #fff), color-mix(in srgb, var(--accent) 75%, #000));color:var(--night)}
 .craft:disabled{background:transparent;border:1px solid var(--line);color:var(--ink3);cursor:default}
-.tabs.four .tab{padding:9px 2px 8px;font-size:10px;letter-spacing:.1em;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tabs.four .tab{padding:9px 1px 8px;font-size:9.5px;letter-spacing:.06em;display:flex;flex-direction:column;align-items:center;gap:3px}
 .tabs.four .tab .ti{font-size:17px;letter-spacing:0;line-height:1}
 .tabs.four .tab .badge{top:5px;right:calc(50% - 20px)}
 .tokbar{display:flex;align-items:center;gap:14px;padding:16px;border-radius:22px;border:1px solid color-mix(in srgb, var(--accent) 40%, transparent);background:rgba(0,0,0,.25)}
@@ -246,6 +246,36 @@ body.mapmode #map{display:block}
 #achBanner .bk{font-family:var(--f-display);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink3)}
 #achBanner .bn{font-family:var(--f-display);font-size:14px;font-weight:600;color:var(--accent)}
 #achBanner .bt{font-size:15px;color:var(--ink2)}
+#btnPet{position:relative;font-size:22px}
+#btnPet .ct{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:var(--accent);color:var(--night);font:700 11px/18px var(--f-display)}
+#btnPet.hungry{filter:grayscale(.6)}
+#btnPet.ready{animation:petbob 2.4s ease-in-out infinite}
+@keyframes petbob{50%{transform:translateY(-3px)}}
+.pets{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.petc{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 10px;border-radius:20px;border:1px solid var(--line);background:linear-gradient(160deg,#2a1d40,#120c1c);color:var(--ink);font:inherit;cursor:pointer;text-align:center}
+.petc:focus-visible,.petname:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.petc .pe{font-size:40px;line-height:1.1}
+.petc b{font-family:var(--f-display);font-size:13px;letter-spacing:.06em;color:var(--accent)}
+.petc span{font-size:15px;color:var(--ink2);font-style:italic;line-height:1.2}
+.petc[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 22px -8px var(--accent), inset 0 0 22px -12px var(--accent)}
+.petname{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.3);color:var(--ink);font:600 18px var(--f-body);text-align:center}
+.pethome{display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 16px;border-radius:24px;border:1px solid color-mix(in srgb, var(--accent) 40%, transparent);background:radial-gradient(120% 90% at 50% 20%, #33245088, #120c1c);text-align:center}
+.pethome .big{font-size:72px;line-height:1;animation:petbob 2.8s ease-in-out infinite;filter:drop-shadow(0 6px 18px rgba(0,0,0,.6))}
+.pethome .big.munch{animation:munch .5s ease-in-out 2}
+@keyframes munch{50%{transform:scale(1.12) rotate(-6deg)}}
+.pethome h3{margin:0;font-family:var(--f-display);font-weight:600;font-size:20px;color:var(--accent);letter-spacing:.04em}
+.pethome .lv{font-family:var(--f-display);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink3)}
+.pethome .say{font-size:17px;font-style:italic;color:var(--ink2)}
+.meter{display:flex;gap:6px;justify-content:center;align-items:center;font-size:20px}
+.meter .off{filter:grayscale(1) opacity(.3)}
+.bond{width:100%;max-width:260px;height:8px;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden}
+.bond i{display:block;height:100%;background:var(--accent);box-shadow:0 0 10px var(--accent);border-radius:4px}
+.perks{display:flex;flex-direction:column;gap:6px}
+.perk{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:14px;background:rgba(0,0,0,.25);font-size:16px;line-height:1.25;color:var(--ink3)}
+.perk b{font-family:var(--f-display);font-size:11px;letter-spacing:.1em;min-width:44px;color:var(--ink3)}
+.perk.on{color:var(--ink)}
+.perk.on b{color:var(--accent)}
+@media (prefers-reduced-motion: reduce){ #btnPet.ready,.pethome .big,.pethome .big.munch{animation:none} }
 .crest .total{font-family:var(--f-display);font-size:13px;letter-spacing:.14em;color:var(--accent);margin-top:6px}
 @media (prefers-reduced-motion: reduce){ #achBanner{transition:none} .recipe.ready,.card,.stars span.on,.orb.next,.spell.armed,.spell.nudge,#levelName .pts.bump{animation:none} }
 </style>
@@ -255,6 +285,7 @@ body.mapmode #map{display:block}
   <header id="hud">
     <button class="icon" id="btnMap" aria-label="Open the grimoire">☾</button>
     <div class="hud-title"><div id="roomName">Gloamwick</div><div id="levelName"></div></div>
+    <button class="icon" id="btnPet" aria-label="Familiar" hidden></button>
     <button class="icon" id="btnHelp" aria-label="How to play">?</button>
     <button class="icon" id="btnSound" aria-label="Toggle sound">♪</button>
   </header>
@@ -280,6 +311,7 @@ body.mapmode #map{display:block}
         <button class="tab" role="tab" data-tab="rooms" aria-selected="true"><span class="ti">🏰</span>Rooms</button>
         <button class="tab" role="tab" data-tab="craft" aria-selected="false"><span class="ti">✦</span>Spells<span class="badge" id="craftBadge" hidden></span></button>
         <button class="tab" role="tab" data-tab="awards" aria-selected="false"><span class="ti">🏆</span>Awards<span class="badge" id="awardBadge" hidden></span></button>
+        <button class="tab" role="tab" data-tab="pet" aria-selected="false"><span class="ti">🐾</span>Familiar<span class="badge" id="petBadge" hidden></span></button>
         <button class="tab" role="tab" data-tab="lore" aria-selected="false"><span class="ti">📜</span>Lore<span class="badge" id="loreBadge" hidden></span></button>
       </div>
       <div class="years" id="yearBar" hidden></div>
@@ -287,6 +319,7 @@ body.mapmode #map{display:block}
       <div id="craftList" style="display:flex;flex-direction:column;gap:14px" hidden></div>
       <div id="awardList" style="display:flex;flex-direction:column;gap:14px" hidden></div>
       <div id="loreList" style="display:flex;flex-direction:column;gap:10px" hidden></div>
+      <div id="petList" style="display:flex;flex-direction:column;gap:14px" hidden></div>
       <div class="map-foot">Five classrooms · thirty brews a year · spells to craft · ✦ stars for brewing without help · <a href="#" id="mapHelp" style="color:inherit">how to play</a><br>Gloamwick™ © 2026 Briarlune Studios · All rights reserved · <a href="https://briarlunestudios.github.io/gloamwick/" style="color:inherit">official site</a></div>
     </div>
   </section>
@@ -357,7 +390,7 @@ const HIDDEN_HEX='#2c2142';
 const KEY='gloamwick-potion-sort-v1';
 // pot: bottled potions on your shelf ("room-color": count). spells: crafted spells. year: highest academy year reached.
 // ach: earned achievements. tok: token balance. sprouts: Pocket Sprouts owned. lore: unlocked lore pages. stats: running tallies.
-let save={done:{},stars:{},seen:{},best:{},ing:{},pot:{},spells:{},year:1,view:1,ach:{},tok:0,sprouts:0,lore:{0:1},stats:{pot:0,stirs:0,swift:0},tut:false,sound:true};
+let save={done:{},stars:{},seen:{},best:{},ing:{},pot:{},spells:{},year:1,view:1,ach:{},tok:0,sprouts:0,lore:{0:1},stats:{pot:0,stirs:0,swift:0},pet:null,tut:false,sound:true};
 try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.done) save=Object.assign(save,s);}catch(e){}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
 function isUnlocked(r,l,y){ y=y||1; if(y>Math.min(save.year,YEARS)) return false;
@@ -446,6 +479,8 @@ const ACH=[
  {k:'pts10k',  i:'💫', n:'Ten Thousand Sparks',   d:'Earn 10,000 points in all.',                      t:2, ok:()=>totalPoints()>=10000, p:()=>[Math.min(totalPoints(),10000),10000]},
  {k:'stir25',  i:'🥄', n:'Stirred, Not Skipped',  d:'Stir the full cauldron by hand 10 times.',        t:1, ok:()=>save.stats.stirs>=10, p:()=>[save.stats.stirs,10]},
  {k:'owl',     i:'🦉', n:'Night Owl',             d:'Finish a brew between midnight and 4 a.m.',       t:1, ok:c=>!!(c&&c.owl)},
+  {k:'pet',     i:'🐾', n:'Familiar Friend',       d:'Adopt a familiar.',                               t:2, ok:()=>!!save.pet},
+ {k:'pet5',    i:'💞', n:'Best of Friends',       d:'Reach the highest bond with your familiar.',      t:4, ok:()=>petLv()>=5, p:()=>[save.pet?save.pet.bond:0,PET_LV[4].need]},
  {k:'lore',    i:'📜', n:'Keeper of Tales',       d:'Unlock every lore page.',                         t:3, ok:()=>LORE.every((_,i)=>save.lore[i]), p:()=>[Object.keys(save.lore).length,LORE.length]},
 ];
 const SPROUT_COST=3;
@@ -514,6 +549,39 @@ const LORE=[
 ];
 const loreCost=i=>LORE[i].c;
 function buyLore(i){ if(save.lore[i]||save.tok<loreCost(i)) return false; save.tok-=loreCost(i); save.lore[i]=1; persist(); checkAch(); return true; }
+/* ======================= FAMILIARS ======================= */
+// Cash in points to adopt a familiar. Feed it treats (also points) to grow your bond; at higher bond levels it
+// gives hints. Each finished brew empties one of its bowls, and a hungry familiar will not help.
+// save.purse: points you can spend (every brew's points go in; spending never lowers your score).
+// save.pet: {k: kind, name, bond: treats eaten, full: bowls 0..PET_FULL}
+const PET_COST=1500, TREAT_COST=250, PET_FULL=3;
+const PETS=[
+ {k:'cat',  i:'🐈‍⬛', n:'Black Cat', def:'Soot',    treat:'🐟', blurb:'Aloof, clever, secretly very fond of you.',
+  hint:['Mrrp. That one.','*taps the glass with one paw*','Obviously, this one. Obviously.'], hungry:'*stares meaningfully at the empty bowl*', fed:'*purrs like a tiny cauldron*', idle:'*curls up on the shelf*'},
+ {k:'owl',  i:'🦉',   n:'Owl',       def:'Pip',     treat:'🫐', blurb:'Wide-eyed, patient, sees every layer twice.',
+  hint:['Hoo. Look there.','*ruffles feathers toward a vial*','Twice-look that one, witch.'], hungry:'*hoots sadly at the bowl*', fed:'*happy little hoots*', idle:'*watches the shelf, unblinking*'},
+ {k:'toad', i:'🐸',   n:'Toad',      def:'Bramble', treat:'🐛', blurb:'Calm, damp, and wiser than he looks.',
+  hint:['Rrribbit. That one.','*hops toward the right vial*','Slow and sure. Pour there.'], hungry:'*croaks hungrily*', fed:'*blinks slowly, content*', idle:'*sits very still, being wise*'},
+ {k:'fox',  i:'🦊',   n:'Fox',       def:'Ember',   treat:'🍎', blurb:'Quick, curious, and always one step ahead.',
+  hint:['Psst. That one!','*flicks a tail at the vial*','I saw it first. Pour there!'], hungry:'*paws at the treat jar*', fed:'*happy yip*', idle:'*trots along the shelf*'},
+];
+// Bond levels: treats needed, title, and what it unlocks.
+const PET_LV=[
+ {need:0,  t:'Shy',           d:'Keeps you company on the shelf.'},
+ {need:2,  t:'Curious',       d:'Once per brew, glows over a vial worth lifting.'},
+ {need:5,  t:'Trusting',      d:'Once per brew, points out the best next pour.'},
+ {need:9,  t:'Devoted',       d:'Two hints per brew.'},
+ {need:14, t:'Best Friends',  d:'Its hints no longer cost you stars.'},
+];
+const petKind=()=>save.pet&&PETS.find(P=>P.k===save.pet.k);
+const petLv=()=>{ if(!save.pet) return 0; let lv=0; PET_LV.forEach((L,i)=>{ if(save.pet.bond>=L.need) lv=i+1; }); return lv; };
+const petCharges=()=>{ const lv=petLv(); return lv>=4?2:lv>=2?1:0; };
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function adoptPet(k,name){ if(save.pet||save.purse<PET_COST) return false; const P=PETS.find(x=>x.k===k); if(!P) return false;
+  save.purse-=PET_COST; save.pet={k,name:(name||'').trim().slice(0,14)||P.def,bond:0,full:PET_FULL}; persist(); checkAch(); return true; }
+function feedPet(){ const pt=save.pet; if(!pt) return 'none'; if(pt.full>=PET_FULL) return 'full'; if(save.purse<TREAT_COST) return 'poor';
+  const before=petLv(); save.purse-=TREAT_COST; pt.full++; pt.bond++; persist(); checkAch(); return petLv()>before?'level':'ok'; }
 function buySprout(){ if(save.tok<SPROUT_COST) return false; save.tok-=SPROUT_COST; save.sprouts=(save.sprouts||0)+1; persist(); return true; }
 
 /* ======================= SOUND ======================= */
@@ -789,7 +857,7 @@ function startLevel(r,l,y){
   if(has('wellspring')){ raw.push([]); caps.push(CAP); }
   raw.forEach((v,i)=>{ if(!v.length) caps[i]=spareCap(); });
   const tot={}; raw.forEach(v=>v.forEach(c=>tot[c]=(tot[c]||0)+1));
-  G={y,r,l,caps,tot,mixed:caps.some(c=>c!==CAP),vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-open}))),undo:[],undos:undosFor(y,r,l)+(has('lantern')?1:0),charges:R.spell.charges+(has('echo')?1:0),unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[LK(y,r,l)]||null,nudged:false};
+  G={y,r,l,caps,tot,mixed:caps.some(c=>c!==CAP),vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-open}))),undo:[],undos:undosFor(y,r,l)+(has('lantern')?1:0),charges:R.spell.charges+(has('echo')?1:0),unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[LK(y,r,l)]||null,nudged:false,pet:petCharges()};
   sel=null; anim=null; hint=null; grains=[]; bursts=[]; floats=[]; lift=[]; shake=[]; sparks=[];
   layout(); updateHUD();
   if(save.tut && y>=3 && !save.seen.sizes) showSizes();
@@ -837,6 +905,9 @@ function updateHUD(){
   $('#btnSpell').classList.toggle('spent',G.charges<=0);
   $('#btnSpell').classList.toggle('armed',G.unbind);
   $('#btnUndo').classList.toggle('spent',G.undos<=0||!G.undo.length);
+  { const pt=save.pet, P=petKind(), b=$('#btnPet'); b.hidden=!pt;
+    if(pt){ b.innerHTML=`${P.i}${G.pet>0&&pt.full>0?`<span class="ct">${G.pet}</span>`:''}`; b.classList.toggle('hungry',pt.full===0); b.classList.toggle('ready',G.pet>0&&pt.full>0);
+      b.setAttribute('aria-label',`${pt.name} the ${P.n.toLowerCase()}: ${pt.full===0?'hungry':G.pet>0?G.pet+' hint'+(G.pet>1?'s':'')+' left':'no hints left this brew'}`); } }
   $('#btnPocket').hidden=!(save.sprouts>0); $('#ctPocket').textContent=save.sprouts||0;
   $('#btnPocket').setAttribute('aria-label',`Pocket Sprout: grow an extra empty vial. ${save.sprouts||0} left`);
   $('#btnSpell').setAttribute('aria-label',`${R.spell.name}: ${R.spell.desc} ${G.charges} left`);
@@ -898,6 +969,7 @@ function brew(i){
   SFX.chime(); try{navigator.vibrate&&navigator.vibrate(18)}catch(e){}
 }
 function win(){
+  if(save.pet&&save.pet.full>0) save.pet.full--;
   G.won=true; const key=LK(G.y,G.r,G.l); const stars=G.helps===0?3:G.helps<=2?2:1;
   save.done[key]=1; save.stars[key]=Math.max(save.stars[key]||0,stars); persist();
   setTimeout(()=>{
@@ -917,12 +989,13 @@ function showResults(key,stars,brewed,stirred,canBefore,cz){
     G.stirred=stirred; SFX.win(); const R=room();
     const sc=tallyScore(); const prevBest=save.best[key]||0; const newBest=sc.total>prevBest;
     save.best[key]=Math.max(prevBest,sc.total);
+    save.purse=(save.purse||0)+sc.total;
     // cauldron: remember brews waiting to be stirred; once stirred, they get their stir bonus too
     const C=save.caul; let caulNote='';
     if(cz&&cz.pending){ C.keys.push([key,sc.total]); const left=CAUL_EVERY-cz.pending;
       caulNote=`🫕 Your potions are in the cauldron (${cz.pending} of ${CAUL_EVERY}). Stir it after ${left===1?'your next brew':`${left} more brews`}.`; }
     if(cz&&cz.full){ const others=stirred?C.keys.length:0;
-      if(stirred) C.keys.forEach(([k,t])=>{ save.best[k]=Math.max(save.best[k]||0,t+PTS.stir); });
+      if(stirred){ C.keys.forEach(([k,t])=>{ save.best[k]=Math.max(save.best[k]||0,t+PTS.stir); }); save.purse+=PTS.stir*C.keys.length; }
       if(others) caulNote=`🫕 +${PTS.stir} stir bonus added to your ${others} earlier brew${others>1?'s':''} in the cauldron too.`;
       save.caul={n:0,cols:[],keys:[]}; }
     if(stirred&&!has('spoon')) save.stats.stirs=(save.stats.stirs||0)+1;
@@ -953,7 +1026,8 @@ function showResults(key,stars,brewed,stirred,canBefore,cz){
         <li class="tot"><span>Points</span><span>${sc.total}</span></li>
       </ul>
       <div class="best">${newBest&&prevBest?'New best for this brew! ':''}Best ${save.best[key]} · Total ${totalPoints()}</div>${extra}
-      <p class="note dim">${has('hearth')?brewed.length*2:brewed.length} potions added to your shelf.</p>
+      <p class="note dim">${has('hearth')?brewed.length*2:brewed.length} potions added to your shelf · ✦ ${(save.purse||0).toLocaleString()} points to spend.</p>
+      ${save.pet&&save.pet.full===0?`<p class="note dim">${petKind().i} ${esc(save.pet.name)} is hungry. Feed them in the grimoire.</p>`:''}
       ${caulNote?`<p class="note dim">${caulNote}</p>`:''}
       ${cando>canBefore?`<button class="btn ghost" id="mCraft">✦ A spell is ready to craft</button>`:''}
       <p class="quote small">“${line}” — ${R.short}</p>
@@ -1146,6 +1220,14 @@ game.addEventListener('pointerdown',e=>{
 });
 $('#btnUndo').onclick=()=>{SFX.init();doUndo()};
 $('#btnSpell').onclick=()=>{SFX.init();castSpell()};
+$('#btnPet').onclick=()=>{ SFX.init(); if(!G||anim||G.won||!save.pet) return; const pt=save.pet, P=petKind(), lv=petLv(), nm=pt.name;
+  if(pt.full===0) return toast(`${nm}: ${P.hungry} Feed them in the grimoire.`,3000);
+  if(lv<2) return toast(`${nm}: ${P.idle} (Feed ${nm} to grow your bond.)`,3000);
+  if(G.pet<=0) return toast(`${nm} has helped all they can this brew.`,2400);
+  const m=findHint(); if(!m) return toast(`${nm} looks puzzled. Try Undo.`,2400);
+  G.pet--; if(lv<5) G.helps++;
+  hint=lv>=3?{a:m[0],b:m[1],t:0}:{a:m[0],b:-1,t:0};
+  SFX.magic(); updateHUD(); toast(`${nm}: ${pick(P.hint)}`,2600); };
 $('#btnPocket').onclick=()=>{ SFX.init(); if(!G||anim||G.won) return;
   if(!(save.sprouts>0)) return toast('No Pocket Sprouts left. Buy more with tokens in the grimoire.');
   if(G.vials.length>=12) return toast('The shelf is full.');
@@ -1196,7 +1278,8 @@ const GUIDE=[
     ['🧺','<b>Your shelf</b><br>Every potion you bottle goes onto your shelf.'],
     ['📖','<b>Spellcraft</b><br>In the grimoire, combine discovered ingredients and bottled potions in the cauldron to craft spells. Crafted spells help in every brew, for good.'],
     ['🎓','<b>Academy years</b><br>Craft all of your year\'s <b>exam spells</b> to move up a year, with new and harder brews in every classroom.'],
-    ['🏆','<b>Achievements</b><br>Earn tokens to spend on Pocket Sprouts and sealed lore pages in the grimoire.']]},
+    ['🏆','<b>Achievements</b><br>Earn tokens to spend on Pocket Sprouts and sealed lore pages in the grimoire.'],
+    ['🐾','<b>Familiars</b><br>Spend points to adopt a familiar and feed it treats. The closer you grow, the more it helps with hints.']]},
 ];
 function showGuide(p,done){
   const P=GUIDE[p], last=p===GUIDE.length-1;
@@ -1221,14 +1304,15 @@ function showMap(tab){
   document.querySelectorAll('.tab[data-tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===mapTab));
   $('#craftBadge').hidden=!craftable().length;
   $('#awardBadge').hidden=!save.newAch;
+  $('#petBadge').hidden=!(save.pet?(save.pet.full<PET_FULL&&save.purse>=TREAT_COST):save.purse>=PET_COST);
   $('#loreBadge').hidden=!LORE.some((L,i)=>!save.lore[i]&&save.tok>=L.c);
-  $('#mapList').hidden=!rooms; $('#craftList').hidden=mapTab!=='craft'; $('#awardList').hidden=mapTab!=='awards'; $('#loreList').hidden=mapTab!=='lore';
+  $('#mapList').hidden=!rooms; $('#craftList').hidden=mapTab!=='craft'; $('#awardList').hidden=mapTab!=='awards'; $('#loreList').hidden=mapTab!=='lore'; $('#petList').hidden=mapTab!=='pet';
   // Year switcher appears once you have reached a second year.
   const yb=$('#yearBar'); yb.hidden=!rooms||save.year<2;
   if(!yb.hidden){ let h=''; for(let y=1;y<=YEARS;y++) h+=`<button class="yr" data-y="${y}" aria-pressed="${y===save.view}" ${y<=save.year?'':'disabled'}>${y<=save.year?'':'🔒 '}${YEAR_NAMES[y]}</button>`;
     if(save.year>YEARS) h+=`<button class="yr" disabled>${YEAR_NAMES[YEARS+1]} · soon</button>`;
     yb.innerHTML=h; yb.querySelectorAll('.yr:not([disabled])').forEach(b=>b.onclick=()=>{ SFX.init(); SFX.tick(); save.view=+b.dataset.y; persist(); showMap(); }); }
-  if(rooms) renderRooms(save.view); else if(mapTab==='craft') renderCraft(); else if(mapTab==='awards') renderAwards(); else renderLore();
+  if(rooms) renderRooms(save.view); else if(mapTab==='craft') renderCraft(); else if(mapTab==='awards') renderAwards(); else if(mapTab==='pet') renderPet(); else renderLore();
 }
 function renderRooms(y){
   const el=$('#mapList'); el.innerHTML='';
@@ -1329,6 +1413,50 @@ function renderAwards(){
   $('#awardList').innerHTML=h;
   $('#buySprout').onclick=()=>{ if(buySprout()){ SFX.magic(); toastMap('🌱 A Pocket Sprout is in your satchel.'); showMap('awards'); } };
   $('#goLore').onclick=()=>{ SFX.tick(); showMap('lore'); };
+}
+const purseBar=lbl=>`<div class="tokbar"><div class="big">✦ ${(save.purse||0).toLocaleString()}</div><div class="lbl">${lbl}</div></div>`;
+let petPick='cat';
+function renderPet(){
+  const el=$('#petList'); const pt=save.pet;
+  if(!pt){
+    const can=save.purse>=PET_COST;
+    el.innerHTML=purseBar(`Points to spend. Every brew adds to it, and spending never lowers your score. Adopting a familiar costs ✦ ${PET_COST.toLocaleString()}.`)
+      +`<div class="ygroup">Choose your familiar</div><div class="pets">${PETS.map(P=>`<button class="petc" data-k="${P.k}" aria-pressed="${P.k===petPick}"><div class="pe">${P.i}</div><b>${P.n}</b><span>${P.blurb}</span></button>`).join('')}</div>
+      <input class="petname" id="petName" maxlength="14" placeholder="Name your familiar" value="${esc(PETS.find(P=>P.k===petPick).def)}" aria-label="Familiar's name">
+      <button class="craft" id="adopt" ${can?'':'disabled'}>${can?`✦ Adopt for ${PET_COST.toLocaleString()} points`:`Needs ✦ ${PET_COST.toLocaleString()} points · keep brewing`}</button>
+      <div class="perks">${PET_LV.map((L,i)=>`<div class="perk"><b>Lv ${i+1}</b>${L.d}</div>`).join('')}</div>`;
+    el.querySelectorAll('.petc').forEach(b=>b.onclick=()=>{ SFX.tick(); const nm=$('#petName').value, old=PETS.find(P=>P.k===petPick).def;
+      petPick=b.dataset.k; renderPet(); if(nm&&nm!==old) $('#petName').value=nm; });
+    $('#adopt').onclick=()=>{ SFX.init(); const P=PETS.find(x=>x.k===petPick);
+      if(adoptPet(petPick,$('#petName').value)){ SFX.magic();
+        modal(`<div class="kicker">A new familiar</div><div class="sigbig">${P.i}</div><h2>Welcome, ${esc(save.pet.name)}!</h2>
+          <p class="quote small">${P.fed}</p>
+          <p class="note">Feed ${esc(save.pet.name)} treats to grow your bond. As you grow closer, ${esc(save.pet.name)} will start pointing out pours. Tap ${P.i} at the top of the screen while you brew.</p>
+          <div class="row"><button class="btn" id="mOk">Wonderful</button></div>`);
+        $('#mOk').onclick=()=>showMap('pet'); } };
+    return;
+  }
+  const P=petKind(), lv=petLv(), nx=PET_LV[lv], cur=PET_LV[lv-1];
+  const pct=nx?Math.round((pt.bond-cur.need)/(nx.need-cur.need)*100):100;
+  const say=pt.full===0?P.hungry:pt.full>=PET_FULL?P.fed:P.idle;
+  const feed=pt.full>=PET_FULL?'Too full for treats':save.purse<TREAT_COST?`Needs ✦ ${TREAT_COST} points`:`${P.treat} Feed a treat · ✦ ${TREAT_COST}`;
+  el.innerHTML=purseBar('Points to spend. Every brew adds to it.')
+    +`<div class="pethome"><div class="big" id="petBig">${P.i}</div><h3>${esc(pt.name)}</h3><div class="lv">Level ${lv} · ${PET_LV[lv-1].t}</div>
+      <div class="say">${say}</div>
+      <div class="meter" aria-label="${pt.full} of ${PET_FULL} bowls full">${Array.from({length:PET_FULL},(_,i)=>`<span class="${i<pt.full?'':'off'}">🥣</span>`).join('')}</div>
+      <div class="bond" aria-label="Bond ${pct}% to the next level"><i style="width:${pct}%"></i></div>
+      <div class="note dim">${nx?`${nx.need-pt.bond} more treat${nx.need-pt.bond>1?'s':''} to Level ${lv+1}`:'Best friends forever ✦'} · each brew empties one bowl</div>
+      <button class="craft" id="feed" style="width:100%" ${pt.full<PET_FULL&&save.purse>=TREAT_COST?'':'disabled'}>${feed}</button></div>
+    <div class="perks">${PET_LV.map((L,i)=>`<div class="perk${i<lv?' on':''}"><b>Lv ${i+1}</b>${L.d}</div>`).join('')}</div>`;
+  $('#feed').onclick=()=>{ SFX.init(); const r=feedPet(); if(r==='ok'||r==='level'){ SFX.chime(); renderPetAfterFeed(r); } };
+}
+function renderPetAfterFeed(r){
+  showMap('pet'); const b=$('#petBig'); if(b) b.classList.add('munch');
+  if(r==='level'){ const lv=petLv(), P=petKind(); SFX.magic();
+    toastMap(`${esc(save.pet.name)} reached Level ${lv}: ${PET_LV[lv-1].t}!`);
+    setTimeout(()=>{ if(!document.body.classList.contains('mapmode')) return; modal(`<div class="kicker">Bond grows</div><div class="sigbig">${P.i}</div><h2>${esc(save.pet.name)} is ${PET_LV[lv-1].t}</h2>
+      <div class="spellbox"><div class="sb-ic">✦</div><div>${PET_LV[lv-1].d}</div></div>
+      <div class="row"><button class="btn" id="mOk">Lovely</button></div>`); $('#mOk').onclick=()=>showMap('pet'); },700); }
 }
 function renderLore(){
   let h=tokBar('Spend tokens to unlock pages of the grimoire.');
@@ -1489,7 +1617,7 @@ function drawGame(t,dt){
     drawVial(c,i,p.x+sx,p.y+lift[i],0,t,opt);
   }
   // hint arrow
-  if(hint){ hint.t+=dt; const p=POS[hint.b]; const bob=Math.sin(t*5)*4; c.fillStyle=acc; c.globalAlpha=.9;
+  if(hint&&hint.b>=0){ hint.t+=dt; const p=POS[hint.b]; const bob=Math.sin(t*5)*4; c.fillStyle=acc; c.globalAlpha=.9;
     c.beginPath(); c.moveTo(p.x,p.y-12+bob); c.lineTo(p.x-8,p.y-24+bob); c.lineTo(p.x+8,p.y-24+bob); c.closePath(); c.fill(); c.globalAlpha=1; }
   // stream
   if(anim&&anim.pose&&anim.pose.pouring&&!known(anim.c)){ const M=anim.pose.M, sy=surfaceY(anim.to); const hex=colOf(anim.c);
@@ -1576,6 +1704,7 @@ if(!save.pv){ Object.keys(save.done).forEach(k=>{ const m=/^(\d)-(\d)$/.exec(k);
     levelColors(1,+m[1],+m[2]).forEach(c=>{ const p=m[1]+'-'+c; save.pot[p]=(save.pot[p]||0)+1; }); });
   save.pv=1; persist(); }
 save.stats=Object.assign({pot:0,stirs:0,swift:0},save.stats); save.lore=save.lore||{0:1}; save.lore[0]=1;
+if(save.purse===undefined) save.purse=totalPoints();
 checkAch(null,true);
 layout(); showMap(); requestAnimationFrame(frame);
 /* ---- Ownership: if this game is re-hosted anywhere but the official site, say so on screen ---- */

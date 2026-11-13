@@ -24,6 +24,10 @@ Every potion you bottle goes onto your shelf. In the grimoire's **Spellcraft** p
 
 Craft all of your year's **exam spells** to move up a year. Your Second Year brings new, harder brews to all five classrooms. In your Third Year the vials come in three sizes: tiny 3-layer vials, standard vials and great 5-layer flasks, with colors that come in matching amounts.
 
+## Familiars
+
+Cash in points to adopt a familiar: a black cat, an owl, a toad or a fox. Feed it treats to grow your bond. As you grow closer it starts pointing out pours, up to two hints a brew that no longer cost you stars. Each brew empties one of its bowls, so keep it fed.
+
 ## Achievements and lore
 
 Earn achievements for progress, skill and collecting. Each one pays out tokens to spend in the grimoire on Pocket Sprouts (an extra empty vial in any brew) and sealed lore pages about the Academy and its professors.
