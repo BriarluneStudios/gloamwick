@@ -48,7 +48,7 @@ Every bonus brew you win earns that classroom's Essence. Combine an Essence with
 
 Harder brews mix in blockers. Each year brings new ones (Year 1: scrolls and webs; Year 2: frost and numbered scrolls; Year 3: vial sizes and fragile vials) and mixes the earlier ones back in:
 
-- **Scrolls** seal a vial until you bottle the potion matching the wax seal; numbered scrolls open after that many potions of any color.
+- **Scrolls** seal a vial until you bottle the potion matching the wax seal; wide scrolls hide 2–3 neighboring vials at once and unroll to uncover them all after 3 potions of any color.
 - **Spider webs** trap a vial until you bottle a potion in a vial right next to it on the shelf.
 - **Frost** thaws after the number of pours shown.
 - **Fragile vials** crack on a wrong pour and shatter on the second. A Second Wind mends them; otherwise, start over.
