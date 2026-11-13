@@ -499,7 +499,9 @@ const ACH=[
  {k:'pts10k',  i:'💫', n:'Ten Thousand Sparks',   d:'Earn 10,000 points in all.',                      t:2, ok:()=>totalPoints()>=10000, p:()=>[Math.min(totalPoints(),10000),10000]},
  {k:'stir25',  i:'🥄', n:'Stirred, Not Skipped',  d:'Stir the full cauldron by hand 10 times.',        t:1, ok:()=>save.stats.stirs>=10, p:()=>[save.stats.stirs,10]},
  {k:'owl',     i:'🦉', n:'Night Owl',             d:'Finish a brew between midnight and 4 a.m.',       t:1, ok:c=>!!(c&&c.owl)},
-   {k:'clock',   i:'⏳', n:'Beat the Clock',        d:'Win a timed brew.',                               t:2, ok:()=>(save.stats.timed||0)>=1},
+   {k:'gold',    i:'🏆', n:'Lucky Find',            d:'Open a golden vial.',                             t:2, ok:()=>(save.stats.gold||0)>=1},
+ {k:'adv',     i:'🗝️', n:'Adventurer',            d:'Conquer an Adventure.',                           t:3, ok:()=>advWins()>=1},
+ {k:'clock',   i:'⏳', n:'Beat the Clock',        d:'Win a timed brew.',                               t:2, ok:()=>(save.stats.timed||0)>=1},
  {k:'attr',    i:'🎀', n:'Gifted Companion',      d:'Give your companion an attribute.',               t:2, ok:()=>!!(save.pet&&save.pet.attr&&Object.keys(save.pet.attr).length)},
  {k:'pet',     i:'🌸', n:'In Full Bloom',         d:'Your Sprout blooms into a familiar.',             t:2, ok:()=>!!save.pet&&!isSprout()},
  {k:'pet5',    i:'💞', n:'Best of Friends',       d:'Reach the highest bond with your familiar.',      t:4, ok:()=>petLv()>=5, p:()=>[save.pet?save.pet.bond:0,PET_LV[4].need]},
@@ -616,7 +618,7 @@ const PETS=[
   vars:[{n:'Oakley',i:'🌳',d:'A sturdy little oak'},{n:'Needles',i:'🌲',d:'A tiny evergreen pine'},{n:'Blossom',i:'🌳',f:'hue-rotate(230deg) saturate(1.6) brightness(1.15)',d:'A cherry tree in bloom'}]},
 ];
 const SPROUT_PET={k:'sprout', n:'Sprout', treat:'💧', blurb:'Your very own little sprout. It grows as you do.',
-  stages:['Seedling','Sprout','Sprout'], forms:['🌱','🌿'], talent:null,
+  stages:['Seedling','Leafy Sprout','Leafy Sprout'], forms:['🌱','🌿'], talent:null,
   hint:['*leans its leaves toward a vial*','*a leaf points the way*','*rustles softly at one vial*'], hungry:'*droops, a little thirsty*', fed:'*leaves perk up and shimmer*', idle:'*turns toward the candlelight*',
   vars:[{n:'Sprout',i:'🌿',d:'A little green sprout'}]};
 // Companion attributes: each classroom's bonus brew yields an Essence. An Essence plus two of that classroom's
@@ -732,15 +734,19 @@ function shuffle(a,R){for(let i=a.length-1;i>0;i--){const j=Math.floor(R()*(i+1)
 function runLen(v){ if(!v.length) return 0; const c=v[v.length-1]; let n=0; for(let i=v.length-1;i>=0&&v[i]===c;i--) n++; return n; }
 
 // caps: each vial's capacity (default: all CAP). A vial is finished once it holds every grain of one color.
-// seals: for each vial, the color whose potion unseals its scroll (-1 or missing = no scroll). A sealed vial
-// can't be poured into or out of until a vial of that color is finished.
-function solve(start,limit,caps,seals){
+// seals: for each vial, what keeps its scroll shut (-1 or missing = no scroll): a color index 0-8 (that potion
+// must be bottled), 100+n (n potions of any color must be bottled) or GOLD_SEAL (never opens; the golden vial).
+// frost: for each vial, how many pours it stays frozen. A sealed or frozen vial can't be poured into or out of.
+const SEAL_COUNT=100, GOLD_SEAL=999;
+function solve(start,limit,caps,seals,frost){
   // best-first search: few colour breaks + few vials per colour = close to solved
-  caps=caps||start.map(()=>CAP); seals=seals||[];
+  caps=caps||start.map(()=>CAP); seals=seals||[]; frost=frost||[];
   const tot={}; start.forEach(v=>v.forEach(x=>tot[x]=(tot[x]||0)+1));
   const full=v=>v.length>0 && v.length===tot[v[0]] && v.every(x=>x===v[0]);
-  const anySeal=seals.some(k=>k>=0);
-  const sealedIn=s=>{ if(!anySeal) return null; const dn={}; s.forEach(v=>{ if(full(v)) dn[v[0]]=1; }); return s.map((_,i)=>seals[i]>=0&&!dn[seals[i]]); };
+  const anySeal=seals.some(k=>k>=0)||frost.some(f=>f>0);
+  const sealedIn=(s,g)=>{ if(!anySeal) return null; const dn={}; let nd=0; s.forEach(v=>{ if(full(v)){ dn[v[0]]=1; nd++; } });
+    return s.map((_,i)=>{ const k=seals[i]; if((frost[i]||0)>g) return true; if(k===undefined||k<0) return false;
+      if(k===GOLD_SEAL) return true; if(k>=SEAL_COUNT) return nd<k-SEAL_COUNT; return !dn[k]; }); };
   const key=s=>s.map((v,i)=>caps[i]+(seals[i]>=0?'s'+seals[i]:'')+':'+v.join(',')).sort().join('|');
   const hScore=s=>{ let t=0; const where={}; s.forEach((v,vi)=>{ for(let i=0;i<v.length;i++){ if(i&&v[i]!==v[i-1]) t++; (where[v[i]]||(where[v[i]]=new Set)).add(vi); } });
     for(const k in where) t+=where[k].size-1; return t; };
@@ -752,7 +758,7 @@ function solve(start,limit,caps,seals){
     const nd=pop();
     if(nd.h===0){ const path=[]; for(let q=nd;q.par;q=q.par) path.push(q.mv); return path.reverse(); }
     if(++nodes>limit) return null;
-    const s=nd.s, sl=sealedIn(s);
+    const s=nd.s, sl=sealedIn(s,nd.g);
     for(let a=0;a<s.length;a++){ const A=s[a]; if(!A.length||full(A)||(sl&&sl[a])) continue; const c=A[A.length-1]; const n=runLen(A); const emptyUsed={};
       for(let b=0;b<s.length;b++){ if(a===b||(sl&&sl[b])) continue; const B=s[b]; if(B.length>=caps[b]) continue;
         if(!B.length){ if(emptyUsed[caps[b]]||(n===A.length&&caps[a]===caps[b])) continue; emptyUsed[caps[b]]=true; } else if(B[B.length-1]!==c) continue;
@@ -775,13 +781,26 @@ const YEARS=3;
 const NCOL={1:[[4,5,5,6,6,7,7],[6,6,7,7,8,8,9],[7,7,8,8,9,9,9],[8,8,9,9,9,9,9],[8,9,9,9,9,9,9]],
             2:[[6,6,7,7,8,8,9],[7,7,8,8,9,9,9],[8,8,9,9,9,9,9],[9,9,9,9,9,9,9],[9,9,9,9,9,9,9]],
             3:[[5,5,6,6,7,7,8],[6,6,7,7,8,8,8],[6,7,7,8,8,8,9],[7,7,8,8,9,9,9],[7,8,8,9,9,9,9]]};
-const SEEDS={1:[[15,14,5,1,81,44,20],[38,27,81,73,3,39,61],[15,7,49,112,85,34,26],[29,17,23,24,51,65,14],[30,6,81,87,89,85,53]],
-             2:[[32,69,46,4,11,84,226],[29,77,35,76,72,28,119],[5,34,93,77,58,87,228],[37,19,72,20,14,68,219],[83,29,7,71,70,12,146]],
-             3:[[35,31,61,90,76,198,106],[74,67,13,77,47,50,136],[92,5,47,3,226,91,152],[38,92,65,100,181,237,128],[23,39,71,42,51,94,276]]};
-function spec(y,r,l){ return {n:NCOL[y][r][l], empties:2, maxRun:(y>=2||l>=2)?2:3}; }
-// Scroll-sealed vials: how many a brew has. Later brews and later years have more.
-function scrollsFor(y,r,l){ return y===1?(l>=4?1:0) : y===2?(l===BONUS?2:l>=2?1:0) : (l>=4?2:l>=1?1:0); }
-function undosFor(y,r,l){ const base=l===BONUS?2 : l>=4?(r>=2?2:3) : l>=2?4:5; return Math.max(1,base-Math.min(1,y-1)); }
+const SEEDS={1:[[15,14,5,1,81,178,254],[38,27,81,73,3,184,178],[15,7,49,112,85,244,222],[29,17,43,44,51,160,94],[30,6,20,86,90,210,127]],
+             2:[[32,69,16,7,196,17,152],[29,77,38,176,86,65,234],[5,34,10,193,152,160,15],[37,19,28,49,251,205,251],[83,29,3,234,65,165,152]],
+             3:[[35,31,542,439,186,226,51],[74,67,483,347,467,526,6],[92,5,299,25,19,422,121],[38,92,198,177,576,204,450],[23,39,292,127,219,260,263]]};
+function spec(y,r,l){ return {n:l===ADV?9:NCOL[y][r][l], empties:2, maxRun:(y>=2||l>=2)?2:3}; }
+// Blockers: how many of each a brew has. Later brews, later classrooms and later years have more.
+//  color: scrolls sealed by one potion · count: scrolls that open after 3 potions · web: cleared by casting the
+//  classroom's spell · frost: thaws after some pours · fragile: cracks on a wrong pour and shatters on the second.
+const ADV=7;   // slot of each year's Adventure brew
+// Adventures: one very hard brew per year, unlocked with a Lucky Elixir from a golden vial.
+const ADV_INFO={1:{r:4,name:'The Gilded Catacombs',icon:'🗝️'},2:{r:2,name:'The Molten Vault',icon:'🌋'},3:{r:1,name:'The Star-Drowned Library',icon:'📚'}};
+const ADV_SEEDS={1:85,2:344,3:390};
+function scrollsFor(y,r,l){ return l===ADV?2 : y===1?(l>=4?1:0) : y===2?(l===BONUS?2:l>=2?1:0) : (l>=4?2:l>=1?1:0); }
+function blockersFor(y,r,l){
+  if(l===ADV) return {color:2,count:1,web:2,frost:1,fragile:2};
+  return {color:scrollsFor(y,r,l),
+    count: y===1?(l>=5?1:0) : y===2?(l>=3?1:0) : (l>=2?1:0),
+    web:   y===1?(r>=2&&l>=3?1:0) : (l>=1?1:0),
+    frost: y===1?(r>=3&&l>=2?1:0) : y===2?(l>=2?1:0) : (l>=3?1:0),
+    fragile: y===1?(l===BONUS?1:0) : y===2?(l>=4?1:0) : (l===BONUS?2:l>=3?1:0)}; }
+function undosFor(y,r,l){ const base=l>=BONUS?2 : l>=4?(r>=2?2:3) : l>=2?4:5; return Math.max(1,base-Math.min(1,y-1)); }
 // Returns {v: vials (arrays of color indexes), caps: each vial's capacity}, or null if the shuffle breaks a rule.
 function buildLevel(y,r,l,att){
   const {n,empties,maxRun}=spec(y,r,l);
@@ -795,27 +814,40 @@ function buildLevel(y,r,l,att){
   if(vials.some(v=>v.every(x=>x===v[0]))) return null;
   if(vials.some(v=>runLen(v)>=maxRun)) return null;
   // Scrolls: wrap some filled vials, each sealed by a color that isn't inside it.
-  const seals=vials.map(()=>-1);
-  for(let k=0;k<scrollsFor(y,r,l);k++){ const free=vials.map((_,i)=>i).filter(i=>seals[i]<0); const i=free[Math.floor(R()*free.length)];
+  const seals=vials.map(()=>-1), B=blockersFor(y,r,l);
+  for(let k=0;k<B.color;k++){ const free=vials.map((_,i)=>i).filter(i=>seals[i]<0); const i=free[Math.floor(R()*free.length)];
     const keys=cols.filter(c=>!vials[i].includes(c)); if(!keys.length) return null; seals[i]=keys[Math.floor(R()*keys.length)]; }
-  for(let e=0;e<empties;e++){ vials.push([]); caps.push(CAP); seals.push(-1); }
-  return {v:vials,caps,seals};
+  // Other blockers go on vials that don't already have one (fragile ones may be empty vials too).
+  const frost=vials.map(()=>0), web=vials.map(()=>0), fragile=vials.map(()=>0);
+  const freeV=()=>vials.map((_,i)=>i).filter(i=>seals[i]<0&&!frost[i]&&!web[i]);
+  const take=()=>{ const f=freeV(); return f.length?f[Math.floor(R()*f.length)]:-1; };
+  for(let k=0;k<B.count;k++){ const i=take(); if(i<0) return null; seals[i]=SEAL_COUNT+3; }
+  for(let k=0;k<B.frost;k++){ const i=take(); if(i<0) return null; frost[i]=4+Math.floor(R()*5); }
+  for(let k=0;k<B.web;k++){ const i=take(); if(i<0) return null; web[i]=1; }
+  for(let e=0;e<empties;e++){ vials.push([]); caps.push(CAP); seals.push(-1); frost.push(0); web.push(0); fragile.push(0); }
+  for(let k=0;k<B.fragile;k++){ const f=vials.map((_,i)=>i).filter(i=>!fragile[i]&&seals[i]<0&&!frost[i]); if(!f.length) break;
+    // prefer the empty vials: they get poured into most
+    const em=f.filter(i=>!vials[i].length); const pool=em.length?em:f; fragile[pool[Math.floor(R()*pool.length)]]=1; }
+  return {v:vials,caps,seals,frost,web,fragile};
 }
 // Save keys: Year 1 keeps the original "room-brew" keys so existing progress carries over.
 const LK=(y,r,l)=>y===1?r+'-'+l:'y'+y+':'+r+'-'+l;
-// Returns {v, caps, seals} with fresh copies of the vials.
+// Returns {v, caps, seals, frost, web, fragile} with fresh copies.
+const seedFor=(y,r,l)=>l===ADV?ADV_SEEDS[y]:SEEDS[y][r][l];
+const LEVEL_SOL={};
 function genLevel(y,r,l){
-  const k=LK(y,r,l), cp=L=>({v:L.v.map(x=>x.slice()),caps:L.caps.slice(),seals:L.seals.slice()});
+  const k=LK(y,r,l), cp=L=>({v:L.v.map(x=>x.slice()),caps:L.caps.slice(),seals:L.seals.slice(),frost:L.frost.slice(),web:L.web.slice(),fragile:L.fragile.slice()});
   if(LEVEL_CACHE[k]) return cp(LEVEL_CACHE[k]);
-  const seeded=buildLevel(y,r,l,SEEDS[y][r][l]); let sol;
-  if(seeded && (sol=solve(seeded.v,30000,seeded.caps,seeded.seals))){ LEVEL_CACHE[k]=cp(seeded); LEVEL_PAR[k]=sol.length; return seeded; }
+  const ok=(L,sol)=>{ LEVEL_CACHE[k]=cp(L); LEVEL_PAR[k]=sol.length; LEVEL_SOL[k]=sol; return cp(L); };
+  const seeded=buildLevel(y,r,l,seedFor(y,r,l)); let sol;
+  if(seeded && (sol=solve(seeded.v,30000,seeded.caps,seeded.seals,seeded.frost))) return ok(seeded,sol);
   let last=null;
   for(let att=0;att<200;att++){ const L=buildLevel(y,r,l,att); if(!L) continue; last=L;
-    if((sol=solve(L.v,30000,L.caps,L.seals))){ LEVEL_CACHE[k]=cp(L); LEVEL_PAR[k]=sol.length; return L; } }
+    if((sol=solve(L.v,30000,L.caps,L.seals,L.frost))) return ok(L,sol); }
   return last;
 }
 // The colors a brew uses, without solving it (for crediting potions to older saves).
-function levelColors(y,r,l){ const L=buildLevel(y,r,l,SEEDS[y][r][l]); return L?[...new Set(L.v.flat())]:[]; }
+function levelColors(y,r,l){ const L=buildLevel(y,r,l,seedFor(y,r,l)); return L?[...new Set(L.v.flat())]:[]; }
 
 /* ======================= COLOR HELPERS ======================= */
 function hexRgb(h){const n=parseInt(h.slice(1),16);return[n>>16&255,n>>8&255,n&255]}
@@ -940,13 +972,64 @@ const colOf=c=>room().colors[c][1];
 // A vial is finished once it holds every grain of one color (with even vials that is simply "full").
 const isDone=v=>v.length>0 && v.length===G.tot[v[0].c] && v.every(u=>u.c===v[0].c);
 const capOf=i=>G.caps[i];
-// A scroll keeps its vial sealed until the potion matching its wax seal has been bottled.
+// A scroll keeps its vial sealed until the potion matching its wax seal has been bottled (or, for a number
+// scroll, until that many potions have been bottled). The golden vial never opens to pours.
 const sealKey=i=>{ const k=G.seal&&G.seal[i]; return k===undefined?-1:k; };
-const sealedAt=i=>{ const k=sealKey(i); return k>=0 && !G.vials.some(v=>isDone(v)&&v[0].c===k); };
+const bottled=()=>G.vials.filter(isDone).length;
+const sealedAt=i=>{ const k=sealKey(i); if(k<0) return false; if(k===GOLD_SEAL) return true;
+  if(k>=SEAL_COUNT) return bottled()<k-SEAL_COUNT; return !G.vials.some(v=>isDone(v)&&v[0].c===k); };
+const frozenAt=i=>((G.frost&&G.frost[i])||0)>G.moves;
+const webAt=i=>!!(G.web&&G.web[i]);
+const blockedAt=i=>sealedAt(i)||frozenAt(i)||webAt(i)||G.broken===i;
+// Golden vials: brew 5 of every classroom. The secret order comes from a real solution, so it can always be done.
+const goldFor=(y,r,l)=>l===4;
+function goldSequence(y,r,l,L){
+  const path=LEVEL_SOL[LK(y,r,l)], v=L.v.map(x=>x.slice()), caps=L.caps, tot={}, order=[];
+  v.forEach(x=>x.forEach(c=>tot[c]=(tot[c]||0)+1));
+  for(const [a,b] of path){ const A=v[a], B=v[b]; let n=runLen(A); n=Math.min(n,caps[b]-B.length); for(let k=0;k<n;k++) B.push(A.pop());
+    if(B.length===tot[B[0]]&&B.every(c=>c===B[0])&&!order.includes(B[0])) order.push(B[0]); }
+  if(order.length<4) return null;
+  const R=rng(424242+y*97+r*31+l*7); const pos=shuffle(order.map((_,i)=>i),R).slice(0,3).sort((a,b)=>a-b);
+  return pos.map(i=>order[i]); }
+// Golden Sense: how many of the golden vial's runes your companion reveals. A bloomed companion reveals one,
+// and every Adventure you conquer reveals one more.
+const advWins=()=>[1,2,3].filter(y=>save.done[LK(y,ADV_INFO[y].r,ADV)]).length;
+const goldSense=()=>Math.min(3,(save.pet&&!isSprout()?1:0)+advWins());
+function goldStep(c){ const q=G.gold; if(!q||q.open) return;
+  // Only the three rune potions matter: bottling one out of order resets the runes; other potions don't.
+  if(!q.seq.includes(c)) return;
+  if(c===q.seq[q.prog]) q.prog++; else { q.prog=c===q.seq[0]?1:0; if(q.prog===0) setTimeout(()=>toast('🏆 The golden runes flicker out. Wrong order!',1800),300); } q.flash=performance.now()/1000;
+  if(q.prog>=3){ q.open=true; save.gold=save.gold||{}; save.gold[LK(G.y,G.r,G.l)]=1; save.elixir=(save.elixir||0)+1; save.stats.gold=(save.stats.gold||0)+1; persist();
+    const p=POS[q.i]; for(let k=0;k<50;k++){ const a=Math.random()*6.28,sp=40+Math.random()*140; bursts.push({x:p.x,y:p.y+p.h*.5,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-60,life:0,max:1.1,c:k%3?'#ffd75e':'#fff6c8',s:2.4}); }
+    setTimeout(()=>{ toast('🏆 The golden vial opens! You found a Lucky Elixir. Use it to unlock an Adventure.',4200); SFX.magic(); SFX.chime(); },400); }
+  else if(q.prog>0) setTimeout(()=>toast(`🏆 A golden rune glows (${q.prog} of 3)…`,1800),300); }
+function burnWebs(){ if(!G.web||!G.web.some(Boolean)) return false;
+  G.web.forEach((w,i)=>{ if(!w) return; G.web[i]=0; const p=POS[i]; for(let k=0;k<26;k++){ const a=Math.random()*6.28,sp=30+Math.random()*90; bursts.push({x:p.x+(Math.random()-.5)*GEO.W,y:p.y+Math.random()*p.h,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-70,life:0,max:.9,c:k%2?'#ffb347':'#fff1d0',s:2}); } });
+  G.burnT=performance.now()/1000; return true; }
+function crackVial(i){ G.fragile[i]++; SFX.nope(); try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}
+  if(G.fragile[i]>=3) return shatter(i);
+  toast('💔 Crack! That vial is fragile. One more wrong pour onto it and it shatters.',3200); }
+function shatter(i){ G.preBreak={vials:snapshot(),i}; const p=POS[i], col=G.vials[i].length?colOf(G.vials[i][0].c):'#cfe6ff';
+  for(let k=0;k<40;k++){ const a=-Math.PI*Math.random(),sp=60+Math.random()*160; bursts.push({x:p.x+(Math.random()-.5)*GEO.W,y:p.y+p.h*(.3+Math.random()*.6),vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:0,max:1,c:k%2?'#e6f2ff':col,s:2.2}); }
+  G.vials[i]=[]; G.broken=i; sel=null; hint=null; SFX.tone(1400,0,.25,.05,'triangle'); SFX.tone(900,.05,.3,.04,'triangle'); try{navigator.vibrate&&navigator.vibrate([30,30,60])}catch(e){}
+  updateHUD(); setTimeout(()=>offerWind('break'),700); }
+// One-time explanations the first time each blocker appears.
+function blockerIntro(){
+  const seen=save.seen, has1=f=>G.vials.some((_,i)=>f(i));
+  const list=[
+    ['gold',  ()=>!!G.gold, '🏆 A golden vial! Bottle three potions in a secret order to open it. Each right potion lights a rune; a wrong one resets them.'],
+    ['web',   ()=>has1(webAt), `🕸️ A spider web! Cast ${room().spell.icon} ${room().spell.name} to burn it away. That cast won't cost you a star.`],
+    ['frost', ()=>has1(frozenAt), '❄️ A frozen vial! It thaws after a few pours. The number shows how many.'],
+    ['count', ()=>has1(i=>sealKey(i)>=SEAL_COUNT&&sealKey(i)<GOLD_SEAL), '📜 A numbered scroll! It unravels after you bottle 3 potions of any color.'],
+    ['fragile',()=>G.fragile.some(Boolean), '💔 A fragile vial! A wrong pour onto it cracks the glass; a second one shatters it.'],
+  ];
+  for(const [k,f,msg] of list){ if(!seen['b_'+k]&&f()){ seen['b_'+k]=1; persist(); setTimeout(()=>toast(msg,4600),300); return true; } }
+  return false; }
 function checkScrolls(){ const now=performance.now()/1000;
-  G.vials.forEach((_,i)=>{ if(sealKey(i)<0) return; const open=!sealedAt(i);
+  G.vials.forEach((_,i)=>{ if((G.frost[i]||0)>0&&!frozenAt(i)&&G.thaw[i]===undefined){ G.thaw[i]=now; setTimeout(()=>toast('❄️ The frost melts away.',1800),200); } });
+  G.vials.forEach((_,i)=>{ if(sealKey(i)<0||sealKey(i)===GOLD_SEAL) return; const open=!sealedAt(i);
     if(open&&G.unroll[i]===undefined){ G.unroll[i]=now; const p=POS[i];
-      for(let k=0;k<24;k++){ const a=Math.random()*6.28,sp=40+Math.random()*90; bursts.push({x:p.x,y:p.y+p.h*.5,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-50,life:0,max:.9,c:k%2?'#f1e2b8':colOf(sealKey(i)),s:2}); }
+      for(let k=0;k<24;k++){ const a=Math.random()*6.28,sp=40+Math.random()*90; bursts.push({x:p.x,y:p.y+p.h*.5,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-50,life:0,max:.9,c:k%2?'#f1e2b8':(sealKey(i)>=SEAL_COUNT?'#e9c46a':colOf(sealKey(i))),s:2}); }
       setTimeout(()=>{ toast('📜 The scroll unravels!',2200); SFX.magic(); },500); }
     if(!open) delete G.unroll[i]; }); }
 
@@ -987,12 +1070,16 @@ function layout(){
 function startLevel(r,l,y){
   y=y||1; closeModal(); document.body.classList.remove('mapmode'); save.view=y;
   const R=ROOMS[r]; setTheme(R);
-  const L=genLevel(y,r,l), raw=L.v, caps=L.caps, seal=L.seals;
+  const L=genLevel(y,r,l), raw=L.v, caps=L.caps, seal=L.seals, frost=L.frost, web=L.web, fragile=L.fragile;
+  const addVial=(cap,sk)=>{ raw.push([]); caps.push(cap); seal.push(sk); frost.push(0); web.push(0); fragile.push(0); };
   const veil=R.hidden||l===BONUS||y>=2, open=has('gloam')?2:1;
-  if(has('wellspring')){ raw.push([]); caps.push(CAP); seal.push(-1); }
+  if(has('wellspring')) addVial(CAP,-1);
+  // A golden vial: bottle three potions in a secret order to open it for a Lucky Elixir.
+  let gold=null;
+  if(goldFor(y,r,l)&&!(save.gold&&save.gold[LK(y,r,l)])&&LEVEL_SOL[LK(y,r,l)]){ const seq=goldSequence(y,r,l,L); if(seq){ addVial(CAP,GOLD_SEAL); gold={i:raw.length-1,seq,prog:0,open:false,flash:0}; } }
   raw.forEach((v,i)=>{ if(!v.length) caps[i]=spareCap(); });
   const tot={}; raw.forEach(v=>v.forEach(c=>tot[c]=(tot[c]||0)+1));
-  G={y,r,l,caps,tot,seal,unroll:{},mixed:caps.some(c=>c!==CAP),vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-open}))),undo:[],undos:undosFor(y,r,l)+(has('lantern')?1:0),charges:R.spell.charges+(has('echo')?1:0),unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[LK(y,r,l)]||null,nudged:false,pet:petCharges(),timed:timedFor(y,r,l),elapsed:0,started:false,timeout:false,limit:0,freeUndo:[0,1,2][talent('snake')]};
+  G={y,r,l,caps,tot,seal,frost,web,fragile,gold,broken:-1,thaw:{},burnT:0,unroll:{},mixed:caps.some(c=>c!==CAP),vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-open}))),undo:[],undos:undosFor(y,r,l)+(has('lantern')?1:0),charges:R.spell.charges+(has('echo')?1:0),unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[LK(y,r,l)]||null,nudged:false,pet:petCharges(),timed:timedFor(y,r,l),elapsed:0,started:false,timeout:false,limit:0,freeUndo:[0,1,2][talent('snake')]};
   if(G.timed){ G.limit=Math.round(30+(G.par||20)*3.5)+(hasAttr('shade')?30:0); }
   if(talent('owl')){ const hid=[]; G.vials.forEach(v=>v.forEach(u=>{ if(u.h) hid.push(u); })); shuffle(hid,Math.random).slice(0,[0,2,5][talent('owl')]).forEach(u=>u.h=false); }
   sel=null; anim=null; hint=null; grains=[]; bursts=[]; floats=[]; lift=[]; shake=[]; sparks=[];
@@ -1000,6 +1087,7 @@ function startLevel(r,l,y){
   if(save.tut && y>=3 && !save.seen.sizes) showSizes();
   else if(!save.tut) showGuide(0,()=>{ if(l===0 && !save.seen[r]) showIntro(r); else firstTip(); });
   else if(l===0 && !save.seen[r]) showIntro(r);
+  else if(blockerIntro()){}
   else if(G.timed&&!save.seen.timed){ save.seen.timed=1; persist(); setTimeout(()=>toast(`⏳ A timed brew! You have ${fmtTime(G.limit)} from your first pour. Time left over earns bonus points.`,4200),300); }
   else if(G.timed) setTimeout(()=>toast(`⏳ Timed brew · ${fmtTime(G.limit)} from your first pour.`,2800),300);
   else if(seal.some(k=>k>=0)&&!save.seen.scroll){ save.seen.scroll=1; persist(); setTimeout(()=>toast('📜 A scroll seals a vial! Bottle the potion matching its wax seal to unravel it.',4200),300); }
@@ -1039,10 +1127,10 @@ function tallyScore(){
 function totalPoints(){ return Object.values(save.best||{}).reduce((a,b)=>a+b,0); }
 function updateHUD(){
   const R=room();
-  $('#roomName').textContent=R.place;
+  $('#roomName').textContent=G.l===ADV?ADV_INFO[G.y].name:R.place;
   const live=Math.max(0,G.vials.filter(isDone).length*PTS.potion-G.helps*PTS.help);
   const bumped=live>G.pts; G.pts=live;
-  $('#levelName').innerHTML=`${G.y>1?'Year '+G.y+' · ':''}${G.l===BONUS?'✦ Bonus brew':`Brew ${G.l+1} of 6`} · <span class="pts${bumped?' bump':''}">✦ ${G.pts} pts</span>`;
+  $('#levelName').innerHTML=`${G.y>1?'Year '+G.y+' · ':''}${G.l===ADV?'✦ Adventure':G.l===BONUS?'✦ Bonus brew':`Brew ${G.l+1} of 6`} · <span class="pts${bumped?' bump':''}">✦ ${G.pts} pts</span>`;
   $('#ctUndo').textContent=G.undos;
   $('#spIc').textContent=R.spell.icon; $('#spNm').textContent=R.spell.name; $('#ctSpell').textContent=G.charges;
   $('#btnSpell').classList.toggle('spent',G.charges<=0);
@@ -1059,7 +1147,7 @@ function updateHUD(){
 function snapshot(){ return G.vials.map(v=>v.map(u=>({c:u.c,h:u.h}))); }
 function pushUndo(){ G.undo.push(snapshot()); if(G.undo.length>60) G.undo.shift(); }
 function canPour(a,b){
-  if(a===b||sealedAt(a)||sealedAt(b)) return false; const A=G.vials[a], B=G.vials[b];
+  if(a===b||blockedAt(a)||blockedAt(b)) return false; const A=G.vials[a], B=G.vials[b];
   if(!A.length||isDone(A)||B.length>=capOf(b)) return false;
   if(!B.length||G.unbind) return true;
   return B[B.length-1].c===A[A.length-1].c;
@@ -1083,7 +1171,8 @@ function finishPour(){
   for(let i=0;i<n;i++){ const u=A.pop(); u.h=false; B.push(u); }
   if(A.length) A[A.length-1].h=false;
   G.moves++; anim=null;
-  if(isDone(B)){ B.forEach(u=>u.h=false); brew(to); checkScrolls(); }
+  if(isDone(B)){ B.forEach(u=>u.h=false); brew(to); goldStep(B[0].c); }
+  checkScrolls();
   updateHUD();
   if(G.vials.every(v=>!v.length||isDone(v))) return win();
   if(!anyMove()) return stuckTip(true);
@@ -1100,14 +1189,16 @@ function stuckTip(hard){
 // Second Winds: continue a brew that is going wrong instead of failing it.
 function offerWind(kind){
   const nm=save.pet?esc(save.pet.name):'', have=save.winds||0, canBuy=(save.purse||0)>=HUT.windNow;
-  const what=kind==='time'?`+${WIND_TIME} seconds`:`+${WIND_UNDOS} undos`;
-  modal(`<div class="kicker">${kind==='time'?'⌛ Time is up':'Out of pours'}</div><div class="sigbig">${kind==='time'?'⌛':'🫗'}</div>
-    <h2>${kind==='time'?"Time's up!":'No pours left'}</h2>
+  const what=kind==='time'?`+${WIND_TIME} seconds`:kind==='break'?'the vial mended, contents and all':`+${WIND_UNDOS} undos`;
+  modal(`<div class="kicker">${kind==='time'?'⌛ Time is up':kind==='break'?'💔 Shattered':'Out of pours'}</div><div class="sigbig">${kind==='time'?'⌛':kind==='break'?'💔':'🫗'}</div>
+    <h2>${kind==='time'?"Time's up!":kind==='break'?'The vial shattered!':'No pours left'}</h2>
     <p class="note">A Second Wind from the Healer's Hut lets you carry on: <b>${what}</b>.</p>
     ${have?`<button class="btn" id="wUse">🌬️ Use a Second Wind (${have} left)</button>`:canBuy?`<button class="btn" id="wBuy">🌬️ Second Wind now · ✦ ${HUT.windNow}</button>`:`<p class="note dim">You have no Second Winds and need ✦ ${HUT.windNow} to buy one here.</p>`}
     <div class="row"><button class="btn ghost" id="wRe">Start over</button><button class="btn ghost" id="wLeave">Leave</button></div>
     ${failCounts()?`<p class="note dim">Starting over or leaving is a failed attempt: −${FAIL_COST} points${save.pet?` and one of ${nm}'s hearts`:''}.</p>`:''}`);
-  const go=()=>{ if(kind==='time'){ G.limit+=WIND_TIME; G.timeout=false; } else { G.undos+=WIND_UNDOS; } persist(); closeModal(); updateHUD(); SFX.magic(); toast(`🌬️ A Second Wind! ${what}.`,2400); };
+  const go=()=>{ if(kind==='time'){ G.limit+=WIND_TIME; G.timeout=false; }
+    else if(kind==='break'&&G.preBreak){ const pb=G.preBreak; G.vials=pb.vials.map(v=>v.map(u=>({c:u.c,h:u.h}))); G.fragile[pb.i]=1; G.broken=-1; G.preBreak=null; }
+    else { G.undos+=WIND_UNDOS; } persist(); closeModal(); updateHUD(); SFX.magic(); toast(`🌬️ A Second Wind! ${what}.`,2400); };
   if($('#wUse')) $('#wUse').onclick=()=>{ save.winds--; go(); };
   if($('#wBuy')) $('#wBuy').onclick=()=>{ save.purse-=HUT.windNow; go(); };
   const fail=after=>{ const m=failAttempt(); after(); if(m) setTimeout(()=>{ G&&!document.body.classList.contains('mapmode')?toast(m,3600):toastMap(m); },350); };
@@ -1175,7 +1266,11 @@ function showResults(key,stars,brewed,stirred,canBefore,cz){
     persist();
     setTimeout(()=>checkAch({owl:new Date().getHours()<4}),600);
     const chips=brewed.map(([ing,hex,pot])=>`<li><span class="dot" style="background:${hex};box-shadow:0 0 10px ${hex}"></span>${pot}</li>`).join('');
-    const last=G.l===5, bonus=G.l===BONUS; let next='Next brew', extra='';
+    const last=G.l===5, bonus=G.l===BONUS, adv=G.l===ADV; let next='Next brew', extra='';
+    if(adv){ next='Grimoire'; extra=`<p class="note">✦ ${ADV_INFO[G.y].name} conquered! The whole Academy is talking about it.</p>`;
+      if(!save.advPaid||!save.advPaid[G.y]){ save.advPaid=Object.assign({},save.advPaid,{[G.y]:1}); save.tok+=5; save.purse+=1000;
+        extra+=`<p class="note">Reward: ◈ 5 tokens and ✦ 1,000 points. Your companion's <b>Golden Sense</b> grows: they now reveal ${goldSense()} of a golden vial's 3 runes.</p>`; }
+      persist(); }
     const cando=craftable().length;
     if(last){ next='✦ Bonus brew';
       extra=(G.r<4?`<p class="note">The way to <b>${ROOMS[G.r+1].place}</b> is open.</p>`
@@ -1209,7 +1304,7 @@ function showResults(key,stars,brewed,stirred,canBefore,cz){
       ${stars<3?'<p class="note dim">Brew without spells or undos for all three stars.</p>':''}
       <div class="row"><button class="btn ghost" id="mMap">Grimoire</button><button class="btn" id="mNext">${next}</button></div>`);
     $('#mMap').onclick=()=>{closeModal();showMap()};
-    $('#mNext').onclick=()=>{ if(G.l<BONUS) startLevel(G.r,G.l+1,G.y); else if(G.r<4) startLevel(G.r+1,0,G.y); else startLevel(G.r,G.l,G.y); };
+    $('#mNext').onclick=()=>{ if(G.l===ADV) return showMap('rooms'); if(G.l<BONUS) startLevel(G.r,G.l+1,G.y); else if(G.r<4) startLevel(G.r+1,0,G.y); else startLevel(G.r,G.l,G.y); };
     if($('#mSkip')) $('#mSkip').onclick=e=>{ e.preventDefault(); startLevel(G.r+1,0,G.y); };
     if($('#mCraft')) $('#mCraft').onclick=()=>{ closeModal(); showMap('craft'); };
 }
@@ -1359,10 +1454,12 @@ function doUndo(){
   const s=G.undo.pop(); while(s.length<G.vials.length) s.push([]);
   G.vials=s; G.undos--; if(G.freeUndo>0) G.freeUndo--; else G.helps++; sel=null; hint=null; checkScrolls(); SFX.tick(); updateHUD();
 }
-function findHint(){ const s=G.vials.map(v=>v.map(u=>u.c)); const p=solve(s,60000,G.caps,G.vials.map((_,i)=>sealKey(i))); return p&&p[0]; }
+function findHint(){ const s=G.vials.map(v=>v.map(u=>u.c)); const p=solve(s,60000,G.caps,G.vials.map((_,i)=>G.broken===i?GOLD_SEAL:sealKey(i)),G.vials.map((_,i)=>Math.max(0,((G.frost&&G.frost[i])||0)-G.moves))); return p&&p[0]; }
 function castSpell(){
   if(!G||anim||G.won||G.timeout) return; const R=room(), sp=R.spell;
   if(G.charges<=0) return toast(`${sp.name} is spent for this brew.`);
+  // Casting the classroom's spell burns away every spider web; a cast that burns webs costs no star.
+  const freeCast=burnWebs(); if(freeCast) setTimeout(()=>toast('🕸️🔥 The webs burn away!',2200),1400);
   switch(sp.key){
     case 'sprout':{ if(G.vials.length>=12) return toast('The shelf is full.'); G.vials.push([]); G.caps.push(spareCap()); layout();
       const p=POS[POS.length-1]; for(let k=0;k<20;k++){const a=Math.random()*6.28;bursts.push({x:p.x,y:p.y+p.h*.6,vx:Math.cos(a)*60,vy:-Math.random()*120,life:0,max:.8,c:'#c9f58a',s:2})}
@@ -1371,11 +1468,11 @@ function castSpell(){
       if(!any) return toast('Nothing left hidden. The stars agree.');
       POS.forEach(p=>{for(let k=0;k<8;k++){const a=Math.random()*6.28;bursts.push({x:p.x+(Math.random()-.5)*GEO.W,y:p.y+Math.random()*p.h,vx:Math.cos(a)*30,vy:Math.sin(a)*30,life:0,max:.9,c:'#eef2ff',s:2})}});
       toast('Starsight! Every layer revealed.'); break; }
-    case 'distill':{ const m=findHint(); if(!m) return toast('Even the cauldron is stumped. Try Undo.'); G.charges--; G.helps++; SFX.magic(); updateHUD(); startPour(m[0],m[1]); return; }
+    case 'distill':{ const m=findHint(); if(!m) return toast('Even the cauldron is stumped. Try Undo.'); G.charges--; if(!freeCast) G.helps++; SFX.magic(); updateHUD(); startPour(m[0],m[1]); return; }
     case 'foretell':{ const m=findHint(); if(!m) return toast('The leaves are murky. Try Undo.'); hint={a:m[0],b:m[1],t:0}; toast('The leaves point the way.'); break; }
     case 'unbind':{ if(G.unbind) return toast('Already unbound. Make your pour.'); G.unbind=true; toast('Unbound. Your next pour ignores color.',2600); break; }
   }
-  G.charges--; G.helps++; SFX.magic(); updateHUD();
+  G.charges--; if(!freeCast) G.helps++; SFX.magic(); updateHUD();
 }
 
 /* ======================= INPUT ======================= */
@@ -1385,13 +1482,21 @@ game.addEventListener('pointerdown',e=>{
   const r=game.getBoundingClientRect(); const i=hitVial(e.clientX-r.left,e.clientY-r.top);
   if(i<0){ sel=null; return; }
   const v=G.vials[i];
-  if(sealedAt(i)){ shake[i]=.35; SFX.nope(); sel=null; return toast(`📜 Sealed. Bottle the ${room().colors[sealKey(i)][2]} to unravel this scroll.`,3000); }
+  if(blockedAt(i)){ shake[i]=.35; SFX.nope(); sel=null; const k=sealKey(i), R=room();
+    if(G.gold&&i===G.gold.i){ const q=G.gold, sn=goldSense();
+      return toast(q.open?'🏆 Lucky Elixir found! It is yours to keep.':`🏆 Bottle three potions in a secret order to open it. ${sn?`${save.pet?esc(save.pet.name):'Your companion'} senses: ${q.seq.slice(0,sn).map(c=>R.colors[c][0]).join(', then ')}${sn<3?'…':''}`:'Each right potion lights a rune.'}`,3800); }
+    if(G.broken===i) return toast('💔 Shattered.',1600);
+    if(webAt(i)) return toast(`🕸️ Webbed! Cast ${R.spell.icon} ${R.spell.name} to burn the webs away.`,3000);
+    if(frozenAt(i)){ const n=G.frost[i]-G.moves; return toast(`❄️ Frozen! It thaws in ${n} more pour${n>1?'s':''}.`,2600); }
+    if(k>=SEAL_COUNT){ const n=k-SEAL_COUNT-bottled(); return toast(`📜 This scroll unravels after ${n} more potion${n>1?'s':''} of any color.`,3000); }
+    return toast(`📜 Sealed. Bottle the ${R.colors[k][2]} to unravel this scroll.`,3000); }
   if(sel===null){
     if(!v.length||isDone(v)){ shake[i]=.35; SFX.nope(); return; }
     sel=i; SFX.tick(); return;
   }
   if(sel===i){ sel=null; return; }
   if(canPour(sel,i)){ startPour(sel,i); return; }
+  if(G.fragile[i]) crackVial(i);
   shake[i]=.35; SFX.nope(); sel=null;
 });
 $('#btnUndo').onclick=()=>{SFX.init();doUndo()};
@@ -1435,31 +1540,37 @@ function showIntro(r){
   $('#mBegin').onclick=()=>{ save.seen[r]=1; persist(); closeModal(); if(r===0) toast('Tap a vial, then tap where to pour.',3200); };
 }
 const GUIDE=[
-  {k:'How to brew · 1 of 5', h:'Welcome to Gloamwick', items:[
+  {k:'How to brew · 1 of 6', h:'Welcome to Gloamwick', items:[
     ['🧪','<b>Vials</b><br>Each glass vial holds layers of enchanted sand. Four layers fill a vial.'],
     ['👆','<b>Pour</b><br>Tap a vial to lift it, then tap another vial to pour the top layer into it.'],
     ['✋','<b>The one rule</b><br>A layer only pours onto the <i>same color</i>, or into an <i>empty</i> vial.']]},
-  {k:'How to brew · 2 of 5', h:'Bottle the potions', items:[
+  {k:'How to brew · 2 of 6', h:'Bottle the potions', items:[
     ['🍾','<b>Potion</b><br>Fill a vial with four layers of one color and it corks into a named potion. The first time you bottle one, its sand turns into the <i>real ingredient</i>: petals, roots, stars, crystals. Collect them all.'],
     ['🫕','<b>Stir the cauldron</b><br>Every brew\'s potions pour into the cauldron. Every third brew it is full: swirl your finger to stir and seal them all.'],
     ['❓','<b>Veiled layers</b><br>In later classrooms, lower layers hide until you uncover them.'],
     ['📜','<b>Scrolls</b><br>Some vials are sealed in a scroll. Bottle the potion matching its wax seal to unravel it.'],
     ['⏳','<b>Timed brews</b><br>Some brews have a clock, starting from your first pour. Time left over earns bonus points.']]},
-  {k:'How to brew · 3 of 5', h:'Your satchel', items:[
+  {k:'How to brew · 3 of 6', h:'Your satchel', items:[
     ['↶','<b>Undo</b><br>Takes back your last pour. You get a few per brew.'],
     ['🌱','<b>The professor\'s spell</b><br>The glowing middle button. In the Glasshouse it\'s <b>Sprout</b>, which grows you an <i>extra empty vial</i> when you\'re stuck. Each classroom teaches a new spell.'],
     ['⟲','<b>Restart</b><br>Starts the brew over, fresh.']]},
-  {k:'How to brew · 4 of 5', h:'Points & stars', items:[
+  {k:'How to brew · 4 of 6', h:'Points & stars', items:[
     ['💯','<b>Points</b><br>+100 for every potion, a bonus for brewing in few pours, and a big bonus for no help at all.'],
     ['⭐','<b>Stars</b><br>Three ✦ for a brew with no undos or spells.'],
     ['🎁','<b>Bonus brews</b><br>Finish a classroom to unlock its harder, veiled bonus brew, worth double points.'],
     ['☾','<b>Grimoire</b><br>The moon button opens your map of classrooms, scores and stars. Tap <b>?</b> any time to see this again.']]},
-  {k:'How to brew · 5 of 5', h:'Spellcraft & academy years', items:[
+  {k:'How to brew · 5 of 6', h:'Spellcraft & academy years', items:[
     ['🧺','<b>Your shelf</b><br>Every potion you bottle goes onto your shelf.'],
     ['📖','<b>Spellcraft</b><br>In the grimoire, combine discovered ingredients and bottled potions in the cauldron to craft spells. Crafted spells help in every brew, for good.'],
     ['🎓','<b>Academy years</b><br>Craft all of your year\'s <b>exam spells</b> to move up a year, with new and harder brews in every classroom.'],
     ['🏆','<b>Achievements</b><br>Earn tokens to spend on Pocket Sprouts and sealed lore pages in the grimoire.'],
     ['🐾','<b>Your Sprout</b><br>A little companion that grows with you and blooms into a familiar of your choice in your Third Year. Feed it, and it helps with hints. Giving up a brew costs points and one of its hearts; the Healer\'s Hut can mend them. Bonus brews earn Essences that give it new attributes.']]},
+  {k:'How to brew · 6 of 6', h:'Whimsical blockers', items:[
+    ['📜','<b>Scrolls</b><br>A wax seal opens when you bottle that potion; a numbered scroll after that many potions.'],
+    ['🕸️','<b>Spider webs</b><br>Cast the classroom\'s spell to burn them away. That cast costs no star.'],
+    ['❄️','<b>Frost</b><br>Thaws after the number of pours shown.'],
+    ['💔','<b>Fragile vials</b><br>A wrong pour onto one cracks it; a second shatters it. A Second Wind mends it, otherwise start over.'],
+    ['🏆','<b>Golden vials</b><br>Bottle three potions in a secret order for a Lucky Elixir, the key to each year\'s Adventure. Your companion can sense the order.']]},
 ];
 function showGuide(p,done){
   const P=GUIDE[p], last=p===GUIDE.length-1;
@@ -1497,6 +1608,17 @@ function showMap(tab){
 function renderRooms(y){
   const el=$('#mapList'); el.innerHTML='';
   let nextFound=false;
+  { const A=ADV_INFO[y], R=ROOMS[A.r], k=LK(y,A.r,ADV), dn=save.done[k], st=save.stars[k]||0, open=save.advOpen&&save.advOpen[y], el2=document.createElement('div'), ex=save.elixir||0;
+    el2.className='room'; el2.style.setProperty('--ra','#f3d98a'); el2.style.setProperty('--rb0','#3a2a10'); el2.style.setProperty('--rb1','#120c1c');
+    el2.innerHTML=`<div class="rhead"><div class="rsig">${A.icon}</div><div style="min-width:0"><div class="rname">✦ Adventure · ${A.name}</div><div class="rprof">${YEAR_NAMES[y]} · in ${R.place} · the hardest brew of the year</div></div></div>
+      ${dn?`<button class="orb bonus done" id="advGo">✓ Conquered · ${'✦'.repeat(st)} · play again</button>`
+        :open?`<button class="orb bonus" id="advGo">✦ Begin the Adventure</button>`
+        :`<button class="orb bonus" id="advUnlock" ${ex?'':'disabled'}>${ex?`🧪 Unlock with a Lucky Elixir (you have ${ex})`:'🔒 Needs a Lucky Elixir'}</button>`}
+      <div class="rspell">${dn||open?'Scrolls, webs, frost and fragile vials, all at once. Good luck, witch.':'Lucky Elixirs hide in golden vials (brew 5 of every classroom). Bottle three potions in their secret order to open one.'}</div>`;
+    el.appendChild(el2);
+    if($('#advGo')) $('#advGo').onclick=()=>{ SFX.init(); startLevel(A.r,ADV,y); };
+    if($('#advUnlock')) $('#advUnlock').onclick=()=>{ SFX.init(); if(!(save.elixir>0)||y>save.year) return; save.elixir--; save.advOpen=Object.assign({},save.advOpen,{[y]:1}); persist(); SFX.magic(); toastMap(`🧪 The Lucky Elixir glows… ${A.name} is open!`); showMap('rooms'); };
+    if(y>Math.min(save.year,YEARS)) el2.classList.add('locked'); }
   ROOMS.forEach((R,ri)=>{
     const unlocked=isUnlocked(ri,0,y);
     const card=document.createElement('div'); card.className='room'+(unlocked?'':' locked');
@@ -1516,7 +1638,7 @@ function renderRooms(y){
       <div class="rspell">${unlocked?`${R.spell.icon} <b>${R.spell.name}</b> · ${R.spell.desc}`:lockMsg}</div>`;
     el.appendChild(card);
   });
-  el.querySelectorAll('.orb:not([disabled])').forEach(b=>b.onclick=()=>{SFX.init();startLevel(+b.dataset.r,+b.dataset.l,y)});
+  el.querySelectorAll('.orb[data-r]:not([disabled])').forEach(b=>b.onclick=()=>{SFX.init();startLevel(+b.dataset.r,+b.dataset.l,y)});
   const nx=el.querySelector('.orb.next'); if(nx) setTimeout(()=>{ try{nx.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){} },60);
 }
 function renderCraft(){
@@ -1737,6 +1859,8 @@ function segments(units){
 }
 
 function drawVial(c,i,ox,oy,ang,t,opt){
+  if(G.gold&&i===G.gold.i) return drawGolden(c,i,ox,oy,t);
+  if(G.broken===i) return drawShards(c,i,ox,oy);
   const {W,U}=GEO, H=POS[i].h, r=W/2, g=Math.max(2,W*.055); const v=G.vials[i]; const done=isDone(v);
   c.save(); c.translate(ox,oy); if(ang) c.rotate(ang);
   // aura
@@ -1805,11 +1929,52 @@ function drawVial(c,i,ox,oy,ang,t,opt){
     c.fillStyle='rgba(255,255,255,.45)'; c.beginPath(); c.arc(-W*.04,-9-W*.05,W*.05,0,Math.PI*2); c.fill();
   }
   // scroll: wrapped round a sealed vial; it rolls up and away once its potion is bottled
-  if(sealKey(i)>=0){ let k=0; if(!sealedAt(i)){ const u0=G.unroll[i]; k=u0===undefined?1:Math.min(1,(t-u0)/.9); }
-    if(k<1) drawScroll(c,r,H,colOf(sealKey(i)),k,t,i); }
+  // fragile glass: a hairline when whole, spreading cracks after a wrong pour
+  if(G.fragile[i]){ const cr=G.fragile[i]-1; c.strokeStyle=cr?'rgba(255,235,235,.85)':'rgba(255,255,255,.4)'; c.lineWidth=cr?1.3:.9; c.beginPath();
+    c.moveTo(r-2,H*.25); c.lineTo(r*.3,H*.38); c.lineTo(r*.55,H*.5); c.lineTo(-r*.1,H*.62);
+    if(cr){ c.moveTo(r*.3,H*.38); c.lineTo(-r*.5,H*.3); c.moveTo(r*.55,H*.5); c.lineTo(r-2,H*.72); c.moveTo(-r*.1,H*.62); c.lineTo(-r+2,H*.8); }
+    c.stroke(); c.font=`${Math.round(W*.42)}px serif`; c.textAlign='center'; c.textBaseline='middle'; c.fillText('💔',0,H+12); }
+  // frost: icy glaze with a countdown of pours until it thaws
+  const fr=(G.frost[i]||0)-G.moves, th=G.thaw[i];
+  if(fr>0||(th!==undefined&&t-th<.8)){ const a=fr>0?1:1-(t-th)/.8; c.save(); c.globalAlpha=a; innerPath(c,r,g,H);
+    const ig=c.createLinearGradient(-r,0,r,H); ig.addColorStop(0,'rgba(220,240,255,.78)'); ig.addColorStop(.5,'rgba(160,205,255,.55)'); ig.addColorStop(1,'rgba(230,245,255,.8)'); c.fillStyle=ig; c.fill();
+    c.strokeStyle='rgba(255,255,255,.8)'; c.lineWidth=1; for(let q=0;q<5;q++){ const yy=H*(.2+q*.15); c.beginPath(); c.moveTo(-r+2,yy); c.lineTo(-r+6,yy-4); c.moveTo(r-2,yy+5); c.lineTo(r-6,yy+1); c.stroke(); }
+    if(fr>0){ c.fillStyle='#1b3a66'; c.font=`600 ${Math.round(W*.42)}px Cinzel, Georgia, serif`; c.textAlign='center'; c.textBaseline='middle'; c.fillText('❄',0,H*.4); c.fillText(fr,0,H*.62); }
+    c.restore(); }
+  // spider web: strands across the mouth and body, burned away by the classroom's spell
+  const bt=G.burnT?t-G.burnT:9;
+  if(webAt(i)||bt<.7){ c.save(); c.globalAlpha=webAt(i)?.9:Math.max(0,1-bt/.7); c.strokeStyle='rgba(240,240,255,.85)'; c.lineWidth=.8;
+    const cx=0, cy=H*.32, R=r*1.5;
+    for(let q=0;q<8;q++){ const a=q/8*6.283; c.beginPath(); c.moveTo(cx,cy); c.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R*1.6); c.stroke(); }
+    for(let ring=1;ring<=3;ring++){ c.beginPath(); for(let q=0;q<=8;q++){ const a=q/8*6.283, rr2=R*ring/3*(q%2?.9:1); c.lineTo(cx+Math.cos(a)*rr2,cy+Math.sin(a)*rr2*1.6); } c.stroke(); }
+    c.font=`${Math.round(W*.36)}px serif`; c.textAlign='center'; c.textBaseline='middle'; c.fillText('🕷️',r*.55,cy+R*1.1+Math.sin(t*2+i)*2); c.restore(); }
+  if(sealKey(i)>=0&&sealKey(i)!==GOLD_SEAL){ let k=0; if(!sealedAt(i)){ const u0=G.unroll[i]; k=u0===undefined?1:Math.min(1,(t-u0)/.9); }
+    const sk=sealKey(i), num=sk>=SEAL_COUNT;
+    if(k<1) drawScroll(c,r,H,num?'#e9c46a':colOf(sk),k,t,i,num?String(Math.max(0,sk-SEAL_COUNT-bottled())):null); }
   c.restore();
 }
-function drawScroll(c,r,H,seal,k,t,i){
+// The golden vial: gold glass with three runes above it; it fills with Lucky Elixir once opened.
+function drawGolden(c,i,ox,oy,t){
+  const {W,U}=GEO, H=POS[i].h, r=W/2, g=Math.max(2,W*.055), q=G.gold, sn=goldSense();
+  c.save(); c.translate(ox,oy);
+  const pulse=.5+.5*Math.sin(t*2.4), gr=c.createRadialGradient(0,H*.55,2,0,H*.55,H*.85);
+  gr.addColorStop(0,`rgba(255,215,94,${q.open?.5:.18+.1*pulse})`); gr.addColorStop(1,'rgba(255,215,94,0)'); c.fillStyle=gr; c.fillRect(-H,-H*.3,H*2,H*1.7);
+  innerPath(c,r,g,H); c.fillStyle='rgba(255,220,120,.08)'; c.fill();
+  if(q.open){ c.save(); innerPath(c,r,g,H); c.clip(); const lg=c.createLinearGradient(0,10,0,H); lg.addColorStop(0,'#fff2a8'); lg.addColorStop(1,'#e0a42a'); c.fillStyle=lg; c.fillRect(-r,14,2*r,H);
+    c.globalCompositeOperation='lighter'; for(let k=0;k<7;k++){ const yy=H-((t*30+k*29)%(H-16)), xx=Math.sin(t*2+k)*r*.5; c.fillStyle='rgba(255,255,220,.8)'; star(c,xx,yy,1.6+k%3); } c.restore(); }
+  outerPath(c,r,H); c.lineWidth=2; c.strokeStyle=`rgba(255,215,94,${.75+.25*pulse})`; c.stroke();
+  rr(c,-r-2.5,0,W+5,6.5,3.2); c.fillStyle='#d9a93a'; c.fill();
+  if(q.open){ c.fillStyle='#8a5a22'; rr(c,-r+g+.5,-9,W-2*g-1,14,3); c.fill(); c.fillStyle='#ffd75e'; c.beginPath(); c.arc(0,-9,W*.15,0,6.283); c.fill(); }
+  // runes
+  const R=room(); for(let k=0;k<3;k++){ const x=(k-1)*W*.5, y=-24, lit=q.open||q.prog>k, show=k<sn||q.open||q.prog>k;
+    c.beginPath(); c.arc(x,y,W*.2,0,6.283); c.fillStyle=show?colOf(q.seq[k]):'#2c2142'; c.fill();
+    c.lineWidth=lit?2.2:1.2; c.strokeStyle=lit?'#fff2a8':'rgba(255,215,94,.6)'; if(lit){ c.shadowColor='#ffd75e'; c.shadowBlur=10; } c.stroke(); c.shadowBlur=0;
+    if(!show){ c.fillStyle='rgba(255,230,160,.85)'; c.font=`600 ${Math.round(W*.24)}px Cinzel, Georgia, serif`; c.textAlign='center'; c.textBaseline='middle'; c.fillText('?',x,y+1); } }
+  c.font=`${Math.round(W*.5)}px serif`; c.textAlign='center'; c.textBaseline='middle'; c.fillText(q.open?'🧪':'🏆',0,H*.55);
+  c.restore(); }
+function drawShards(c,i,ox,oy){ const {W}=GEO, H=POS[i].h, r=W/2; c.save(); c.translate(ox,oy); c.strokeStyle='rgba(220,235,255,.6)'; c.lineWidth=1.2;
+  for(let k=0;k<6;k++){ const x=-r+k*W/5, y=H-2-(k%3)*3; c.beginPath(); c.moveTo(x,y); c.lineTo(x+4,y-7-(k%2)*5); c.lineTo(x+8,y); c.stroke(); } c.restore(); }
+function drawScroll(c,r,H,seal,k,t,i,label){
   const e=ease(k), x0=-r-4, w=2*r+8, top=4, bot=H+2, yb=bot-(bot-top)*e;   // the bottom rolls up as it opens
   c.save(); c.globalAlpha=1-Math.max(0,(k-.6)/.4);
   if(yb-top>2){
@@ -1827,7 +1992,8 @@ function drawScroll(c,r,H,seal,k,t,i){
   if(k<.35){ const sy=(top+bot)/2, R=Math.max(7,r*.62);
     c.fillStyle=mix(seal,'#000000',.25); c.beginPath(); for(let q=0;q<12;q++){ const a=q/12*6.283, rr2=R*(q%2?.92:1.06); c.lineTo(Math.cos(a)*rr2,sy+Math.sin(a)*rr2); } c.closePath(); c.fill();
     c.fillStyle=seal; c.beginPath(); c.arc(0,sy,R*.72,0,6.283); c.fill();
-    c.fillStyle='rgba(255,255,255,.75)'; star(c,0,sy,R*.38+Math.sin(t*2+i)*.6); }
+    if(label){ c.fillStyle='#4a2f0a'; c.font=`700 ${Math.round(R*1.05)}px Cinzel, Georgia, serif`; c.textAlign='center'; c.textBaseline='middle'; c.fillText(label,0,sy+1); }
+    else { c.fillStyle='rgba(255,255,255,.75)'; star(c,0,sy,R*.38+Math.sin(t*2+i)*.6); } }
   c.restore();
 }
 
@@ -1985,7 +2151,7 @@ layout(); showMap(); requestAnimationFrame(frame);
   b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top,0px));background:#7a1f2b;color:#fff;font:600 14px Georgia,serif;text-align:center;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.5)';
   document.body.appendChild(b);
 })();
-window.__gw={get G(){return G}, get POS(){return POS}, get GEO(){return GEO}, get save(){return save}, persist, showMap, startLevel, solve, genLevel};
+window.__gw={get G(){return G}, get POS(){return POS}, get GEO(){return GEO}, get save(){return save}, persist, showMap, startLevel, solve, genLevel, LEVEL_SOL, LK};
 })();
 </script>
 

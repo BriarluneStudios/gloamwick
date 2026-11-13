@@ -42,9 +42,18 @@ Brew 4 of each classroom (and brew 6 from your Second Year) has a clock that sta
 
 Every bonus brew you win earns that classroom's Essence. Combine an Essence with two of the classroom's potions to give your companion a lasting attribute: a Leafy Crown (a fourth heart), Starlit Eyes (hints lift veils), an Ember Heart (wins restore two hearts), a Tea-Leaf Charm (an extra hint) or an Hourglass Shade (more time on timed brews).
 
-## Scrolls
+## Whimsical blockers
 
-Later brews hide some vials inside sealed scrolls. A sealed vial can't be poured into or out of until you bottle the potion matching its wax seal; then the scroll unravels.
+Harder brews mix in blockers, more of them each year:
+
+- **Scrolls** seal a vial until you bottle the potion matching the wax seal; numbered scrolls open after that many potions of any color.
+- **Spider webs** block a vial until you cast the classroom's spell (that cast costs no star).
+- **Frost** thaws after the number of pours shown.
+- **Fragile vials** crack on a wrong pour and shatter on the second. A Second Wind mends them; otherwise, start over.
+
+## Golden vials and Adventures
+
+Brew 5 of every classroom hides a golden vial. Bottle three potions in its secret order to open it for a Lucky Elixir, and spend that to unlock the year's Adventure: one very hard brew with every blocker at once. Your companion's Golden Sense reveals the order: one rune once your Sprout has bloomed, and one more for every Adventure you conquer.
 
 ## Achievements and lore
 
