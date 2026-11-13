@@ -853,15 +853,15 @@ const ADV_INFO={1:{r:4,name:'The Gilded Catacombs',icon:'🗝️'},2:{r:2,name:'
 const PATH0=ADV+1, PATH_N=5;
 const PATH_INFO={"1": {"r": 3, "name": "The Lamplighter's Path", "icon": "🏮", "end": "Lamplighter's Friend: Wick will be waiting when you reach the Hollow Lantern.", "ch": [["A Ghost with a Taper", "Following the hidden golden glow, you find a narrow stair behind the Parlor's fireplace. At the bottom a pale boy with a lamplighter's taper bows. “Wick,” he says. “Morrow's apprentice. Or I was.”"], ["Wick's Rounds", "Wick lit every lamp in Gloamwick, every dusk, for twenty years. “Then one night the lantern took my light too,” he says, and holds up a taper that won't catch."], ["The Lamplighter's Map", "He unrolls a map of every lamp in the Academy. One is circled in red: a lamp inside the Hollow Lantern itself."], ["A Spark Shared", "You brew while Wick watches. When you finish, his taper catches, just for a moment. He laughs for the first time in three hundred years."], ["Wick's Promise", "“When you reach the lantern,” Wick says, “call for me. I'll light the last lamp.” Then he's gone, and the stair is only a fireplace again."]]}, "2": {"r": 0, "name": "The Path of Stolen Dusk", "icon": "🌘", "end": "Keeper of Dusk: the stolen evenings are safe, and Morrow's sister knows your name.", "ch": [["A Door in the Roots", "The hidden glow leads under the Glasshouse, through a door woven from roots. Down here the dusk is thick and sweet and very still."], ["Bottled Evenings", "Jars line the roots, each holding an evening the lantern stole: someone's first spell, a long-ago picnic, a goodbye."], ["The Gardener", "A woman made of ivy tends the jars. “Morrow's sister,” she says. “I keep what the lantern takes, so it isn't lost forever.”"], ["Unstopped", "Together you unstop one jar. A warm evening spills out over the Glasshouse, and every flower opens at once."], ["The Sister's Gift", "“Take this,” she says, and gives you a seed of pure dusk. “Plant it in the lantern. It remembers what the lantern forgot.”"]]}, "3": {"r": 4, "name": "The Founder's Path", "icon": "🌟", "end": "The Founder's Heir: Morrow names you heir to Gloamwick.", "ch": [["The Third Door", "Beyond Ashgrave's second door there is a third, made of starlight and golden glass. Only a witch who finds what no one else can see may open it."], ["Morrow's Voice", "Inside, a voice like candlelight: “You found the hidden vials. Then you see as I did. Come closer.”"], ["The Founder's Regret", "Morrow tells you everything. She only meant to keep the dusk gentle. “I made it hungry because I was afraid of the dark. You aren't, are you?”"], ["Lighting the Way Back", "You and your familiar brew Morrow a lamp of her own, and for the first time in three hundred years she can see the way out."], ["The Founder Returns", "Morrow Gloam steps into the Hall at dusk. The professors rise. She looks at you and says only, “Thank you, Headwitch.”"]]}};
 const PATH_SEEDS={1:[55,59,33,58,106],
-             2:[326,36,84,394,2],
-             3:[52,31,260,89,9]};
+             2:[94,36,196,171,70],
+             3:[175,31,260,89,9]};
 // Pre-picked layouts (tools/seeds.js): SEEDS[year][room][brew], breathers are random so they hold 0.
-const ADV_SEEDS={1:847,
-             2:318,
-             3:307};
+const ADV_SEEDS={1:891,
+             2:793,
+             3:862};
 const SEEDS={1:[[0,0,3,14,17,0,16,3,1,1,0,0,3,7,10,1,13,13,7,36,0,0,18,1,20,17,1,17,9,18,69],[0,0,16,2,11,7,3,14,5,21,0,0,7,16,35,1,11,13,24,14,0,0,39,3,38,4,34,27,8,27,121],[0,0,5,11,43,22,18,37,5,15,0,0,26,6,18,9,16,39,10,27,0,0,11,10,17,29,33,24,8,21,47],[0,0,51,35,36,12,3,11,22,30,0,0,3,58,21,3,28,13,36,15,0,0,37,12,17,23,3,32,23,109,14],[0,0,13,28,28,0,10,15,4,81,0,0,26,45,19,36,36,33,42,162,0,0,0,1,26,125,135,142,113,25,116]],
-             2:[[0,0,18,13,0,9,4,14,13,37,0,0,16,20,1,27,40,13,21,45,0,0,35,16,15,46,62,6,7,48,166],[0,0,10,14,16,22,3,23,40,28,0,0,41,34,38,14,14,74,67,26,0,0,43,123,57,30,23,61,11,82,160],[0,0,121,27,151,11,35,3,50,1,0,0,32,6,17,146,24,45,18,39,0,0,9,160,49,8,25,27,43,71,42],[0,0,153,61,92,141,83,119,8,27,0,0,5,25,16,22,23,22,160,152,0,0,10,14,28,27,49,97,40,102,63],[0,0,4,89,125,1,48,8,39,52,0,0,146,135,21,123,8,152,111,132,0,0,33,43,33,10,55,123,11,89,108]],
-             3:[[0,0,32,94,23,195,16,122,28,26,0,0,43,41,17,22,27,18,32,29,0,0,19,24,24,15,16,87,33,13,50],[0,0,31,41,9,205,21,138,37,56,0,0,116,19,12,14,12,37,29,72,0,0,21,9,35,196,12,86,15,47,161],[0,0,35,13,13,88,28,28,16,160,0,0,81,46,173,137,29,40,7,250,0,0,227,32,27,37,91,90,87,33,23],[0,0,59,34,101,29,27,141,28,30,0,0,2,31,109,41,70,75,52,137,0,0,215,32,35,17,241,25,121,3,27],[0,0,216,127,62,35,135,0,226,35,0,0,54,51,153,96,42,33,126,27,0,0,0,208,2,72,135,29,136,156,24]]};
+             2:[[0,0,18,13,0,9,4,14,13,37,0,0,16,20,1,27,40,13,21,45,0,0,35,16,15,46,62,6,7,48,9],[0,0,10,14,16,22,3,23,40,28,0,0,41,34,38,14,14,43,67,60,0,0,43,90,57,30,23,61,11,113,9],[0,0,80,27,73,11,35,3,50,1,0,0,32,6,17,49,24,45,18,127,0,0,76,102,49,8,25,27,43,141,39],[0,0,103,61,97,35,83,34,8,27,0,0,92,25,16,22,23,71,96,10,0,0,10,72,28,27,64,138,40,102,63],[0,0,4,109,125,1,48,8,116,52,0,0,146,55,41,47,8,16,90,108,0,0,33,55,20,10,42,80,11,89,119]],
+             3:[[0,0,32,24,23,184,16,142,28,26,0,0,43,41,17,22,27,18,32,29,0,0,19,24,24,15,16,81,66,13,258],[0,0,31,41,9,131,71,138,37,56,0,0,116,19,12,14,12,37,29,127,0,0,21,9,35,16,12,9,15,47,149],[0,0,35,13,13,88,28,28,225,72,0,0,55,46,95,143,161,40,7,150,0,0,158,32,27,37,6,90,87,33,23],[0,0,79,34,53,29,27,141,28,30,0,0,2,31,47,41,70,75,95,139,0,0,178,32,21,17,122,25,28,120,27],[0,0,216,127,240,35,30,169,138,35,0,0,231,209,53,38,42,33,235,27,0,0,0,208,2,72,165,29,187,332,24]]};
 const slotKind=l=>l>=PATH0?'path':l===BONUS?'bonus':l===ADV?'adv':l%10===9?'peak':(l%10<=1)?'ease':'ramp';
 const isEase=(y,r,l)=>slotKind(l)==='ease';
 const YEAR_D={1:[.05,.8],2:[.3,.92],3:[.45,1]};   // difficulty at the start and end of each year
@@ -891,7 +891,7 @@ function blockersFor(y,r,l){ const R=rng(9001+y*977+r*131+l*17);
 // Returns {v: vials (arrays of color indexes), caps: each vial's capacity}, or null if the shuffle breaks a rule.
 function buildLevel(y,r,l,att){
   const R=rng(9173+r*1009+l*131+att*7919+(y-1)*104729);
-  let {n,empties,maxRun}=spec(y,r,l); if(blockersFor(y,r,l).count) empties++;   // a wide scroll hides vials, so give one more empty
+  let {n,empties,maxRun}=spec(y,r,l);
   if(slotKind(l)==='ease'){ n=4+Math.floor(R()*2)+(y>=2?1:0); maxRun=3; }
   const cols=shuffle([0,1,2,3,4,5,6,7,8],R).slice(0,n);
   // From Year 3 each color comes in 3, 4 or 5 grains, and there is one vial of each matching size.
@@ -911,15 +911,22 @@ function buildLevel(y,r,l,att){
   const take=()=>{ const f=freeV(); return f.length?f[Math.floor(R()*f.length)]:-1; };
   for(let k=0;k<B.frost;k++){ const i=take(); if(i<0) return null; frost[i]=4+Math.floor(R()*5); }
   for(let e=0;e<empties;e++){ vials.push([]); caps.push(CAP); seals.push(-1); frost.push(0); web.push(0); fragile.push(0); }
-  // Wide scrolls: one scroll over 2-3 neighboring vials on the same shelf; it unrolls once 3 potions are bottled.
-  const wide=vials.map(()=>-1), nV=vials.length;
-  for(let k=0;k<B.count;k++){ const span=2+(l!==ADV&&spec(y,r,l).D>.7&&R()<.5?1:0), free=i=>i<nV&&seals[i]<0&&!frost[i]&&!web[i]&&wide[i]<0;
-    const starts=[]; for(let i=0;i<nV;i++){ const g=[i]; while(g.length<span){ const j=g[g.length-1]+1; if(!free(j)||!shelfNbrs(g[g.length-1],nV,nV).includes(j)) break; g.push(j); } if(g.length===span&&g.every(free)) starts.push(g); }
-    if(!starts.length) return null; const g=starts[Math.floor(R()*starts.length)]; g.forEach(i=>{ seals[i]=SEAL_COUNT+3; wide[i]=k; }); }  for(let k=0;k<B.web;k++){ const f=vials.map((_,i)=>i).filter(i=>vials[i].length&&seals[i]<0&&!frost[i]&&!web[i]); if(!f.length) return null; web[f[Math.floor(R()*f.length)]]=1; }
+  // Wide scrolls: one scroll stretched over 2-3 neighboring vials on one shelf, always hiding one extra empty
+  // vial among them. Its size and how many potions it needs (2-4) vary brew to brew. It unrolls to uncover them all.
+  let wide=vials.map(()=>-1); const hv=[];
+  for(let k=0;k<B.count;k++){ const nV=vials.length, N=nV+1, span=2+(R()<(l===ADV?0:.5)?1:0), need=2+Math.floor(R()*3);
+    const orig=(j,p)=>j<p?j:j-1, free=i=>seals[i]<0&&!frost[i]&&!web[i]&&wide[i]<0;
+    const opts=[]; for(let p=0;p<N;p++) for(let st=Math.max(0,p-span+1);st<=p;st++){ const g=[]; for(let j=st;j<st+span;j++) g.push(j);
+      if(g[g.length-1]>=N) continue; if(!g.every((j,q)=>q===0||shelfNbrs(g[q-1],N,N).includes(j))) continue;
+      if(g.every(j=>j===p||free(orig(j,p)))) opts.push([p,g]); }
+    if(!opts.length) return null; const [p,g]=opts[Math.floor(R()*opts.length)];
+    vials.splice(p,0,[]); caps.splice(p,0,CAP); seals.splice(p,0,-1); frost.splice(p,0,0); web.splice(p,0,0); fragile.splice(p,0,0); wide.splice(p,0,-1);
+    g.forEach(j=>{ seals[j]=SEAL_COUNT+need; wide[j]=k; }); hv.push(p); }
+  for(let k=0;k<B.web;k++){ const f=vials.map((_,i)=>i).filter(i=>vials[i].length&&seals[i]<0&&!frost[i]&&!web[i]); if(!f.length) return null; web[f[Math.floor(R()*f.length)]]=1; }
   for(let k=0;k<B.fragile;k++){ const f=vials.map((_,i)=>i).filter(i=>!fragile[i]&&seals[i]<0&&!frost[i]); if(!f.length) break;
     // prefer the empty vials: they get poured into most
     const em=f.filter(i=>!vials[i].length); const pool=em.length?em:f; fragile[pool[Math.floor(R()*pool.length)]]=1; }
-  return {v:vials,caps,seals,frost,web,fragile,wide};
+  return {v:vials,caps,seals,frost,web,fragile,wide,hv};
 }
 // Save keys: Year 1 keeps the original "room-brew" keys so existing progress carries over.
 const LK=(y,r,l)=>y===1?r+'-'+l:'y'+y+':'+r+'-'+l;
@@ -927,7 +934,7 @@ const LK=(y,r,l)=>y===1?r+'-'+l:'y'+y+':'+r+'-'+l;
 const seedFor=(y,r,l)=>l>=PATH0?((PATH_SEEDS[y]||[])[l-PATH0]||0):l===ADV?ADV_SEEDS[y]:((SEEDS[y]&&SEEDS[y][r]&&SEEDS[y][r][l])||0);
 const LEVEL_SOL={};
 function genLevel(y,r,l){
-  const k=LK(y,r,l), cp=L=>({v:L.v.map(x=>x.slice()),caps:L.caps.slice(),seals:L.seals.slice(),frost:L.frost.slice(),web:L.web.slice(),fragile:L.fragile.slice(),wide:L.wide.slice()});
+  const k=LK(y,r,l), cp=L=>({v:L.v.map(x=>x.slice()),caps:L.caps.slice(),seals:L.seals.slice(),frost:L.frost.slice(),web:L.web.slice(),fragile:L.fragile.slice(),wide:L.wide.slice(),hv:L.hv.slice()});
   const ok=(L,sol)=>{ LEVEL_CACHE[k]=cp(L); LEVEL_PAR[k]=sol.length; LEVEL_SOL[k]=sol; return cp(L); };
   if(isEase(y,r,l)){ const s0=Math.floor(Math.random()*1e6); for(let att=s0;att<s0+60;att++){ const L=buildLevel(y,r,l,att); let sol; if(L&&(sol=solve(L.v,20000,L.caps,L.seals,L.frost,L.web))) return ok(L,sol); } }
   if(LEVEL_CACHE[k]) return cp(LEVEL_CACHE[k]);
@@ -1147,7 +1154,7 @@ function blockerIntro(){
     ['gold',  ()=>!!G.gold, '🏆 A golden vial! Bottle three potions in a secret order to open it. Each right potion lights a rune; a wrong one resets them.'],
     ['web',   ()=>has1(webAt), '🕸️ A spider web traps a vial! Bottle a potion in a vial right next to it on the shelf to tear it free.'],
     ['frost', ()=>has1(frozenAt), '❄️ A frozen vial! It thaws after a few pours. The number shows how many.'],
-    ['count', ()=>has1(i=>sealKey(i)>=SEAL_COUNT&&sealKey(i)<GOLD_SEAL), '📜 A wide scroll hides several vials! It unrolls to uncover them all once you bottle 3 potions of any color.'],
+    ['count', ()=>has1(i=>sealKey(i)>=SEAL_COUNT&&sealKey(i)<GOLD_SEAL), '📜 A wide scroll hides several vials, and a secret one! It unrolls to uncover them all once you bottle the number of potions on its seal.'],
     ['fragile',()=>G.fragile.some(Boolean), '💔 A fragile vial! A wrong pour onto it cracks the glass; a second one shatters it.'],
   ];
   for(const [k,f,msg] of list){ if(!seen['b_'+k]&&f()){ seen['b_'+k]=1; persist(); setTimeout(()=>toast(msg,4600),300); return true; } }
@@ -1157,7 +1164,9 @@ function checkScrolls(){ const now=performance.now()/1000;
   G.vials.forEach((_,i)=>{ if(sealKey(i)<0||sealKey(i)===GOLD_SEAL) return; const open=!sealedAt(i);
     if(open&&G.unroll[i]===undefined){ G.unroll[i]=now; const p=POS[i];
       for(let k=0;k<24;k++){ const a=Math.random()*6.28,sp=40+Math.random()*90; bursts.push({x:p.x,y:p.y+p.h*.5,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-50,life:0,max:.9,c:k%2?'#f1e2b8':(sealKey(i)>=SEAL_COUNT?'#e9c46a':colOf(sealKey(i))),s:2}); }
-      setTimeout(()=>{ toast('📜 The scroll unravels!',2200); SFX.magic(); },500); }
+      if(G.hv&&G.hv.includes(i)){ for(let k=0;k<36;k++){ const a=Math.random()*6.28,sp=30+Math.random()*120; bursts.push({x:p.x,y:p.y+p.h*.5,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-60,life:0,max:1.2,c:k%2?'#ffe9a0':'#ffffff',s:2.4}); }
+        setTimeout(()=>{ toast('📜✨ The scroll unrolls, and there was a hidden vial inside!',3000); SFX.chime(); },1900); }
+      else if(!(G.wide&&G.wide[i]>=0)) setTimeout(()=>{ toast('📜 The scroll unravels!',2200); SFX.magic(); },500); }
     if(!open) delete G.unroll[i]; }); }
 
 function setTheme(T){
@@ -1206,7 +1215,7 @@ function startLevel(r,l,y){
   if(goldFor(y,r,l)&&!(save.gold&&save.gold[LK(y,r,l)])&&LEVEL_SOL[LK(y,r,l)]){ const seq=goldSequence(y,r,l,L); if(seq){ addVial(CAP,GOLD_SEAL); gold={i:raw.length-1,seq,prog:0,open:false,flash:0}; } }
   raw.forEach((v,i)=>{ if(!v.length) caps[i]=spareCap(); });
   const tot={}; raw.forEach(v=>v.forEach(c=>tot[c]=(tot[c]||0)+1));
-  G={y,r,l,baseN:L.v.length,cols:colorsFor(y,r),motifs:motifsFor(y,r),caps,tot,seal,frost,web,fragile,wide:L.wide,gold,broken:-1,thaw:{},burnT:0,unroll:{},mixed:caps.some(c=>c!==CAP),vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-open}))),undo:[],undos:undosFor(y,r,l)+(has('lantern')?1:0),charges:R.spell.charges+(has('echo')?1:0),unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[LK(y,r,l)]||null,nudged:false,pet:petCharges(),timed:timedFor(y,r,l),elapsed:0,started:false,timeout:false,limit:0,freeUndo:[0,1,2][talent('snake')]};
+  G={y,r,l,baseN:L.v.length,cols:colorsFor(y,r),motifs:motifsFor(y,r),caps,tot,seal,frost,web,fragile,wide:L.wide,hv:L.hv,gold,broken:-1,thaw:{},burnT:0,unroll:{},mixed:caps.some(c=>c!==CAP),vials:raw.map(v=>v.map((c,j)=>({c,h:veil&&j<v.length-open}))),undo:[],undos:undosFor(y,r,l)+(has('lantern')?1:0),charges:R.spell.charges+(has('echo')?1:0),unbind:false,moves:0,helps:0,won:false,pts:0,par:LEVEL_PAR[LK(y,r,l)]||null,nudged:false,pet:petCharges(),timed:timedFor(y,r,l),elapsed:0,started:false,timeout:false,limit:0,freeUndo:[0,1,2][talent('snake')]};
   if(G.timed){ G.limit=Math.round(30+(G.par||20)*3.5)+(hasAttr('shade')?30:0)+(hasCharm('quick')?15:0); }
   if(hasCharm('thaw')) G.frost=G.frost.map(f=>f?Math.max(1,f-2):0);
   if(hasCharm('star')) G.undos++;
@@ -1728,7 +1737,7 @@ const GUIDE=[
     ['🏆','<b>Achievements</b><br>Earn tokens to spend on Pocket Sprouts and sealed lore pages in the grimoire.'],
     ['🐾','<b>Your Sprout</b><br>A little companion that grows with you and blooms into a familiar of your choice in your Third Year. Feed it, and it helps with hints. Giving up a brew costs points and one of its hearts; the Healer\'s Hut can mend them. Bonus brews earn Essences that give it new attributes, and every so often it asks to brew a remedy with you: win for a new charm, lose and it is injured until you win one.']]},
   {k:'How to brew · 6 of 6', h:'Whimsical blockers', items:[
-    ['📜','<b>Scrolls</b><br>A wax seal opens when you bottle that potion. A wide scroll hides 2–3 vials at once and unrolls to uncover them all after 3 potions.'],
+    ['📜','<b>Scrolls</b><br>A wax seal opens when you bottle that potion. A wide scroll hides 2–3 vials, one of them a secret empty vial, and unrolls once you bottle the number of potions on its seal.'],
     ['🕸️','<b>Spider webs</b><br>A webbed vial is trapped until you bottle a potion in a vial right next to it on the shelf.'],
     ['❄️','<b>Frost</b><br>Thaws after the number of pours shown.'],
     ['💔','<b>Fragile vials</b><br>A wrong pour onto one cracks it; a second shatters it. A Second Wind mends it, otherwise start over.'],
